@@ -53,9 +53,6 @@ struct LibraryListView: View {
       }
       .navigationTitle("Browse")
       .navigationBarTitleDisplayMode(.inline)
-      .refreshable {
-        await viewModel.loadLibraries()
-      }
     }
     .task {
       if viewModel.libraries.isEmpty {

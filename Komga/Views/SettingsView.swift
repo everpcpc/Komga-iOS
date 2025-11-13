@@ -22,13 +22,21 @@ struct SettingsView: View {
               Text(user.email)
                 .foregroundColor(.secondary)
             }
+            HStack {
+              Text("Roles")
+              Spacer()
+              Text(user.roles.joined(separator: ", "))
+                .font(.caption)
+                .lineLimit(1)
+                .foregroundColor(.secondary)
+            }
           }
         }
 
         Section(header: Text("Reader")) {
           VStack(alignment: .leading, spacing: 8) {
             HStack {
-              Text("Pillarbox / Horizontal Padding")
+              Text("Webtoon Page Width")
               Spacer()
               Text("\(Int(webtoonPageWidthPercentage))%")
                 .foregroundColor(.secondary)
@@ -38,7 +46,7 @@ struct SettingsView: View {
               in: 50...100,
               step: 5
             )
-            Text("For webtoon reading, adjust the width of pages as a percentage of screen width")
+            Text("Adjust the width of webtoon pages as a percentage of screen width")
               .font(.caption)
               .foregroundColor(.secondary)
           }

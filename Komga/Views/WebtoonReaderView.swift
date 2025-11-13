@@ -134,6 +134,7 @@ struct WebtoonReaderView: UIViewRepresentable {
     let currentPageChangedExternally = currentPage != context.coordinator.lastExternalCurrentPage
     if currentPageChangedExternally && currentPage >= 0 && currentPage < pages.count
       && !context.coordinator.isUserScrolling
+      && !context.coordinator.isProgrammaticScrolling
     {
       context.coordinator.scrollToPage(currentPage, animated: true)
       context.coordinator.lastExternalCurrentPage = currentPage
@@ -160,6 +161,7 @@ struct WebtoonReaderView: UIViewRepresentable {
     var lastPagesCount: Int = 0
     var lastExternalCurrentPage: Int = -1
     var isUserScrolling: Bool = false
+    var isProgrammaticScrolling: Bool = false
     var hasScrolledToInitialPage: Bool = false
     var lastPreloadTime: Date?
     var pageWidthPercentage: Double = 100.0
@@ -302,20 +304,25 @@ struct WebtoonReaderView: UIViewRepresentable {
         as! WebtoonPageCell
 
       let pageIndex = indexPath.item
+
+      if pageImages[pageIndex] == nil {
+        Task { @MainActor [weak self] in
+          guard let self = self else { return }
+          await self.loadImageForPage(pageIndex)
+        }
+      }
+
       cell.configure(
         pageIndex: pageIndex,
         image: pageImages[pageIndex],
         loadImage: { [weak self] index in
-          await self?.loadImageForPage(index)
+          guard let self = self else { return }
+          Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            await self.loadImageForPage(index)
+          }
         }
       )
-
-      // Load image if not already loaded
-      if pageImages[pageIndex] == nil {
-        Task { @MainActor in
-          await loadImageForPage(pageIndex)
-        }
-      }
 
       return cell
     }
@@ -383,6 +390,10 @@ struct WebtoonReaderView: UIViewRepresentable {
 
     func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
       isUserScrolling = false
+      // Delay clearing programmatic scrolling flag to prevent updateUIView from triggering additional scroll
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+        self?.isProgrammaticScrolling = false
+      }
       updateCurrentPage()
       preloadNearbyPages()
     }
@@ -418,18 +429,16 @@ struct WebtoonReaderView: UIViewRepresentable {
 
     @MainActor
     func loadImageForPage(_ pageIndex: Int) async {
-      if loadingPages.contains(pageIndex) {
-        return
-      }
-      loadingPages.insert(pageIndex)
-      defer { loadingPages.remove(pageIndex) }
-
       guard pageIndex >= 0 && pageIndex < pages.count,
         pageImages[pageIndex] == nil,
         let loader = imageLoader
       else {
         return
       }
+
+      // Mark as loading
+      loadingPages.insert(pageIndex)
+      defer { loadingPages.remove(pageIndex) }
 
       let image = await loader.loadImage(pageIndex)
 
@@ -527,14 +536,15 @@ struct WebtoonReaderView: UIViewRepresentable {
 
       let visibleIndices = Set(visibleIndexPaths.map { $0.item })
 
-      // Preload 2 pages before and after visible range
+      // Preload 3 pages before and after visible range
       let minVisible = visibleIndices.min() ?? 0
       let maxVisible = visibleIndices.max() ?? pages.count - 1
 
-      for i in max(0, minVisible - 2)...min(pages.count - 1, maxVisible + 2) {
+      for i in max(0, minVisible - 3)...min(pages.count - 1, maxVisible + 3) {
         if pageImages[i] == nil {
-          Task { @MainActor in
-            await loadImageForPage(i)
+          Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            await self.loadImageForPage(i)
           }
         }
       }
@@ -572,6 +582,7 @@ struct WebtoonReaderView: UIViewRepresentable {
         onCenterTap?()
       } else if isTopArea || isLeftArea {
         // Scroll up by half screen
+        isProgrammaticScrolling = true
         let currentOffset = collectionView.contentOffset.y
         let scrollAmount = screenHeight * 0.8
         let targetOffset = max(
@@ -585,6 +596,7 @@ struct WebtoonReaderView: UIViewRepresentable {
         )
       } else if isBottomArea || isRightArea {
         // Scroll down by half screen
+        isProgrammaticScrolling = true
         let currentOffset = collectionView.contentOffset.y
         let scrollAmount = screenHeight * 0.8
         let targetOffset = min(

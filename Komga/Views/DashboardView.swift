@@ -18,7 +18,6 @@ struct DashboardView: View {
   @State private var bookViewModel = BookViewModel()
   @State private var seriesViewModel = SeriesViewModel()
 
-  // Library selection with persistence
   @State private var libraries: [Library] = []
   @AppStorage("selectedLibraryId") private var selectedLibraryId: String = ""
   @State private var showLibraryPicker = false

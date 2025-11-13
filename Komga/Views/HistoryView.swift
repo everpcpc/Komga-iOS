@@ -13,9 +13,8 @@ struct HistoryView: View {
   @State private var errorMessage: String?
   @State private var bookViewModel = BookViewModel()
 
-  // Library selection with persistence
   @State private var libraries: [Library] = []
-  @AppStorage("selectedLibraryId") private var selectedLibraryId: String = ""  // Empty string means "All Libraries"
+  @AppStorage("selectedLibraryId") private var selectedLibraryId: String = ""
 
   private var selectedLibraryIdOptional: String? {
     selectedLibraryId.isEmpty ? nil : selectedLibraryId
@@ -94,9 +93,6 @@ struct HistoryView: View {
             Image(systemName: "line.3.horizontal.decrease.circle")
           }
         }
-      }
-      .refreshable {
-        await loadRecentlyRead(showLoading: false)
       }
       .onChange(of: selectedLibraryId) {
         Task {
@@ -273,8 +269,4 @@ struct ReadHistoryBookRow: View {
     formatter.timeStyle = .none
     return formatter.string(from: date)
   }
-}
-
-#Preview {
-  HistoryView()
 }
