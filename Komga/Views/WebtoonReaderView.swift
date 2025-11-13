@@ -31,6 +31,7 @@ struct WebtoonReaderView: UIViewRepresentable {
   let imageLoader: ImageLoader
   let onPageChange: ((Int) -> Void)?
   let onCenterTap: (() -> Void)?
+  @AppStorage("webtoonPageWidthPercentage") private var pageWidthPercentage: Double = 100.0
 
   init(
     pages: [BookPage], currentPage: Binding<Int>, viewModel: ReaderViewModel,
@@ -91,10 +92,14 @@ struct WebtoonReaderView: UIViewRepresentable {
     context.coordinator.imageLoader = imageLoader
     context.coordinator.onPageChange = onPageChange
     context.coordinator.onCenterTap = onCenterTap
+    context.coordinator.pageWidthPercentage = pageWidthPercentage
 
-    // Reload data if pages count changed
-    if context.coordinator.lastPagesCount != pages.count {
+    // Reload data if pages count changed or width percentage changed
+    if context.coordinator.lastPagesCount != pages.count
+      || context.coordinator.lastPageWidthPercentage != pageWidthPercentage
+    {
       context.coordinator.lastPagesCount = pages.count
+      context.coordinator.lastPageWidthPercentage = pageWidthPercentage
       context.coordinator.hasScrolledToInitialPage = false
       collectionView.reloadData()
 
@@ -157,6 +162,8 @@ struct WebtoonReaderView: UIViewRepresentable {
     var isUserScrolling: Bool = false
     var hasScrolledToInitialPage: Bool = false
     var lastPreloadTime: Date?
+    var pageWidthPercentage: Double = 100.0
+    var lastPageWidthPercentage: Double = 100.0
 
     // Cache for page heights and images
     var pageHeights: [Int: CGFloat] = [:]
@@ -173,6 +180,8 @@ struct WebtoonReaderView: UIViewRepresentable {
       self.onCenterTap = parent.onCenterTap
       self.lastPagesCount = parent.pages.count
       self.hasScrolledToInitialPage = false
+      self.pageWidthPercentage = parent.pageWidthPercentage
+      self.lastPageWidthPercentage = parent.pageWidthPercentage
     }
 
     func scrollToPage(_ pageIndex: Int, animated: Bool) {
@@ -199,7 +208,9 @@ struct WebtoonReaderView: UIViewRepresentable {
               if let height = self.pageHeights[i] {
                 offset += height
               } else {
-                offset += collectionView.bounds.width * 1.5
+                let screenWidth = collectionView.bounds.width
+                let width = screenWidth * (self.pageWidthPercentage / 100.0)
+                offset += width * 1.5
               }
             }
             collectionView.setContentOffset(CGPoint(x: 0, y: offset), animated: animated)
@@ -255,7 +266,9 @@ struct WebtoonReaderView: UIViewRepresentable {
           offset += height
         } else {
           // If we don't have the height yet, use estimated height
-          offset += collectionView.bounds.width * 1.5
+          let screenWidth = collectionView.bounds.width
+          let width = screenWidth * (pageWidthPercentage / 100.0)
+          offset += width * 1.5
         }
       }
 
@@ -298,7 +311,7 @@ struct WebtoonReaderView: UIViewRepresentable {
       )
 
       // Load image if not already loaded
-      if pageImages[pageIndex] == nil && !loadingPages.contains(pageIndex) {
+      if pageImages[pageIndex] == nil {
         Task { @MainActor in
           await loadImageForPage(pageIndex)
         }
@@ -313,7 +326,8 @@ struct WebtoonReaderView: UIViewRepresentable {
       _ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout,
       sizeForItemAt indexPath: IndexPath
     ) -> CGSize {
-      let width = collectionView.bounds.width
+      let screenWidth = collectionView.bounds.width
+      let width = screenWidth * (pageWidthPercentage / 100.0)
 
       if let height = pageHeights[indexPath.item] {
         return CGSize(width: width, height: height)
@@ -404,16 +418,18 @@ struct WebtoonReaderView: UIViewRepresentable {
 
     @MainActor
     func loadImageForPage(_ pageIndex: Int) async {
+      if loadingPages.contains(pageIndex) {
+        return
+      }
+      loadingPages.insert(pageIndex)
+      defer { loadingPages.remove(pageIndex) }
+
       guard pageIndex >= 0 && pageIndex < pages.count,
         pageImages[pageIndex] == nil,
-        !loadingPages.contains(pageIndex),
         let loader = imageLoader
       else {
         return
       }
-
-      loadingPages.insert(pageIndex)
-      defer { loadingPages.remove(pageIndex) }
 
       let image = await loader.loadImage(pageIndex)
 
@@ -421,12 +437,13 @@ struct WebtoonReaderView: UIViewRepresentable {
         pageImages[pageIndex] = image
 
         // Calculate and cache height
-        let width = collectionView?.bounds.width ?? UIScreen.main.bounds.width
+        let screenWidth = collectionView?.bounds.width ?? UIScreen.main.bounds.width
+        let width = screenWidth * (pageWidthPercentage / 100.0)
         let aspectRatio = image.size.height / image.size.width
         let height = width * aspectRatio
 
         // Get old height if exists
-        let oldHeight = pageHeights[pageIndex] ?? width
+        let oldHeight = pageHeights[pageIndex] ?? screenWidth
         pageHeights[pageIndex] = height
 
         // Update visible cell if it exists
@@ -515,7 +532,7 @@ struct WebtoonReaderView: UIViewRepresentable {
       let maxVisible = visibleIndices.max() ?? pages.count - 1
 
       for i in max(0, minVisible - 2)...min(pages.count - 1, maxVisible + 2) {
-        if pageImages[i] == nil && !loadingPages.contains(i) {
+        if pageImages[i] == nil {
           Task { @MainActor in
             await loadImageForPage(i)
           }
@@ -601,7 +618,36 @@ class WebtoonLayout: UICollectionViewFlowLayout {
       return nil
     }
 
-    // Heights are handled by sizeForItemAt delegate method
+    // Center items horizontally if they are narrower than the collection view
+    if let collectionView = collectionView {
+      let collectionViewWidth = collectionView.bounds.width
+      for attribute in attributes {
+        if attribute.frame.width < collectionViewWidth {
+          let centerX = collectionViewWidth / 2
+          attribute.center = CGPoint(x: centerX, y: attribute.center.y)
+        }
+      }
+    }
+
+    return attributes
+  }
+
+  override func layoutAttributesForItem(at indexPath: IndexPath)
+    -> UICollectionViewLayoutAttributes?
+  {
+    guard let attributes = super.layoutAttributesForItem(at: indexPath),
+      let collectionView = collectionView
+    else {
+      return nil
+    }
+
+    // Center item horizontally if it is narrower than the collection view
+    let collectionViewWidth = collectionView.bounds.width
+    if attributes.frame.width < collectionViewWidth {
+      let centerX = collectionViewWidth / 2
+      attributes.center = CGPoint(x: centerX, y: attributes.center.y)
+    }
+
     return attributes
   }
 }

@@ -331,13 +331,6 @@ struct BookReaderView: View {
       )
     }
     .ignoresSafeArea()
-    .onChange(of: viewModel.currentPage) { _, newPage in
-      // Handle external page changes (e.g., from slider)
-      Task {
-        await viewModel.updateProgress()
-        await viewModel.preloadPages()
-      }
-    }
   }
 
   private func goToNextPage() {
