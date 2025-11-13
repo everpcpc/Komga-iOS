@@ -82,8 +82,8 @@ struct SeriesDetailView: View {
                   .font(.caption)
                   .padding(.horizontal, 8)
                   .padding(.vertical, 4)
-                  .background(Color.secondary.opacity(0.2))
-                  .foregroundColor(.primary)
+                  .background(ageRating > 18 ? Color.red : Color.green)
+                  .foregroundColor(.white)
                   .cornerRadius(4)
               }
 
@@ -257,6 +257,11 @@ struct BookRowView: View {
   var viewModel: BookViewModel
   @State private var thumbnail: UIImage?
 
+  var completed: Bool {
+    guard let readProgress = book.readProgress else { return false }
+    return readProgress.completed
+  }
+
   var body: some View {
     HStack(spacing: 12) {
       if let thumbnail = thumbnail {
@@ -276,7 +281,7 @@ struct BookRowView: View {
       VStack(alignment: .leading, spacing: 6) {
         Text(book.metadata.title)
           .font(.subheadline)
-          .foregroundColor(.primary)
+          .foregroundColor(completed ? .primary : .secondary)
           .lineLimit(2)
 
         HStack(spacing: 4) {
