@@ -11,6 +11,23 @@ import UIKit
 enum ReadingDirection {
   case ltr  // Left to Right (从左往右)
   case rtl  // Right to Left (从右往左)
+  case vertical  // Vertical (纵向翻页)
+  case webtoon  // Webtoon (纵向连续滚动)
+
+  static func fromString(_ direction: String) -> ReadingDirection {
+    switch direction.uppercased() {
+    case "LEFT_TO_RIGHT":
+      return .ltr
+    case "RIGHT_TO_LEFT":
+      return .rtl
+    case "VERTICAL":
+      return .vertical
+    case "WEBTOON":
+      return .webtoon
+    default:
+      return .ltr
+    }
+  }
 }
 
 @MainActor
@@ -57,6 +74,10 @@ class ReaderViewModel {
       return nil
     }
 
+    guard !bookId.isEmpty else {
+      return nil
+    }
+
     do {
       // Use the page number from the API response (1-based)
       let apiPageNumber = pages[pageIndex].number
@@ -66,7 +87,7 @@ class ReaderViewModel {
         return image
       }
     } catch {
-      // Silently fail for individual pages
+      // Silently fail for image loading
     }
 
     return nil
@@ -109,6 +130,8 @@ class ReaderViewModel {
       return displayIndex
     case .rtl:
       return pages.count - 1 - displayIndex
+    case .vertical, .webtoon:
+      return displayIndex
     }
   }
 
@@ -119,6 +142,8 @@ class ReaderViewModel {
       return pageIndex
     case .rtl:
       return pages.count - 1 - pageIndex
+    case .vertical, .webtoon:
+      return pageIndex
     }
   }
 }

@@ -23,76 +23,22 @@ struct BookReaderView: View {
         ProgressView()
           .tint(.white)
       } else if !viewModel.pages.isEmpty {
-        // Page viewer with swipe animation
-        TabView(
-          selection: Binding(
-            get: { viewModel.pageIndexToDisplayIndex(viewModel.currentPage) },
-            set: { displayIndex in
-              withAnimation {
-                viewModel.currentPage = viewModel.displayIndexToPageIndex(displayIndex)
-              }
-            }
-          )
-        ) {
-          ForEach(0..<viewModel.pages.count, id: \.self) { displayIndex in
-            GeometryReader { geometry in
-              ZStack {
-                PageImageView(
-                  viewModel: viewModel,
-                  pageIndex: viewModel.displayIndexToPageIndex(displayIndex)
-                )
-
-                // Tap zones overlay
-                HStack(spacing: 0) {
-                  // Left tap zone
-                  Color.clear
-                    .frame(width: geometry.size.width * 0.3)
-                    .contentShape(Rectangle())
-                    .simultaneousGesture(
-                      TapGesture()
-                        .onEnded { _ in
-                          goToPreviousPage()
-                        }
-                    )
-
-                  // Center tap zone (toggle controls)
-                  Color.clear
-                    .frame(width: geometry.size.width * 0.4)
-                    .contentShape(Rectangle())
-                    .simultaneousGesture(
-                      TapGesture()
-                        .onEnded { _ in
-                          toggleControls()
-                        }
-                    )
-
-                  // Right tap zone
-                  Color.clear
-                    .frame(width: geometry.size.width * 0.3)
-                    .contentShape(Rectangle())
-                    .simultaneousGesture(
-                      TapGesture()
-                        .onEnded { _ in
-                          goToNextPage()
-                        }
-                    )
-                }
-              }
-            }
-            .tag(displayIndex)
+        // Page viewer based on reading direction
+        Group {
+          switch viewModel.readingDirection {
+          case .ltr, .rtl:
+            horizontalPageView
+          case .vertical:
+            verticalPageView
+          case .webtoon:
+            webtoonPageView
           }
         }
-        .tabViewStyle(.page(indexDisplayMode: .never))
-        .indexViewStyle(.page(backgroundDisplayMode: .never))
         .onChange(of: viewModel.currentPage) { _, _ in
           Task {
             await viewModel.updateProgress()
             await viewModel.preloadPages()
           }
-        }
-        .onChange(of: viewModel.readingDirection) { _, _ in
-          // When direction changes, maintain the current page position
-          // The TabView will automatically update due to the binding
         }
 
         // Controls overlay
@@ -113,29 +59,69 @@ struct BookReaderView: View {
 
               Spacer()
 
-              // Reading direction toggle button
-              Button {
-                toggleReadingDirection()
-              } label: {
-                Image(
-                  systemName: viewModel.readingDirection == .ltr
-                    ? "arrow.left.arrow.right" : "arrow.right.arrow.left"
-                )
-                .font(.title3)
-                .foregroundColor(.white)
-                .padding()
-                .background(Color.black.opacity(0.5))
-                .clipShape(Circle())
-              }
-
-              Spacer()
-
+              // Page count in the middle
               Text("\(viewModel.currentPage + 1) / \(viewModel.pages.count)")
                 .foregroundColor(.white)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
                 .background(Color.black.opacity(0.5))
                 .cornerRadius(20)
+
+              Spacer()
+
+              // Display mode toggle button
+              Menu {
+                Button {
+                  viewModel.readingDirection = .ltr
+                } label: {
+                  HStack {
+                    Text("LTR")
+                    if viewModel.readingDirection == .ltr {
+                      Image(systemName: "checkmark")
+                    }
+                  }
+                }
+
+                Button {
+                  viewModel.readingDirection = .rtl
+                } label: {
+                  HStack {
+                    Text("RTL")
+                    if viewModel.readingDirection == .rtl {
+                      Image(systemName: "checkmark")
+                    }
+                  }
+                }
+
+                Button {
+                  viewModel.readingDirection = .vertical
+                } label: {
+                  HStack {
+                    Text("Vertical")
+                    if viewModel.readingDirection == .vertical {
+                      Image(systemName: "checkmark")
+                    }
+                  }
+                }
+
+                Button {
+                  viewModel.readingDirection = .webtoon
+                } label: {
+                  HStack {
+                    Text("Webtoon")
+                    if viewModel.readingDirection == .webtoon {
+                      Image(systemName: "checkmark")
+                    }
+                  }
+                }
+              } label: {
+                Image(systemName: readingDirectionIcon)
+                  .font(.title3)
+                  .foregroundColor(.white)
+                  .padding()
+                  .background(Color.black.opacity(0.5))
+                  .clipShape(Circle())
+              }
             }
             .padding()
 
@@ -157,31 +143,23 @@ struct BookReaderView: View {
             }
             .padding()
           }
-          .background(
-            LinearGradient(
-              gradient: Gradient(colors: [
-                .black.opacity(0.5),
-                .black.opacity(0.2),
-                .clear, .clear,
-                .black.opacity(0.2),
-                .black.opacity(0.5),
-              ]),
-              startPoint: .top,
-              endPoint: .bottom
-            )
-            .allowsHitTesting(false)
-          )
           .transition(.opacity)
         }
       }
     }
     .statusBar(hidden: !showingControls)
     .task {
-      // Load book info to get read progress page
+      // Load book info to get read progress page and series reading direction
       var initialPage: Int? = nil
       do {
         let book = try await BookService.shared.getBook(id: bookId)
         initialPage = book.readProgress?.page
+
+        // Get series reading direction
+        let series = try await SeriesService.shared.getOneSeries(id: book.seriesId)
+        if let readingDirectionString = series.metadata.readingDirection {
+          viewModel.readingDirection = ReadingDirection.fromString(readingDirectionString)
+        }
       } catch {
         // Silently fail, will start from first page
       }
@@ -191,6 +169,174 @@ struct BookReaderView: View {
     }
     .onDisappear {
       controlsTimer?.invalidate()
+    }
+  }
+
+  // Horizontal page view (LTR/RTL)
+  private var horizontalPageView: some View {
+    TabView(
+      selection: Binding(
+        get: { viewModel.pageIndexToDisplayIndex(viewModel.currentPage) },
+        set: { displayIndex in
+          withAnimation {
+            viewModel.currentPage = viewModel.displayIndexToPageIndex(displayIndex)
+          }
+        }
+      )
+    ) {
+      ForEach(0..<viewModel.pages.count, id: \.self) { displayIndex in
+        GeometryReader { geometry in
+          ZStack {
+            PageImageView(
+              viewModel: viewModel,
+              pageIndex: viewModel.displayIndexToPageIndex(displayIndex)
+            )
+
+            // Tap zones overlay
+            HStack(spacing: 0) {
+              // Left tap zone
+              Color.clear
+                .frame(width: geometry.size.width * 0.3)
+                .contentShape(Rectangle())
+                .simultaneousGesture(
+                  TapGesture()
+                    .onEnded { _ in
+                      goToPreviousPage()
+                    }
+                )
+
+              // Center tap zone (toggle controls)
+              Color.clear
+                .frame(width: geometry.size.width * 0.4)
+                .contentShape(Rectangle())
+                .simultaneousGesture(
+                  TapGesture()
+                    .onEnded { _ in
+                      toggleControls()
+                    }
+                )
+
+              // Right tap zone
+              Color.clear
+                .frame(width: geometry.size.width * 0.3)
+                .contentShape(Rectangle())
+                .simultaneousGesture(
+                  TapGesture()
+                    .onEnded { _ in
+                      goToNextPage()
+                    }
+                )
+            }
+          }
+        }
+        .tag(displayIndex)
+      }
+    }
+    .tabViewStyle(.page(indexDisplayMode: .never))
+    .indexViewStyle(.page(backgroundDisplayMode: .never))
+  }
+
+  // Vertical page view (VERTICAL)
+  private var verticalPageView: some View {
+    ScrollViewReader { proxy in
+      ScrollView(.vertical) {
+        LazyVStack(spacing: 0) {
+          ForEach(0..<viewModel.pages.count, id: \.self) { pageIndex in
+            GeometryReader { geometry in
+              ZStack {
+                PageImageView(
+                  viewModel: viewModel,
+                  pageIndex: pageIndex
+                )
+
+                // Tap zones overlay
+                VStack(spacing: 0) {
+                  // Top tap zone
+                  Color.clear
+                    .frame(height: geometry.size.height * 0.3)
+                    .contentShape(Rectangle())
+                    .simultaneousGesture(
+                      TapGesture()
+                        .onEnded { _ in
+                          goToPreviousPage()
+                        }
+                    )
+
+                  // Center tap zone (toggle controls)
+                  Color.clear
+                    .frame(height: geometry.size.height * 0.4)
+                    .contentShape(Rectangle())
+                    .simultaneousGesture(
+                      TapGesture()
+                        .onEnded { _ in
+                          toggleControls()
+                        }
+                    )
+
+                  // Bottom tap zone
+                  Color.clear
+                    .frame(height: geometry.size.height * 0.3)
+                    .contentShape(Rectangle())
+                    .simultaneousGesture(
+                      TapGesture()
+                        .onEnded { _ in
+                          goToNextPage()
+                        }
+                    )
+                }
+              }
+            }
+            .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+            .id(pageIndex)
+            .onAppear {
+              // Update current page when page appears
+              if pageIndex != viewModel.currentPage {
+                viewModel.currentPage = pageIndex
+              }
+            }
+          }
+        }
+      }
+      .scrollTargetBehavior(.paging)
+      .onChange(of: viewModel.currentPage) { _, newPage in
+        // Scroll to current page when changed externally (e.g., from slider)
+        withAnimation {
+          proxy.scrollTo(newPage, anchor: .top)
+        }
+      }
+    }
+  }
+
+  // Webtoon page view (WEBTOON - continuous vertical scroll)
+  private var webtoonPageView: some View {
+    let vm = viewModel  // Capture viewModel in a local variable
+    return ZStack {
+      WebtoonReaderView(
+        pages: vm.pages,
+        currentPage: Binding(
+          get: { vm.currentPage },
+          set: { newPage in
+            if newPage != vm.currentPage {
+              vm.currentPage = newPage
+            }
+          }
+        ),
+        viewModel: vm,
+        onPageChange: { pageIndex in
+          vm.currentPage = pageIndex
+        },
+        onCenterTap: {
+          toggleControls()
+        }
+      )
+    }
+    .ignoresSafeArea()
+    .onChange(of: viewModel.currentPage) { _, newPage in
+      // Handle external page changes (e.g., from slider)
+      Task {
+        await viewModel.updateProgress()
+        await viewModel.preloadPages()
+      }
     }
   }
 
@@ -206,6 +352,19 @@ struct BookReaderView: View {
       if viewModel.currentPage > 0 {
         withAnimation {
           viewModel.currentPage -= 1
+        }
+      }
+    case .vertical:
+      if viewModel.currentPage < viewModel.pages.count - 1 {
+        withAnimation {
+          viewModel.currentPage += 1
+        }
+      }
+    case .webtoon:
+      // Webtoon mode uses scroll, so we scroll to next page
+      if viewModel.currentPage < viewModel.pages.count - 1 {
+        withAnimation {
+          viewModel.currentPage += 1
         }
       }
     }
@@ -225,6 +384,32 @@ struct BookReaderView: View {
           viewModel.currentPage += 1
         }
       }
+    case .vertical:
+      if viewModel.currentPage > 0 {
+        withAnimation {
+          viewModel.currentPage -= 1
+        }
+      }
+    case .webtoon:
+      // Webtoon mode uses scroll, so we scroll to previous page
+      if viewModel.currentPage > 0 {
+        withAnimation {
+          viewModel.currentPage -= 1
+        }
+      }
+    }
+  }
+
+  private var readingDirectionIcon: String {
+    switch viewModel.readingDirection {
+    case .ltr:
+      return "arrow.right"
+    case .rtl:
+      return "arrow.left"
+    case .vertical:
+      return "arrow.down"
+    case .webtoon:
+      return "list.bullet"
     }
   }
 
@@ -345,8 +530,4 @@ struct PageImageView: View {
       image = await viewModel.loadPageImage(pageIndex: pageIndex)
     }
   }
-}
-
-#Preview {
-  BookReaderView(bookId: "1")
 }

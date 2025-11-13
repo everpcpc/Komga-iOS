@@ -224,27 +224,11 @@ struct ReadHistoryBookRow: View {
           .foregroundColor(.primary)
           .lineLimit(2)
 
+        Text("#\(Int(book.number)) - \(book.media.pagesCount) pages")
+          .font(.caption)
+          .foregroundColor(.secondary)
+
         if let progress = book.readProgress {
-          HStack(spacing: 4) {
-            let percentage = Double(progress.page + 1) / Double(book.media.pagesCount) * 100
-
-            if progress.completed {
-              Image(systemName: "checkmark.circle.fill")
-                .font(.caption)
-                .foregroundColor(.green)
-              Text("Completed")
-                .font(.caption)
-                .foregroundColor(.green)
-            } else {
-              ProgressView(value: percentage, total: 100)
-                .progressViewStyle(.linear)
-                .frame(width: 100)
-              Text("\(Int(percentage))%")
-                .font(.caption)
-                .foregroundColor(.blue)
-            }
-          }
-
           Text("Last read: \(formatRelativeDate(progress.readDate))")
             .font(.caption2)
             .foregroundColor(.secondary)
