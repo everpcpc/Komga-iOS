@@ -9,10 +9,10 @@ import Foundation
 import UIKit
 
 enum ReadingDirection: CaseIterable, Hashable {
-  case ltr  // Left to Right (从左往右)
-  case rtl  // Right to Left (从右往左)
-  case vertical  // Vertical (纵向翻页)
-  case webtoon  // Webtoon (纵向连续滚动)
+  case ltr
+  case rtl
+  case vertical
+  case webtoon
 
   static func fromString(_ direction: String) -> ReadingDirection {
     switch direction.uppercased() {

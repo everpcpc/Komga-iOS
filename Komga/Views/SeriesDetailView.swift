@@ -281,7 +281,7 @@ struct BookRowView: View {
       VStack(alignment: .leading, spacing: 6) {
         Text(book.metadata.title)
           .font(.subheadline)
-          .foregroundColor(completed ? .primary : .secondary)
+          .foregroundColor(completed ? .secondary : .primary)
           .lineLimit(2)
 
         HStack(spacing: 4) {
