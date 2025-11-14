@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import UIKit
+import SwiftUI
 
 enum ReadingDirection: CaseIterable, Hashable {
   case ltr

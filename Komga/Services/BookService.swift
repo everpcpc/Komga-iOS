@@ -72,7 +72,7 @@ class BookService {
   }
 
   func getBooksOnDeck(
-    libraryId: String? = nil,
+    libraryId: String = "",
     page: Int = 0,
     size: Int = 20
   ) async throws -> Page<Book> {
@@ -81,7 +81,7 @@ class BookService {
       URLQueryItem(name: "size", value: "\(size)"),
     ]
 
-    if let libraryId = libraryId {
+    if !libraryId.isEmpty {
       queryItems.append(URLQueryItem(name: "library_id", value: libraryId))
     }
 
@@ -145,13 +145,13 @@ class BookService {
   }
 
   func getRecentlyReadBooks(
-    libraryId: String? = nil,
+    libraryId: String = "",
     page: Int = 0,
     size: Int = 20
   ) async throws -> Page<Book> {
     // Get books with READ status, sorted by last read date
     let condition: BookSearch.Condition
-    if let libraryId = libraryId {
+    if !libraryId.isEmpty {
       condition = .libraryIdAndReadStatus(libraryId: libraryId, readStatus: .read)
     } else {
       condition = .readStatus(.read)
@@ -168,14 +168,14 @@ class BookService {
   }
 
   func getRecentlyAddedBooks(
-    libraryId: String? = nil,
+    libraryId: String = "",
     page: Int = 0,
     size: Int = 20
   ) async throws -> Page<Book> {
     // Get books sorted by created date (most recent first)
     // Use allOf with empty array to match all books, or with libraryId condition if specified
     let condition: BookSearch.Condition
-    if let libraryId = libraryId {
+    if !libraryId.isEmpty {
       // Filter by libraryId using allOf
       condition = .allOf([.libraryId(libraryId)])
     } else {

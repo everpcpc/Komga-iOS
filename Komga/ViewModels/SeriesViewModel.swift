@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import UIKit
+import SwiftUI
 
 @MainActor
 @Observable
@@ -20,7 +20,7 @@ class SeriesViewModel {
   private var currentPage = 0
   private var hasMorePages = true
 
-  func loadSeries(libraryId: String? = nil, refresh: Bool = false) async {
+  func loadSeries(libraryId: String = "", refresh: Bool = false) async {
     if refresh {
       currentPage = 0
       series = []
@@ -49,7 +49,7 @@ class SeriesViewModel {
     isLoading = false
   }
 
-  func loadNewSeries(libraryId: String? = nil) async {
+  func loadNewSeries(libraryId: String = "") async {
     isLoading = true
     errorMessage = nil
 
@@ -63,7 +63,7 @@ class SeriesViewModel {
     isLoading = false
   }
 
-  func loadUpdatedSeries(libraryId: String? = nil) async {
+  func loadUpdatedSeries(libraryId: String = "") async {
     isLoading = true
     errorMessage = nil
 

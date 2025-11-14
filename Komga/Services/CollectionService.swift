@@ -14,7 +14,7 @@ class CollectionService {
   private init() {}
 
   func getCollections(
-    libraryId: String? = nil,
+    libraryId: String = "",
     page: Int = 0,
     size: Int = 20
   ) async throws -> Page<Collection> {
@@ -23,7 +23,7 @@ class CollectionService {
       URLQueryItem(name: "size", value: "\(size)"),
     ]
 
-    if let libraryId = libraryId {
+    if !libraryId.isEmpty {
       queryItems.append(URLQueryItem(name: "library_id", value: libraryId))
     }
 

@@ -49,7 +49,7 @@ struct MainTabView: View {
           Label("Home", systemImage: "house")
         }
 
-      LibraryListView()
+      BrowseView()
         .tabItem {
           Label("Browse", systemImage: "books.vertical")
         }

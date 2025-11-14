@@ -23,10 +23,6 @@ struct DashboardView: View {
   @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
   @State private var showLibraryPicker = false
 
-  private var selectedLibraryIdOptional: String? {
-    selectedLibraryId.isEmpty ? nil : selectedLibraryId
-  }
-
   var body: some View {
     NavigationStack {
       ScrollView {
@@ -71,7 +67,6 @@ struct DashboardView: View {
             .disabled(isLoading)
           }
           .padding(.horizontal)
-          .padding(.top, 8)
 
           if isLoading && keepReadingBooks.isEmpty && onDeckBooks.isEmpty
             && recentlyAddedBooks.isEmpty
@@ -206,9 +201,9 @@ struct DashboardView: View {
     do {
       // Load books with IN_PROGRESS read status
       let condition: BookSearch.Condition
-      if let selectedId = selectedLibraryIdOptional {
+      if !selectedLibraryId.isEmpty {
         // Filter by both library and read status
-        condition = .libraryIdAndReadStatus(libraryId: selectedId, readStatus: .inProgress)
+        condition = .libraryIdAndReadStatus(libraryId: selectedLibraryId, readStatus: .inProgress)
       } else {
         // Filter by read status only
         condition = .readStatus(.inProgress)
@@ -230,7 +225,7 @@ struct DashboardView: View {
   private func loadOnDeck() async {
     do {
       let page = try await BookService.shared.getBooksOnDeck(
-        libraryId: selectedLibraryIdOptional, size: 20)
+        libraryId: selectedLibraryId, size: 20)
       onDeckBooks = page.content
     } catch {
       errorMessage = error.localizedDescription
@@ -240,7 +235,7 @@ struct DashboardView: View {
   private func loadRecentlyAddedBooks() async {
     do {
       let page = try await BookService.shared.getRecentlyAddedBooks(
-        libraryId: selectedLibraryIdOptional, size: 20)
+        libraryId: selectedLibraryId, size: 20)
       recentlyAddedBooks = page.content
     } catch {
       errorMessage = error.localizedDescription
@@ -248,12 +243,12 @@ struct DashboardView: View {
   }
 
   private func loadRecentlyAddedSeries() async {
-    await seriesViewModel.loadNewSeries(libraryId: selectedLibraryIdOptional)
+    await seriesViewModel.loadNewSeries(libraryId: selectedLibraryId)
     recentlyAddedSeries = seriesViewModel.series
   }
 
   private func loadRecentlyUpdatedSeries() async {
-    await seriesViewModel.loadUpdatedSeries(libraryId: selectedLibraryIdOptional)
+    await seriesViewModel.loadUpdatedSeries(libraryId: selectedLibraryId)
     recentlyUpdatedSeries = seriesViewModel.series
   }
 }

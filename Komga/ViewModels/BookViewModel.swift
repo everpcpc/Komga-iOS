@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import UIKit
+import SwiftUI
 
 @MainActor
 @Observable
@@ -18,6 +18,8 @@ class BookViewModel {
   var thumbnailCache: [String: UIImage] = [:]
 
   private let bookService = BookService.shared
+  private var currentPage = 0
+  private var hasMorePages = true
 
   func loadBooks(seriesId: String) async {
     isLoading = true
@@ -46,7 +48,7 @@ class BookViewModel {
     isLoading = false
   }
 
-  func loadBooksOnDeck(libraryId: String? = nil) async {
+  func loadBooksOnDeck(libraryId: String = "") async {
     isLoading = true
     errorMessage = nil
 
@@ -112,5 +114,34 @@ class BookViewModel {
     } catch {
       errorMessage = error.localizedDescription
     }
+  }
+
+  func loadRecentlyReadBooks(libraryId: String = "", refresh: Bool = false) async {
+    if refresh {
+      currentPage = 0
+      books = []
+      hasMorePages = true
+    }
+
+    guard hasMorePages && !isLoading else { return }
+
+    isLoading = true
+    errorMessage = nil
+
+    do {
+      let page = try await bookService.getRecentlyReadBooks(
+        libraryId: libraryId,
+        page: currentPage,
+        size: 20
+      )
+
+      books.append(contentsOf: page.content)
+      hasMorePages = !page.last
+      currentPage += 1
+    } catch {
+      errorMessage = error.localizedDescription
+    }
+
+    isLoading = false
   }
 }

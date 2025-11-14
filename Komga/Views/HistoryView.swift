@@ -8,17 +8,10 @@
 import SwiftUI
 
 struct HistoryView: View {
-  @State private var recentlyReadBooks: [Book] = []
-  @State private var isLoading = false
-  @State private var errorMessage: String?
   @State private var bookViewModel = BookViewModel()
 
   @AppStorage("selectedLibraryId") private var selectedLibraryId: String = ""
   @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
-
-  private var selectedLibraryIdOptional: String? {
-    selectedLibraryId.isEmpty ? nil : selectedLibraryId
-  }
 
   var body: some View {
     NavigationStack {
@@ -54,24 +47,24 @@ struct HistoryView: View {
             Spacer()
             Button {
               Task {
-                await loadRecentlyRead()
+                await bookViewModel.loadRecentlyReadBooks(
+                  libraryId: selectedLibraryId, refresh: true)
               }
             } label: {
               Image(systemName: "arrow.clockwise.circle")
                 .font(.title2)
-                .symbolEffect(.rotate, value: isLoading)
+                .symbolEffect(.rotate, value: bookViewModel.isLoading)
             }
-            .disabled(isLoading)
+            .disabled(bookViewModel.isLoading)
           }
           .padding(.horizontal)
-          .padding(.top, 8)
 
-          if isLoading && recentlyReadBooks.isEmpty {
+          if bookViewModel.isLoading && bookViewModel.books.isEmpty {
             ProgressView()
               .frame(maxWidth: .infinity)
               .padding()
               .transition(.opacity)
-          } else if let errorMessage = errorMessage {
+          } else if let errorMessage = bookViewModel.errorMessage {
             VStack(spacing: 16) {
               Image(systemName: "exclamationmark.triangle")
                 .font(.largeTitle)
@@ -80,20 +73,28 @@ struct HistoryView: View {
                 .multilineTextAlignment(.center)
               Button("Retry") {
                 Task {
-                  await loadRecentlyRead()
+                  await bookViewModel.loadRecentlyReadBooks(
+                    libraryId: selectedLibraryId, refresh: true)
                 }
               }
             }
             .padding()
             .transition(.opacity)
-          } else if !recentlyReadBooks.isEmpty {
+          } else if !bookViewModel.books.isEmpty {
             // Recently Read Books Section
             ReadHistorySection(
               title: "Recently Read Books",
-              books: recentlyReadBooks,
-              bookViewModel: bookViewModel
+              books: bookViewModel.books,
+              bookViewModel: bookViewModel,
+              onLoadMore: {
+                Task {
+                  await bookViewModel.loadRecentlyReadBooks(
+                    libraryId: selectedLibraryId, refresh: false)
+                }
+              },
+              isLoading: bookViewModel.isLoading
             )
-            .animation(.default, value: recentlyReadBooks)
+            .animation(.default, value: bookViewModel.books)
             .transition(.move(edge: .top).combined(with: .opacity))
           } else {
             VStack(spacing: 16) {
@@ -119,12 +120,12 @@ struct HistoryView: View {
       .animation(.default, value: selectedLibraryId)
       .onChange(of: selectedLibraryId) {
         Task {
-          await loadRecentlyRead()
+          await bookViewModel.loadRecentlyReadBooks(libraryId: selectedLibraryId, refresh: true)
         }
       }
     }
     .task {
-      await loadRecentlyRead()
+      await bookViewModel.loadRecentlyReadBooks(libraryId: selectedLibraryId, refresh: true)
     }
   }
 
@@ -132,29 +133,14 @@ struct HistoryView: View {
     guard !selectedLibraryId.isEmpty else { return nil }
     return LibraryManager.shared.getLibrary(id: selectedLibraryId)
   }
-
-  private func loadRecentlyRead() async {
-    isLoading = true
-    errorMessage = nil
-
-    do {
-      let page = try await BookService.shared.getRecentlyReadBooks(
-        libraryId: selectedLibraryIdOptional,
-        size: 50
-      )
-      recentlyReadBooks = page.content
-    } catch {
-      errorMessage = error.localizedDescription
-    }
-
-    isLoading = false
-  }
 }
 
 struct ReadHistorySection: View {
   let title: String
   let books: [Book]
   var bookViewModel: BookViewModel
+  var onLoadMore: (() -> Void)?
+  var isLoading: Bool = false
 
   @State private var selectedBookId: String?
 
@@ -173,13 +159,25 @@ struct ReadHistorySection: View {
         .padding(.horizontal)
 
       LazyVStack(spacing: 8) {
-        ForEach(books) { book in
+        ForEach(Array(books.enumerated()), id: \.element.id) { index, book in
           Button {
             selectedBookId = book.id
           } label: {
             ReadHistoryBookRow(book: book, viewModel: bookViewModel)
           }
           .buttonStyle(PlainButtonStyle())
+          .onAppear {
+            // Load next page when the last few items appear
+            if let onLoadMore = onLoadMore, index >= books.count - 3 {
+              onLoadMore()
+            }
+          }
+        }
+
+        if isLoading {
+          ProgressView()
+            .frame(maxWidth: .infinity)
+            .padding()
         }
       }
       .padding(.horizontal)
