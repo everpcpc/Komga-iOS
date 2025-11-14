@@ -2,11 +2,30 @@
 //  WebtoonReaderView.swift
 //  Komga
 //
-//  Created based on Aidoku's ReaderWebtoonViewController implementation
+//  Created by Komga iOS Client
 //
 
 import SwiftUI
 import UIKit
+
+// MARK: - Constants
+private enum Constants {
+  static let initialScrollDelay: TimeInterval = 0.3
+  static let layoutReadyDelay: TimeInterval = 0.2
+  static let scrollRestoreDelay: TimeInterval = 0.3
+  static let centerTapHandlingDelay: TimeInterval = 0.2
+  static let preloadThrottleInterval: TimeInterval = 0.3
+  static let scrollPositionThreshold: CGFloat = 50
+  static let heightChangeThreshold: CGFloat = 100
+  static let bottomThreshold: CGFloat = 120
+  static let footerHeight: CGFloat = 320
+  static let estimatedAspectRatio: CGFloat = 1.5
+  static let scrollAmountMultiplier: CGFloat = 0.8
+  static let topAreaThreshold: CGFloat = 0.3
+  static let bottomAreaThreshold: CGFloat = 0.7
+  static let centerAreaMin: CGFloat = 0.3
+  static let centerAreaMax: CGFloat = 0.7
+}
 
 // Wrapper class to avoid closure capture issues
 @MainActor
@@ -77,97 +96,22 @@ struct WebtoonReaderView: UIViewRepresentable {
     context.coordinator.layout = layout
 
     // Set up initial scroll after view appears
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-      if !context.coordinator.hasScrolledToInitialPage
-        && context.coordinator.pages.count > 0
-        && context.coordinator.currentPage >= 0
-        && context.coordinator.currentPage < context.coordinator.pages.count
-      {
-        context.coordinator.scrollToInitialPage(context.coordinator.currentPage)
-      }
-    }
+    context.coordinator.scheduleInitialScroll()
 
     return collectionView
   }
 
   func updateUIView(_ collectionView: UICollectionView, context: Context) {
-    context.coordinator.pages = pages
-    context.coordinator.currentPage = currentPage
-    context.coordinator.imageLoader = imageLoader
-    context.coordinator.onPageChange = onPageChange
-    context.coordinator.onCenterTap = onCenterTap
-    context.coordinator.onScrollToBottom = onScrollToBottom
-    context.coordinator.pageWidthPercentage = pageWidthPercentage
-
-    // Reload data if pages count changed or width percentage changed
-    if context.coordinator.lastPagesCount != pages.count
-      || context.coordinator.lastPageWidthPercentage != pageWidthPercentage
-    {
-      context.coordinator.lastPagesCount = pages.count
-      context.coordinator.lastPageWidthPercentage = pageWidthPercentage
-      context.coordinator.hasScrolledToInitialPage = false
-      collectionView.reloadData()
-
-      // Force layout
-      collectionView.layoutIfNeeded()
-
-      // Scroll to current page after reload - wait for layout
-      if currentPage >= 0 && currentPage < pages.count {
-        // Try multiple times with increasing delays
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-          context.coordinator.scrollToInitialPage(currentPage)
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-          if !context.coordinator.hasScrolledToInitialPage {
-            context.coordinator.scrollToInitialPage(currentPage)
-          }
-        }
-      }
-    }
-
-    // If pages are loaded but we haven't scrolled to initial page yet
-    if !context.coordinator.hasScrolledToInitialPage
-      && pages.count > 0
-      && currentPage >= 0
-      && currentPage < pages.count
-    {
-      // Try to scroll, will retry if layout not ready
-      context.coordinator.scrollToInitialPage(currentPage)
-    }
-
-    // If we're handling center tap, preserve scroll position and skip any programmatic scrolling
-    if context.coordinator.isHandlingCenterTap {
-      // Restore scroll position if it has changed significantly
-      if context.coordinator.savedScrollOffset > 0 {
-        if let collectionView = context.coordinator.collectionView {
-          let currentOffset = collectionView.contentOffset.y
-          // Restore if position has changed significantly (more than 50 points)
-          // This prevents scroll reset when controls are hidden/shown
-          if abs(currentOffset - context.coordinator.savedScrollOffset) > 50 {
-            collectionView.setContentOffset(
-              CGPoint(x: 0, y: context.coordinator.savedScrollOffset),
-              animated: false
-            )
-          }
-        }
-      }
-      // Update lastExternalCurrentPage to prevent triggering scroll when isHandlingCenterTap becomes false
-      context.coordinator.lastExternalCurrentPage = currentPage
-      return
-    }
-
-    // Scroll to current page if changed externally
-    // Don't scroll if we're handling a center tap (to prevent scroll reset when controls are shown/hidden)
-    let currentPageChangedExternally = currentPage != context.coordinator.lastExternalCurrentPage
-    if currentPageChangedExternally && currentPage >= 0 && currentPage < pages.count
-      && !context.coordinator.isUserScrolling
-      && !context.coordinator.isProgrammaticScrolling
-    {
-      context.coordinator.scrollToPage(currentPage, animated: true)
-      context.coordinator.lastExternalCurrentPage = currentPage
-    } else if !currentPageChangedExternally {
-      context.coordinator.lastExternalCurrentPage = currentPage
-    }
+    context.coordinator.update(
+      pages: pages,
+      currentPage: currentPage,
+      imageLoader: imageLoader,
+      onPageChange: onPageChange,
+      onCenterTap: onCenterTap,
+      onScrollToBottom: onScrollToBottom,
+      pageWidthPercentage: pageWidthPercentage,
+      collectionView: collectionView
+    )
   }
 
   func makeCoordinator() -> Coordinator {
@@ -218,35 +162,156 @@ struct WebtoonReaderView: UIViewRepresentable {
       self.lastPageWidthPercentage = parent.pageWidthPercentage
     }
 
-    func scrollToPage(_ pageIndex: Int, animated: Bool) {
-      guard let collectionView = collectionView,
-        pageIndex >= 0 && pageIndex < pages.count
-      else { return }
+    // MARK: - Helper Methods
 
-      // Use scrollToItem for more reliable scrolling
+    /// Validates if a page index is within valid range
+    func isValidPageIndex(_ index: Int) -> Bool {
+      index >= 0 && index < pages.count
+    }
+
+    /// Calculates page width based on screen width and percentage
+    func calculatePageWidth(screenWidth: CGFloat) -> CGFloat {
+      screenWidth * (pageWidthPercentage / 100.0)
+    }
+
+    /// Calculates estimated height for a page
+    func estimatedPageHeight(screenWidth: CGFloat) -> CGFloat {
+      calculatePageWidth(screenWidth: screenWidth) * Constants.estimatedAspectRatio
+    }
+
+    /// Schedules initial scroll after view appears
+    func scheduleInitialScroll() {
+      DispatchQueue.main.asyncAfter(deadline: .now() + Constants.initialScrollDelay) {
+        [weak self] in
+        guard let self = self,
+          !self.hasScrolledToInitialPage,
+          self.pages.count > 0,
+          self.isValidPageIndex(self.currentPage)
+        else { return }
+        self.scrollToInitialPage(self.currentPage)
+      }
+    }
+
+    /// Executes code after a delay
+    func executeAfterDelay(_ delay: TimeInterval, _ block: @escaping () -> Void) {
+      DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: block)
+    }
+
+    /// Calculates offset to a page index
+    func calculateOffsetToPage(_ pageIndex: Int, screenWidth: CGFloat) -> CGFloat {
+      var offset: CGFloat = 0
+      for i in 0..<pageIndex {
+        if let height = pageHeights[i] {
+          offset += height
+        } else {
+          offset += estimatedPageHeight(screenWidth: screenWidth)
+        }
+      }
+      return offset
+    }
+
+    /// Updates coordinator state and handles view updates
+    func update(
+      pages: [BookPage],
+      currentPage: Int,
+      imageLoader: ImageLoader,
+      onPageChange: ((Int) -> Void)?,
+      onCenterTap: (() -> Void)?,
+      onScrollToBottom: ((Bool) -> Void)?,
+      pageWidthPercentage: Double,
+      collectionView: UICollectionView
+    ) {
+      self.pages = pages
+      self.currentPage = currentPage
+      self.imageLoader = imageLoader
+      self.onPageChange = onPageChange
+      self.onCenterTap = onCenterTap
+      self.onScrollToBottom = onScrollToBottom
+      self.pageWidthPercentage = pageWidthPercentage
+
+      // Handle data reload if needed
+      if lastPagesCount != pages.count || lastPageWidthPercentage != pageWidthPercentage {
+        handleDataReload(collectionView: collectionView, currentPage: currentPage)
+      }
+
+      // Handle center tap state
+      if isHandlingCenterTap {
+        handleCenterTapState(currentPage: currentPage)
+        return
+      }
+
+      // Handle initial scroll if needed
+      if !hasScrolledToInitialPage && pages.count > 0 && isValidPageIndex(currentPage) {
+        scrollToInitialPage(currentPage)
+      }
+
+      // Handle external page change
+      handleExternalPageChange(currentPage: currentPage)
+    }
+
+    /// Handles data reload when pages count or width percentage changes
+    private func handleDataReload(collectionView: UICollectionView, currentPage: Int) {
+      lastPagesCount = pages.count
+      lastPageWidthPercentage = pageWidthPercentage
+      hasScrolledToInitialPage = false
+      collectionView.reloadData()
+      collectionView.layoutIfNeeded()
+
+      if isValidPageIndex(currentPage) {
+        executeAfterDelay(Constants.layoutReadyDelay) { [weak self] in
+          self?.scrollToInitialPage(currentPage)
+        }
+        executeAfterDelay(0.5) { [weak self] in
+          guard let self = self, !self.hasScrolledToInitialPage else { return }
+          self.scrollToInitialPage(currentPage)
+        }
+      }
+    }
+
+    /// Handles center tap state to preserve scroll position
+    private func handleCenterTapState(currentPage: Int) {
+      if savedScrollOffset > 0, let collectionView = collectionView {
+        let currentOffset = collectionView.contentOffset.y
+        if abs(currentOffset - savedScrollOffset) > Constants.scrollPositionThreshold {
+          collectionView.setContentOffset(
+            CGPoint(x: 0, y: savedScrollOffset),
+            animated: false
+          )
+        }
+      }
+      lastExternalCurrentPage = currentPage
+    }
+
+    /// Handles external page changes
+    private func handleExternalPageChange(currentPage: Int) {
+      let currentPageChangedExternally = currentPage != lastExternalCurrentPage
+      if currentPageChangedExternally
+        && isValidPageIndex(currentPage)
+        && !isUserScrolling
+        && !isProgrammaticScrolling
+      {
+        scrollToPage(currentPage, animated: true)
+        lastExternalCurrentPage = currentPage
+      } else if !currentPageChangedExternally {
+        lastExternalCurrentPage = currentPage
+      }
+    }
+
+    func scrollToPage(_ pageIndex: Int, animated: Bool) {
+      guard let collectionView = collectionView, isValidPageIndex(pageIndex) else { return }
+
       let indexPath = IndexPath(item: pageIndex, section: 0)
 
-      // If layout is ready, scroll directly
       if collectionView.contentSize.height > 0 {
         collectionView.scrollToItem(at: indexPath, at: .top, animated: animated)
       } else {
-        // Wait for layout, then scroll
         DispatchQueue.main.async { [weak self] in
           guard let self = self, let collectionView = self.collectionView else { return }
           if collectionView.contentSize.height > 0 {
             collectionView.scrollToItem(at: indexPath, at: .top, animated: animated)
           } else {
-            // Fallback: calculate offset manually
-            var offset: CGFloat = 0
-            for i in 0..<pageIndex {
-              if let height = self.pageHeights[i] {
-                offset += height
-              } else {
-                let screenWidth = collectionView.bounds.width
-                let width = screenWidth * (self.pageWidthPercentage / 100.0)
-                offset += width * 1.5
-              }
-            }
+            let offset = self.calculateOffsetToPage(
+              pageIndex, screenWidth: collectionView.bounds.width)
             collectionView.setContentOffset(CGPoint(x: 0, y: offset), animated: animated)
           }
         }
@@ -256,63 +321,40 @@ struct WebtoonReaderView: UIViewRepresentable {
     func scrollToInitialPage(_ pageIndex: Int) {
       guard !hasScrolledToInitialPage else { return }
       guard let collectionView = collectionView,
-        pageIndex >= 0 && pageIndex < pages.count,
+        isValidPageIndex(pageIndex),
         collectionView.bounds.width > 0 && collectionView.bounds.height > 0
       else {
-        // Retry if conditions not met (only once)
         if !hasScrolledToInitialPage {
-          DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+          executeAfterDelay(0.1) { [weak self] in
             self?.scrollToInitialPage(pageIndex)
           }
         }
         return
       }
 
-      // Don't scroll if user is currently scrolling
       guard !isUserScrolling else {
-        // Wait for scrolling to finish
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+        executeAfterDelay(Constants.layoutReadyDelay) { [weak self] in
           guard let self = self, !self.hasScrolledToInitialPage else { return }
           self.scrollToInitialPage(pageIndex)
         }
         return
       }
 
-      // Force layout update
       collectionView.layoutIfNeeded()
 
-      // Wait for layout to be ready
       guard collectionView.contentSize.height > 0 else {
-        // Retry after a short delay if layout not ready (only once)
         if !hasScrolledToInitialPage {
-          DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+          executeAfterDelay(Constants.layoutReadyDelay) { [weak self] in
             self?.scrollToInitialPage(pageIndex)
           }
         }
         return
       }
 
-      // Calculate offset based on cached heights
-      var offset: CGFloat = 0
-
-      for i in 0..<pageIndex {
-        if let height = pageHeights[i] {
-          offset += height
-        } else {
-          // If we don't have the height yet, use estimated height
-          let screenWidth = collectionView.bounds.width
-          let width = screenWidth * (pageWidthPercentage / 100.0)
-          offset += width * 1.5
-        }
-      }
-
-      // Use scrollToItem for reliable scrolling
       let indexPath = IndexPath(item: pageIndex, section: 0)
-
       collectionView.scrollToItem(at: indexPath, at: .top, animated: false)
       collectionView.layoutIfNeeded()
 
-      // Mark as scrolled after a brief delay to ensure scroll completed
       DispatchQueue.main.async { [weak self] in
         guard let self = self else { return }
         self.hasScrolledToInitialPage = true
@@ -376,11 +418,11 @@ struct WebtoonReaderView: UIViewRepresentable {
       sizeForItemAt indexPath: IndexPath
     ) -> CGSize {
       let screenWidth = collectionView.bounds.width
-      let width = screenWidth * (pageWidthPercentage / 100.0)
+      let width = calculatePageWidth(screenWidth: screenWidth)
 
       // Footer cell - fixed height for button area
       if indexPath.item == pages.count {
-        return CGSize(width: width, height: 320)
+        return CGSize(width: width, height: Constants.footerHeight)
       }
 
       if let height = pageHeights[indexPath.item] {
@@ -406,21 +448,22 @@ struct WebtoonReaderView: UIViewRepresentable {
     }
 
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
-      // Check if scrolled to bottom
       checkIfAtBottom(scrollView)
 
-      // Only update page if user is scrolling (not programmatic scrolls)
       if isUserScrolling {
-        // Update current page based on scroll position
         updateCurrentPage()
+        throttlePreload()
+      }
+    }
 
-        // Preload nearby pages while scrolling (throttled)
-        // Use a simple throttling mechanism to avoid too frequent calls
-        let now = Date()
-        if lastPreloadTime == nil || now.timeIntervalSince(lastPreloadTime!) > 0.3 {
-          lastPreloadTime = now
-          preloadNearbyPages()
-        }
+    /// Throttles preload calls to avoid too frequent updates
+    private func throttlePreload() {
+      let now = Date()
+      if lastPreloadTime == nil
+        || now.timeIntervalSince(lastPreloadTime!) > Constants.preloadThrottleInterval
+      {
+        lastPreloadTime = now
+        preloadNearbyPages()
       }
     }
 
@@ -444,7 +487,7 @@ struct WebtoonReaderView: UIViewRepresentable {
       isUserScrolling = false
       checkIfAtBottom(scrollView)
       // Delay clearing programmatic scrolling flag to prevent updateUIView from triggering additional scroll
-      DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+      executeAfterDelay(0.1) { [weak self] in
         self?.isProgrammaticScrolling = false
       }
       updateCurrentPage()
@@ -455,10 +498,8 @@ struct WebtoonReaderView: UIViewRepresentable {
       let contentHeight = scrollView.contentSize.height
       let scrollOffset = scrollView.contentOffset.y
       let scrollViewHeight = scrollView.bounds.height
-
-      // Consider at bottom if within 120pt of the bottom (footer area is 320pt)
-      let threshold: CGFloat = 120
-      let isAtBottomNow = scrollOffset + scrollViewHeight >= contentHeight - threshold
+      let isAtBottomNow =
+        scrollOffset + scrollViewHeight >= contentHeight - Constants.bottomThreshold
 
       if isAtBottomNow != isAtBottom {
         isAtBottom = isAtBottomNow
@@ -469,28 +510,24 @@ struct WebtoonReaderView: UIViewRepresentable {
     private func updateCurrentPage() {
       guard let collectionView = collectionView else { return }
 
-      // Find the page that is most visible in the center of the screen
       let centerY = collectionView.contentOffset.y + collectionView.bounds.height / 2
       let centerPoint = CGPoint(x: collectionView.bounds.width / 2, y: centerY)
 
-      if let indexPath = collectionView.indexPathForItem(at: centerPoint) {
-        // Ignore footer cell
-        if indexPath.item != pages.count && indexPath.item != currentPage && indexPath.item >= 0
-          && indexPath.item < pages.count
-        {
-          currentPage = indexPath.item
-          onPageChange?(indexPath.item)
-        }
+      if let indexPath = collectionView.indexPathForItem(at: centerPoint),
+        indexPath.item != pages.count,
+        indexPath.item != currentPage,
+        isValidPageIndex(indexPath.item)
+      {
+        currentPage = indexPath.item
+        onPageChange?(indexPath.item)
       } else {
         // Fallback: find closest page by checking visible items
-        let visibleIndexPaths = collectionView.indexPathsForVisibleItems.filter {
-          $0.item < pages.count
-        }.sorted {
-          $0.item < $1.item
-        }
+        let visibleIndexPaths = collectionView.indexPathsForVisibleItems
+          .filter { $0.item < pages.count }
+          .sorted { $0.item < $1.item }
         if let firstVisible = visibleIndexPaths.first {
           let midIndex = firstVisible.item + visibleIndexPaths.count / 2
-          if midIndex >= 0 && midIndex < pages.count && midIndex != currentPage {
+          if isValidPageIndex(midIndex) && midIndex != currentPage {
             currentPage = midIndex
             onPageChange?(midIndex)
           }
@@ -502,101 +539,99 @@ struct WebtoonReaderView: UIViewRepresentable {
 
     @MainActor
     func loadImageForPage(_ pageIndex: Int) async {
-      guard pageIndex >= 0 && pageIndex < pages.count,
+      guard isValidPageIndex(pageIndex),
         pageImages[pageIndex] == nil,
         let loader = imageLoader
       else {
         return
       }
 
-      // Mark as loading
       loadingPages.insert(pageIndex)
       defer { loadingPages.remove(pageIndex) }
 
-      let image = await loader.loadImage(pageIndex)
+      guard let image = await loader.loadImage(pageIndex) else {
+        showImageError(for: pageIndex)
+        return
+      }
 
-      if let image = image {
-        pageImages[pageIndex] = image
+      pageImages[pageIndex] = image
+      let (height, oldHeight) = calculateAndCacheHeight(for: pageIndex, image: image)
+      updateCellImage(image, for: pageIndex)
+      updateLayoutIfNeeded(pageIndex: pageIndex, height: height, oldHeight: oldHeight)
+      tryScrollToInitialPageIfNeeded(pageIndex: pageIndex)
+    }
 
-        // Calculate and cache height
-        let screenWidth = collectionView?.bounds.width ?? UIScreen.main.bounds.width
-        let width = screenWidth * (pageWidthPercentage / 100.0)
-        let aspectRatio = image.size.height / image.size.width
-        let height = width * aspectRatio
+    /// Calculates and caches height for a page image
+    private func calculateAndCacheHeight(for pageIndex: Int, image: UIImage) -> (
+      height: CGFloat, oldHeight: CGFloat
+    ) {
+      let screenWidth = collectionView?.bounds.width ?? UIScreen.main.bounds.width
+      let width = calculatePageWidth(screenWidth: screenWidth)
+      let aspectRatio = image.size.height / image.size.width
+      let height = width * aspectRatio
+      let oldHeight = pageHeights[pageIndex] ?? screenWidth
+      pageHeights[pageIndex] = height
+      return (height, oldHeight)
+    }
 
-        // Get old height if exists
-        let oldHeight = pageHeights[pageIndex] ?? screenWidth
-        pageHeights[pageIndex] = height
+    /// Updates cell image if visible
+    private func updateCellImage(_ image: UIImage, for pageIndex: Int) {
+      guard let collectionView = collectionView else { return }
+      let indexPath = IndexPath(item: pageIndex, section: 0)
+      if let cell = collectionView.cellForItem(at: indexPath) as? WebtoonPageCell {
+        cell.updateImage(image)
+      }
+    }
 
-        // Update visible cell if it exists
-        if let collectionView = collectionView {
-          let indexPath = IndexPath(item: pageIndex, section: 0)
-          if let cell = collectionView.cellForItem(at: indexPath) as? WebtoonPageCell {
-            cell.updateImage(image)
+    /// Updates layout if height changed significantly
+    private func updateLayoutIfNeeded(pageIndex: Int, height: CGFloat, oldHeight: CGFloat) {
+      let heightDiff = abs(height - oldHeight)
+      guard heightDiff > Constants.heightChangeThreshold else { return }
+
+      if !isUserScrolling, let collectionView = collectionView, let layout = layout {
+        let currentOffset = collectionView.contentOffset.y
+        layout.invalidateLayout()
+        collectionView.layoutIfNeeded()
+
+        if pageIndex < currentPage {
+          let newOffset = max(0, currentOffset + (height - oldHeight))
+          UIView.performWithoutAnimation {
+            collectionView.setContentOffset(CGPoint(x: 0, y: newOffset), animated: false)
           }
         }
-
-        // Preserve scroll position when updating layout
-        // Only update layout if height changed significantly and user is not scrolling
-        if abs(height - oldHeight) > 100.0 && !isUserScrolling {
-          if let collectionView = collectionView, let layout = layout {
-            // Save current scroll position
-            let currentOffset = collectionView.contentOffset.y
-
-            // Calculate the difference in height
-            let heightDiff = height - oldHeight
-
-            // Invalidate layout to update cell size
+      } else if isUserScrolling {
+        executeAfterDelay(0.5) { [weak self] in
+          guard let self = self, !self.isUserScrolling,
+            let collectionView = self.collectionView,
+            let layout = self.layout
+          else { return }
+          let currentHeight = self.pageHeights[pageIndex] ?? 0
+          if abs(currentHeight - oldHeight) > Constants.heightChangeThreshold {
             layout.invalidateLayout()
             collectionView.layoutIfNeeded()
-
-            // Adjust scroll offset to maintain visual position
-            // Only adjust if the updated page is above the current viewport
-            // This prevents the scroll position from jumping when images load
-            if pageIndex < currentPage {
-              let newOffset = max(0, currentOffset + heightDiff)
-              // Use performWithoutAnimation to avoid any visual glitches
-              UIView.performWithoutAnimation {
-                collectionView.setContentOffset(CGPoint(x: 0, y: newOffset), animated: false)
-              }
-            }
-          }
-        } else if abs(height - oldHeight) > 100.0 && isUserScrolling {
-          // If user is scrolling, defer layout update until scrolling stops
-          // This prevents scroll position jumping during user interaction
-          DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            guard let self = self, !self.isUserScrolling,
-              let collectionView = self.collectionView,
-              let layout = self.layout
-            else { return }
-
-            // Only update if height still differs
-            let currentHeight = self.pageHeights[pageIndex] ?? 0
-            if abs(currentHeight - oldHeight) > 100.0 {
-              layout.invalidateLayout()
-              collectionView.layoutIfNeeded()
-            }
           }
         }
+      }
+    }
 
-        // If we haven't scrolled to initial page yet, try scrolling after image loads
-        if !hasScrolledToInitialPage && currentPage >= 0 && currentPage < pages.count {
-          // If this is the initial page or nearby, try scrolling
-          if abs(pageIndex - currentPage) <= 3 {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-              guard let self = self else { return }
-              self.scrollToInitialPage(self.currentPage)
-            }
-          }
-        }
-      } else {
-        // Image loading failed - update cell to show error state
-        if let collectionView = collectionView,
-          let cell = collectionView.cellForItem(at: IndexPath(item: pageIndex, section: 0))
-            as? WebtoonPageCell
-        {
-          cell.showError()
-        }
+    /// Tries to scroll to initial page if needed
+    private func tryScrollToInitialPageIfNeeded(pageIndex: Int) {
+      guard !hasScrolledToInitialPage,
+        isValidPageIndex(currentPage),
+        abs(pageIndex - currentPage) <= 3
+      else { return }
+      let targetPage = currentPage
+      executeAfterDelay(0.1) { [weak self] in
+        self?.scrollToInitialPage(targetPage)
+      }
+    }
+
+    /// Shows error state for failed image load
+    private func showImageError(for pageIndex: Int) {
+      guard let collectionView = collectionView else { return }
+      let indexPath = IndexPath(item: pageIndex, section: 0)
+      if let cell = collectionView.cellForItem(at: indexPath) as? WebtoonPageCell {
+        cell.showError()
       }
     }
 
@@ -630,87 +665,93 @@ struct WebtoonReaderView: UIViewRepresentable {
         let view = collectionView.superview
       else { return }
 
-      // Get location in the view's coordinate space (screen coordinates)
       let location = gesture.location(in: view)
       let screenHeight = view.bounds.height
       let screenWidth = view.bounds.width
 
-      // Check vertical position first (top/bottom priority)
-      let isTopArea = location.y < screenHeight * 0.3
-      let isBottomArea = location.y > screenHeight * 0.7
+      let tapArea = determineTapArea(
+        location: location, screenWidth: screenWidth, screenHeight: screenHeight)
+
+      switch tapArea {
+      case .center:
+        handleCenterTap(collectionView: collectionView)
+      case .topLeft:
+        scrollUp(collectionView: collectionView, screenHeight: screenHeight)
+      case .bottomRight:
+        scrollDown(collectionView: collectionView, screenHeight: screenHeight)
+      }
+    }
+
+    /// Determines which area was tapped
+    private enum TapArea {
+      case center
+      case topLeft
+      case bottomRight
+    }
+
+    private func determineTapArea(location: CGPoint, screenWidth: CGFloat, screenHeight: CGFloat)
+      -> TapArea
+    {
+      let isTopArea = location.y < screenHeight * Constants.topAreaThreshold
+      let isBottomArea = location.y > screenHeight * Constants.bottomAreaThreshold
       let isMiddleArea = !isTopArea && !isBottomArea
+      let isLeftArea = location.x < screenWidth * Constants.topAreaThreshold
 
-      // Check horizontal position for middle area
-      let isLeftArea = location.x < screenWidth * 0.3
-      let isRightArea = location.x > screenWidth * 0.7
-
-      // Check if tap is in center area (center 40% width and 40% height)
       let isCenterArea =
-        location.x > screenWidth * 0.3
-        && location.x < screenWidth * 0.7
-        && location.y > screenHeight * 0.3
-        && location.y < screenHeight * 0.7
-
-      // TopLeft L-shaped area: top area OR (middle area AND left area)
-      let isTopLeftArea = isTopArea || (isMiddleArea && isLeftArea)
-
-      // BottomRight L-shaped area: bottom area OR (middle area AND right area)
-      let isBottomRightArea = isBottomArea || (isMiddleArea && isRightArea)
+        location.x > screenWidth * Constants.centerAreaMin
+        && location.x < screenWidth * Constants.centerAreaMax
+        && location.y > screenHeight * Constants.centerAreaMin
+        && location.y < screenHeight * Constants.centerAreaMax
 
       if isCenterArea {
-        // Center tap - toggle controls
-        // Save current scroll position to prevent it from resetting when controls are shown/hidden
-        isHandlingCenterTap = true
-        savedScrollOffset = collectionView.contentOffset.y
-        onCenterTap?()
-        // Restore scroll position after a delay to allow any layout updates to complete
-        // Use a longer delay to ensure controls animation completes
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-          guard let self = self, let collectionView = self.collectionView else { return }
-          // Only restore if user hasn't scrolled since the tap
-          if !self.isUserScrolling && !self.isProgrammaticScrolling {
-            let currentOffset = collectionView.contentOffset.y
-            // Restore if position has changed significantly (more than 50 points)
-            // This handles cases where layout updates might have shifted the scroll position
-            if abs(currentOffset - self.savedScrollOffset) > 50 {
-              collectionView.setContentOffset(
-                CGPoint(x: 0, y: self.savedScrollOffset), animated: false)
-            }
-          }
-          // Keep isHandlingCenterTap true a bit longer to prevent updateUIView from triggering scrolls
-          DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-            self?.isHandlingCenterTap = false
+        return .center
+      } else if isTopArea || (isMiddleArea && isLeftArea) {
+        return .topLeft
+      } else {
+        return .bottomRight
+      }
+    }
+
+    /// Handles center tap to toggle controls
+    private func handleCenterTap(collectionView: UICollectionView) {
+      isHandlingCenterTap = true
+      savedScrollOffset = collectionView.contentOffset.y
+      onCenterTap?()
+
+      executeAfterDelay(Constants.scrollRestoreDelay) { [weak self] in
+        guard let self = self, let collectionView = self.collectionView else { return }
+        if !self.isUserScrolling && !self.isProgrammaticScrolling {
+          let currentOffset = collectionView.contentOffset.y
+          if abs(currentOffset - self.savedScrollOffset) > Constants.scrollPositionThreshold {
+            collectionView.setContentOffset(
+              CGPoint(x: 0, y: self.savedScrollOffset), animated: false)
           }
         }
-      } else if isTopLeftArea {
-        // Scroll up
-        isProgrammaticScrolling = true
-        let currentOffset = collectionView.contentOffset.y
-        let scrollAmount = screenHeight * 0.8
-        let targetOffset = max(
-          currentOffset - scrollAmount,
-          0
-        )
-
-        collectionView.setContentOffset(
-          CGPoint(x: 0, y: targetOffset),
-          animated: true
-        )
-      } else if isBottomRightArea {
-        // Scroll down
-        isProgrammaticScrolling = true
-        let currentOffset = collectionView.contentOffset.y
-        let scrollAmount = screenHeight * 0.8
-        let targetOffset = min(
-          currentOffset + scrollAmount,
-          collectionView.contentSize.height - screenHeight
-        )
-
-        collectionView.setContentOffset(
-          CGPoint(x: 0, y: targetOffset),
-          animated: true
-        )
+        self.executeAfterDelay(Constants.centerTapHandlingDelay) { [weak self] in
+          self?.isHandlingCenterTap = false
+        }
       }
+    }
+
+    /// Scrolls up
+    private func scrollUp(collectionView: UICollectionView, screenHeight: CGFloat) {
+      isProgrammaticScrolling = true
+      let currentOffset = collectionView.contentOffset.y
+      let scrollAmount = screenHeight * Constants.scrollAmountMultiplier
+      let targetOffset = max(currentOffset - scrollAmount, 0)
+      collectionView.setContentOffset(CGPoint(x: 0, y: targetOffset), animated: true)
+    }
+
+    /// Scrolls down
+    private func scrollDown(collectionView: UICollectionView, screenHeight: CGFloat) {
+      isProgrammaticScrolling = true
+      let currentOffset = collectionView.contentOffset.y
+      let scrollAmount = screenHeight * Constants.scrollAmountMultiplier
+      let targetOffset = min(
+        currentOffset + scrollAmount,
+        collectionView.contentSize.height - screenHeight
+      )
+      collectionView.setContentOffset(CGPoint(x: 0, y: targetOffset), animated: true)
     }
   }
 }
