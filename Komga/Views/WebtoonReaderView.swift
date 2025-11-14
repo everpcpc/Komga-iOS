@@ -813,6 +813,9 @@ class WebtoonPageCell: UICollectionViewCell {
 
     if let image = image {
       imageView.image = image
+      // Force layout update to ensure image fills width
+      imageView.setNeedsLayout()
+      imageView.layoutIfNeeded()
       loadingIndicator.stopAnimating()
       loadingIndicator.isHidden = true
       imageView.alpha = 1.0
@@ -826,6 +829,9 @@ class WebtoonPageCell: UICollectionViewCell {
 
   func updateImage(_ image: UIImage) {
     imageView.image = image
+    // Force layout update to ensure image fills width
+    imageView.setNeedsLayout()
+    imageView.layoutIfNeeded()
     UIView.animate(withDuration: 0.2) {
       self.imageView.alpha = 1.0
     }
