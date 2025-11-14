@@ -19,12 +19,21 @@ class SeriesViewModel {
   private let seriesService = SeriesService.shared
   private var currentPage = 0
   private var hasMorePages = true
+  private var currentState: BrowseOptions?
 
-  func loadSeries(libraryId: String = "", refresh: Bool = false) async {
-    if refresh {
+  func loadSeries(browseOpts: BrowseOptions, refresh: Bool = false) async {
+    // Check if parameters changed - if so, reset pagination
+    let paramsChanged =
+      currentState?.libraryId != browseOpts.libraryId
+      || currentState?.readStatusFilter != browseOpts.readStatusFilter
+      || currentState?.seriesStatusFilter != browseOpts.seriesStatusFilter
+      || currentState?.sortString != browseOpts.sortString
+
+    if refresh || paramsChanged {
       currentPage = 0
       series = []
       hasMorePages = true
+      currentState = browseOpts
     }
 
     guard hasMorePages && !isLoading else { return }
@@ -34,9 +43,12 @@ class SeriesViewModel {
 
     do {
       let page = try await seriesService.getSeries(
-        libraryId: libraryId,
+        libraryId: browseOpts.libraryId,
         page: currentPage,
-        size: 20
+        size: 20,
+        sort: browseOpts.sortString,
+        readStatus: browseOpts.readStatusFilter,
+        seriesStatus: browseOpts.seriesStatusFilter
       )
 
       series.append(contentsOf: page.content)
@@ -95,19 +107,19 @@ class SeriesViewModel {
     return nil
   }
 
-  func markAsRead(seriesId: String) async {
+  func markAsRead(seriesId: String, browseOpts: BrowseOptions) async {
     do {
       try await seriesService.markAsRead(seriesId: seriesId)
-      await loadSeries(refresh: true)
+      await loadSeries(browseOpts: browseOpts, refresh: true)
     } catch {
       errorMessage = error.localizedDescription
     }
   }
 
-  func markAsUnread(seriesId: String) async {
+  func markAsUnread(seriesId: String, browseOpts: BrowseOptions) async {
     do {
       try await seriesService.markAsUnread(seriesId: seriesId)
-      await loadSeries(refresh: true)
+      await loadSeries(browseOpts: browseOpts, refresh: true)
     } catch {
       errorMessage = error.localizedDescription
     }

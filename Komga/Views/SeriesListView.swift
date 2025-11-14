@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct SeriesListView: View {
-  let libraryId: String
+  @Bindable var browseOpts: BrowseOptions
   let width: CGFloat
   let spacing: CGFloat = 16
   @State private var viewModel = SeriesViewModel()
@@ -48,7 +48,7 @@ struct SeriesListView: View {
             .multilineTextAlignment(.center)
           Button("Retry") {
             Task {
-              await viewModel.loadSeries(libraryId: libraryId, refresh: true)
+              await viewModel.loadSeries(browseOpts: browseOpts, refresh: true)
             }
           }
         }
@@ -65,7 +65,7 @@ struct SeriesListView: View {
               // Load next page when the last few items appear
               if index >= viewModel.series.count - 3 {
                 Task {
-                  await viewModel.loadSeries(libraryId: libraryId, refresh: false)
+                  await viewModel.loadSeries(browseOpts: browseOpts, refresh: false)
                 }
               }
             }
@@ -81,11 +81,11 @@ struct SeriesListView: View {
     }
     .animation(.default, value: viewModel.series)
     .task {
-      await viewModel.loadSeries(libraryId: libraryId, refresh: true)
+      await viewModel.loadSeries(browseOpts: browseOpts, refresh: true)
     }
-    .onChange(of: libraryId) {
+    .onChange(of: browseOpts.libraryId) {
       Task {
-        await viewModel.loadSeries(libraryId: libraryId, refresh: true)
+        await viewModel.loadSeries(browseOpts: browseOpts, refresh: true)
       }
     }
   }

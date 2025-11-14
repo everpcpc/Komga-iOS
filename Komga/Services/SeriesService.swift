@@ -17,7 +17,9 @@ class SeriesService {
     libraryId: String = "",
     page: Int = 0,
     size: Int = 20,
-    sort: String = "metadata.titleSort,asc"
+    sort: String = "metadata.titleSort,asc",
+    readStatus: ReadStatusFilter? = nil,
+    seriesStatus: SeriesStatusFilter? = nil
   ) async throws -> Page<Series> {
     var queryItems = [
       URLQueryItem(name: "page", value: "\(page)"),
@@ -27,6 +29,14 @@ class SeriesService {
 
     if !libraryId.isEmpty {
       queryItems.append(URLQueryItem(name: "library_id", value: libraryId))
+    }
+
+    if let readStatus = readStatus, readStatus != .all {
+      queryItems.append(URLQueryItem(name: "read_status", value: readStatus.rawValue))
+    }
+
+    if let seriesStatus = seriesStatus, seriesStatus != .all {
+      queryItems.append(URLQueryItem(name: "metadata.status", value: seriesStatus.rawValue))
     }
 
     return try await apiClient.request(path: "/api/v1/series", queryItems: queryItems)

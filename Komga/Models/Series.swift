@@ -71,3 +71,153 @@ struct AlternateTitle: Codable, Equatable {
   let label: String
   let title: String
 }
+
+// Filter and Sort enums for Series
+enum ReadStatusFilter: String, CaseIterable {
+  case all = "ALL"
+  case read = "READ"
+  case unread = "UNREAD"
+  case inProgress = "IN_PROGRESS"
+
+  var displayName: String {
+    switch self {
+    case .all: return "All"
+    case .read: return "Read"
+    case .unread: return "Unread"
+    case .inProgress: return "In Progress"
+    }
+  }
+}
+
+enum SeriesStatusFilter: String, CaseIterable {
+  case all = "ALL"
+  case ongoing = "ONGOING"
+  case ended = "ENDED"
+  case hiatus = "HIATUS"
+  case cancelled = "CANCELLED"
+
+  var displayName: String {
+    switch self {
+    case .all: return "All"
+    case .ongoing: return "Ongoing"
+    case .ended: return "Ended"
+    case .hiatus: return "Hiatus"
+    case .cancelled: return "Cancelled"
+    }
+  }
+}
+
+enum SeriesSortField: String, CaseIterable {
+  case name = "metadata.titleSort"
+  case dateAdded = "created"
+  case dateUpdated = "lastModified"
+  case dateRead = "fileLastModified"
+  case releaseDate = "booksMetadata.releaseDate"
+  case folderName = "metadata.title"
+  case booksCount = "booksCount"
+  case random = "random"
+
+  var displayName: String {
+    switch self {
+    case .name: return "Name"
+    case .dateAdded: return "Date Added"
+    case .dateUpdated: return "Date Updated"
+    case .dateRead: return "Date Read"
+    case .releaseDate: return "Release Date"
+    case .folderName: return "Folder Name"
+    case .booksCount: return "Books Count"
+    case .random: return "Random"
+    }
+  }
+
+  var supportsDirection: Bool {
+    return self != .random
+  }
+}
+
+enum SortDirection: String, CaseIterable {
+  case ascending = "asc"
+  case descending = "desc"
+
+  var displayName: String {
+    switch self {
+    case .ascending: return "Ascending"
+    case .descending: return "Descending"
+    }
+  }
+
+  var icon: String {
+    switch self {
+    case .ascending: return "arrow.up"
+    case .descending: return "arrow.down"
+    }
+  }
+
+  func toggle() -> SortDirection {
+    return self == .ascending ? .descending : .ascending
+  }
+}
+
+// Legacy enum for backward compatibility - converts to new format
+enum SeriesSortOption: String, CaseIterable {
+  case nameAsc = "metadata.titleSort,asc"
+  case nameDesc = "metadata.titleSort,desc"
+  case dateAddedAsc = "created,asc"
+  case dateAddedDesc = "created,desc"
+  case dateUpdatedAsc = "lastModified,asc"
+  case dateUpdatedDesc = "lastModified,desc"
+  case dateReadAsc = "fileLastModified,asc"
+  case dateReadDesc = "fileLastModified,desc"
+  case releaseDateAsc = "booksMetadata.releaseDate,asc"
+  case releaseDateDesc = "booksMetadata.releaseDate,desc"
+  case folderNameAsc = "metadata.title,asc"
+  case folderNameDesc = "metadata.title,desc"
+  case booksCountAsc = "booksCount,asc"
+  case booksCountDesc = "booksCount,desc"
+  case random = "random"
+
+  var displayName: String {
+    switch self {
+    case .nameAsc: return "Name (A-Z)"
+    case .nameDesc: return "Name (Z-A)"
+    case .dateAddedAsc: return "Date Added (Oldest)"
+    case .dateAddedDesc: return "Date Added (Newest)"
+    case .dateUpdatedAsc: return "Date Updated (Oldest)"
+    case .dateUpdatedDesc: return "Date Updated (Newest)"
+    case .dateReadAsc: return "Date Read (Oldest)"
+    case .dateReadDesc: return "Date Read (Newest)"
+    case .releaseDateAsc: return "Release Date (Oldest)"
+    case .releaseDateDesc: return "Release Date (Newest)"
+    case .folderNameAsc: return "Folder Name (A-Z)"
+    case .folderNameDesc: return "Folder Name (Z-A)"
+    case .booksCountAsc: return "Books Count (Fewest)"
+    case .booksCountDesc: return "Books Count (Most)"
+    case .random: return "Random"
+    }
+  }
+
+  var sortField: SeriesSortField {
+    switch self {
+    case .nameAsc, .nameDesc: return .name
+    case .dateAddedAsc, .dateAddedDesc: return .dateAdded
+    case .dateUpdatedAsc, .dateUpdatedDesc: return .dateUpdated
+    case .dateReadAsc, .dateReadDesc: return .dateRead
+    case .releaseDateAsc, .releaseDateDesc: return .releaseDate
+    case .folderNameAsc, .folderNameDesc: return .folderName
+    case .booksCountAsc, .booksCountDesc: return .booksCount
+    case .random: return .random
+    }
+  }
+
+  var sortDirection: SortDirection {
+    switch self {
+    case .nameAsc, .dateAddedAsc, .dateUpdatedAsc, .dateReadAsc, .releaseDateAsc, .folderNameAsc,
+      .booksCountAsc:
+      return .ascending
+    case .nameDesc, .dateAddedDesc, .dateUpdatedDesc, .dateReadDesc, .releaseDateDesc,
+      .folderNameDesc, .booksCountDesc:
+      return .descending
+    case .random: return .ascending  // Not used for random
+    }
+  }
+}
