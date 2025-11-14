@@ -244,9 +244,6 @@ struct WebtoonReaderView: UIViewRepresentable {
       if !hasScrolledToInitialPage && pages.count > 0 && isValidPageIndex(currentPage) {
         scrollToInitialPage(currentPage)
       }
-
-      // Handle external page change
-      handleExternalPageChange(currentPage: currentPage)
     }
 
     /// Handles data reload when pages count or width percentage changes
@@ -282,21 +279,6 @@ struct WebtoonReaderView: UIViewRepresentable {
       lastExternalCurrentPage = currentPage
     }
 
-    /// Handles external page changes
-    private func handleExternalPageChange(currentPage: Int) {
-      let currentPageChangedExternally = currentPage != lastExternalCurrentPage
-      if currentPageChangedExternally
-        && isValidPageIndex(currentPage)
-        && !isUserScrolling
-        && !isProgrammaticScrolling
-      {
-        scrollToPage(currentPage, animated: true)
-        lastExternalCurrentPage = currentPage
-      } else if !currentPageChangedExternally {
-        lastExternalCurrentPage = currentPage
-      }
-    }
-
     func scrollToPage(_ pageIndex: Int, animated: Bool) {
       guard let collectionView = collectionView, isValidPageIndex(pageIndex) else { return }
 
@@ -328,14 +310,6 @@ struct WebtoonReaderView: UIViewRepresentable {
           executeAfterDelay(0.1) { [weak self] in
             self?.scrollToInitialPage(pageIndex)
           }
-        }
-        return
-      }
-
-      guard !isUserScrolling else {
-        executeAfterDelay(Constants.layoutReadyDelay) { [weak self] in
-          guard let self = self, !self.hasScrolledToInitialPage else { return }
-          self.scrollToInitialPage(pageIndex)
         }
         return
       }
@@ -718,18 +692,8 @@ struct WebtoonReaderView: UIViewRepresentable {
       savedScrollOffset = collectionView.contentOffset.y
       onCenterTap?()
 
-      executeAfterDelay(Constants.scrollRestoreDelay) { [weak self] in
-        guard let self = self, let collectionView = self.collectionView else { return }
-        if !self.isUserScrolling && !self.isProgrammaticScrolling {
-          let currentOffset = collectionView.contentOffset.y
-          if abs(currentOffset - self.savedScrollOffset) > Constants.scrollPositionThreshold {
-            collectionView.setContentOffset(
-              CGPoint(x: 0, y: self.savedScrollOffset), animated: false)
-          }
-        }
-        self.executeAfterDelay(Constants.centerTapHandlingDelay) { [weak self] in
-          self?.isHandlingCenterTap = false
-        }
+      executeAfterDelay(Constants.centerTapHandlingDelay) { [weak self] in
+        self?.isHandlingCenterTap = false
       }
     }
 
