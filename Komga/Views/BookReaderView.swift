@@ -20,6 +20,7 @@ struct BookReaderView: View {
   @State private var nextBook: Book?
   @State private var isAtBottom = false
   @State private var isAtEndPage = false
+  @State private var showingReadingDirectionPicker = false
   @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
 
   init(bookId: String) {
@@ -86,15 +87,8 @@ struct BookReaderView: View {
                 Spacer()
 
                 // Display mode toggle button
-                Menu {
-                  Picker(selection: $viewModel.readingDirection) {
-                    ForEach(ReadingDirection.allCases, id: \.self) { direction in
-                      Text(direction.displayName).tag(direction)
-                    }
-                  } label: {
-                    EmptyView()
-                  }
-                  .pickerStyle(.inline)
+                Button {
+                  showingReadingDirectionPicker = true
                 } label: {
                   Image(systemName: viewModel.readingDirection.icon)
                     .font(.title3)
@@ -144,6 +138,31 @@ struct BookReaderView: View {
       }
     }
     .statusBar(hidden: !showingControls)
+    .sheet(isPresented: $showingReadingDirectionPicker) {
+      NavigationStack {
+        Form {
+          Section(header: Text("Reading Direction")) {
+            Picker("", selection: $viewModel.readingDirection) {
+              ForEach(ReadingDirection.allCases, id: \.self) { direction in
+                Label(direction.displayName, systemImage: direction.icon)
+                  .tag(direction)
+              }
+            }
+            .pickerStyle(.inline)
+          }
+        }
+        .navigationTitle("Reading Mode")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+          ToolbarItem(placement: .topBarTrailing) {
+            Button("Done") {
+              showingReadingDirectionPicker = false
+            }
+          }
+        }
+      }
+      .presentationDetents([.medium])
+    }
     .task(id: currentBookId) {
       // Reset isAtBottom and isAtEndPage when switching to a new book
       isAtBottom = false
