@@ -133,7 +133,7 @@ struct BrowseOptionsSheet: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .navigationBarTrailing) {
-          Button("Done") {
+          Button {
             // Only assign if there are changes
             if tempOpts != browseOpts {
               browseOpts.libraryId = tempOpts.libraryId
@@ -143,6 +143,8 @@ struct BrowseOptionsSheet: View {
               browseOpts.sortDirection = tempOpts.sortDirection
             }
             dismiss()
+          } label: {
+            Label("Done", systemImage: "checkmark")
           }
         }
       }
@@ -169,8 +171,10 @@ struct LibraryPickerSheet: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .navigationBarTrailing) {
-          Button("Done") {
+          Button {
             dismiss()
+          } label: {
+            Label("Done", systemImage: "checkmark")
           }
         }
       }

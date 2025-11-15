@@ -87,8 +87,10 @@ struct BookReaderView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
           ToolbarItem(placement: .topBarTrailing) {
-            Button("Done") {
+            Button {
               showingReadingDirectionPicker = false
+            } label: {
+              Label("Done", systemImage: "checkmark")
             }
           }
         }
