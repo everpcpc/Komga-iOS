@@ -8,7 +8,6 @@
 import Foundation
 import OSLog
 import SwiftUI
-import UIKit
 
 /// Disk cache system for storing raw image data
 /// Used to avoid re-downloading images. Decoding is handled by SDWebImage or on-demand.
@@ -95,9 +94,26 @@ class ImageCache {
     return fileManager.fileExists(atPath: fileURL.path)
   }
 
+  /// Get cached content type for an image
+  func getContentType(forKey key: Int, bookId: String) -> String? {
+    let contentTypeURL = contentTypeFileURL(key: key, bookId: bookId)
+    guard fileManager.fileExists(atPath: contentTypeURL.path) else {
+      return nil
+    }
+    return try? String(contentsOf: contentTypeURL, encoding: .utf8)
+  }
+
   /// Store image data to disk cache
-  func storeImageData(_ data: Data, forKey key: Int, bookId: String) async {
+  func storeImageData(_ data: Data, forKey key: Int, bookId: String, contentType: String? = nil)
+    async
+  {
     let fileURL = diskCacheFileURL(key: key, bookId: bookId)
+
+    // Store content type if provided
+    if let contentType = contentType {
+      let contentTypeURL = contentTypeFileURL(key: key, bookId: bookId)
+      try? contentType.write(to: contentTypeURL, atomically: true, encoding: .utf8)
+    }
     let oldFileSize: Int64?
     if fileManager.fileExists(atPath: fileURL.path),
       let attributes = try? fileManager.attributesOfItem(atPath: fileURL.path),
@@ -365,6 +381,12 @@ class ImageCache {
     let bookCacheDir = diskCacheURL.appendingPathComponent(bookId, isDirectory: true)
     try? fileManager.createDirectory(at: bookCacheDir, withIntermediateDirectories: true)
     return bookCacheDir.appendingPathComponent("page_\(key).data")
+  }
+
+  private func contentTypeFileURL(key: Int, bookId: String) -> URL {
+    let bookCacheDir = diskCacheURL.appendingPathComponent(bookId, isDirectory: true)
+    try? fileManager.createDirectory(at: bookCacheDir, withIntermediateDirectories: true)
+    return bookCacheDir.appendingPathComponent("page_\(key).type")
   }
 
   private func cleanupDiskCache() async {

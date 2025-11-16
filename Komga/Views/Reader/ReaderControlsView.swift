@@ -6,18 +6,21 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ReaderControlsView: View {
   @Binding var showingControls: Bool
   @Binding var showingReadingDirectionPicker: Bool
   let viewModel: ReaderViewModel
   let currentBook: Book?
-  let themeColorOption: ThemeColorOption
   let onDismiss: () -> Void
 
-  @State private var shareURL: URL?
+  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
+
   @State private var saveImageResult: SaveImageResult?
   @State private var showSaveAlert = false
+  @State private var showDocumentPicker = false
+  @State private var fileToSave: URL?
 
   enum SaveImageResult: Equatable {
     case success
@@ -84,34 +87,21 @@ struct ReaderControlsView: View {
       // Bottom slider
       VStack(spacing: 12) {
         HStack(spacing: 12) {
-          // Share button
-          if let shareURL = shareURL {
-            ShareLink(item: shareURL) {
-              Image(systemName: "square.and.arrow.up.circle")
-                .font(.title3)
-                .foregroundColor(.white)
-                .padding()
-                .background(themeColorOption.color.opacity(0.8))
-                .clipShape(Circle())
+          // Save to file button
+          Button {
+            Task {
+              await prepareSaveToFile()
             }
-            .frame(minWidth: 40, minHeight: 40)
-            .contentShape(Rectangle())
-          } else {
-            Button {
-              Task {
-                await prepareShare()
-              }
-            } label: {
-              Image(systemName: "square.and.arrow.up.circle")
-                .font(.title3)
-                .foregroundColor(.white)
-                .padding()
-                .background(themeColorOption.color.opacity(0.8))
-                .clipShape(Circle())
-            }
-            .frame(minWidth: 40, minHeight: 40)
-            .contentShape(Rectangle())
+          } label: {
+            Image(systemName: "folder.badge.plus")
+              .font(.title3)
+              .foregroundColor(.white)
+              .padding()
+              .background(themeColorOption.color.opacity(0.8))
+              .clipShape(Circle())
           }
+          .frame(minWidth: 40, minHeight: 40)
+          .contentShape(Rectangle())
 
           Spacer()
 
@@ -126,10 +116,10 @@ struct ReaderControlsView: View {
 
           Spacer()
 
-          // Save button
+          // Save to Photos button
           Button {
             Task {
-              await saveCurrentPage()
+              await saveCurrentPageToPhotos()
             }
           } label: {
             Image(systemName: "photo.badge.arrow.down.fill")
@@ -172,38 +162,79 @@ struct ReaderControlsView: View {
         showSaveAlert = true
       }
     }
+    .fileExporter(
+      isPresented: $showDocumentPicker,
+      document: fileToSave.map { ImageFileDocument(url: $0) },
+      contentType: .item,
+      defaultFilename: fileToSave?.lastPathComponent ?? "page"
+    ) { result in
+      // Clean up temporary file after export
+      if let tempURL = fileToSave {
+        try? FileManager.default.removeItem(at: tempURL)
+      }
+      fileToSave = nil
+    }
   }
 
-  // Prepare share URL for current page image
-  private func prepareShare() async {
-    guard viewModel.currentPage >= 0 && viewModel.currentPage < viewModel.pages.count else {
+  // Prepare file for saving to Files app
+  private func prepareSaveToFile() async {
+    // Get page image info
+    guard
+      let (cachedFileURL, contentType) = viewModel.getPageImageInfo(
+        pageIndex: viewModel.currentPage)
+    else {
+      await MainActor.run {
+        saveImageResult = .failure("Image not available")
+      }
       return
     }
 
-    // Get cached image file URL
-    let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
-    let diskCacheURL = cacheDir.appendingPathComponent("KomgaImageCache", isDirectory: true)
-    let bookCacheDir = diskCacheURL.appendingPathComponent(viewModel.bookId, isDirectory: true)
-    let fileURL = bookCacheDir.appendingPathComponent("page_\(viewModel.currentPage).data")
+    let fileExtension = fileExtensionFromContentType(contentType)
 
-    guard FileManager.default.fileExists(atPath: fileURL.path) else {
-      return
-    }
+    // Create a temporary file with proper extension in a location accessible to document picker
+    let tempDir = FileManager.default.temporaryDirectory
+    let timestamp = ISO8601DateFormatter().string(from: Date())
+      .replacingOccurrences(of: ":", with: "-")
+      .replacingOccurrences(of: ".", with: "-")
+    let fileName = "page_\(viewModel.currentPage + 1)_\(timestamp).\(fileExtension)"
+    let tempFileURL = tempDir.appendingPathComponent(fileName)
 
-    await MainActor.run {
-      shareURL = fileURL
-      // Reset after a short delay to allow ShareLink to trigger
-      Task {
-        try? await Task.sleep(nanoseconds: 100_000_000)  // 0.1 seconds
-        await MainActor.run {
-          shareURL = nil
-        }
+    // Copy file to temp location with proper extension
+    do {
+      if FileManager.default.fileExists(atPath: tempFileURL.path) {
+        try FileManager.default.removeItem(at: tempFileURL)
+      }
+      try FileManager.default.copyItem(at: cachedFileURL, to: tempFileURL)
+
+      await MainActor.run {
+        fileToSave = tempFileURL
+        showDocumentPicker = true
+      }
+    } catch {
+      await MainActor.run {
+        saveImageResult = .failure("Failed to prepare file: \(error.localizedDescription)")
       }
     }
   }
 
+  // Get file extension from content type using UTType
+  private func fileExtensionFromContentType(_ contentType: String) -> String {
+    let mimeType = ReaderViewModel.parseMimeType(from: contentType)
+
+    // Try to create UTType from MIME type
+    if let utType = UTType(mimeType: mimeType) {
+      // Get preferred file extension from UTType
+      if let preferredExtension = utType.preferredFilenameExtension {
+        return preferredExtension
+      }
+    }
+
+    // Default to png if unknown
+    return "png"
+  }
+
   // Save current page image to Photos
-  private func saveCurrentPage() async {
+  private func saveCurrentPageToPhotos() async {
     let result = await viewModel.savePageImageToPhotos(pageIndex: viewModel.currentPage)
 
     await MainActor.run {
@@ -214,5 +245,40 @@ struct ReaderControlsView: View {
         saveImageResult = .failure(error.localizedDescription)
       }
     }
+  }
+}
+
+// File document wrapper for fileExporter
+struct ImageFileDocument: FileDocument {
+  let url: URL
+  let fileType: UTType?
+
+  static var readableContentTypes: [UTType] {
+    [.item]
+  }
+
+  static var writableContentTypes: [UTType] {
+    [.item]
+  }
+
+  init(url: URL) {
+    self.url = url
+    // Detect file type from extension
+    self.fileType = UTType(filenameExtension: url.pathExtension)
+  }
+
+  init(configuration: ReadConfiguration) throws {
+    guard let data = configuration.file.regularFileContents,
+      let url = URL(dataRepresentation: data, relativeTo: nil)
+    else {
+      throw CocoaError(.fileReadCorruptFile)
+    }
+    self.url = url
+    self.fileType = UTType(filenameExtension: url.pathExtension)
+  }
+
+  func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+    let data = try Data(contentsOf: url)
+    return FileWrapper(regularFileWithContents: data)
   }
 }

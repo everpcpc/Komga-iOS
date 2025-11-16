@@ -10,7 +10,7 @@ import OSLog
 import Photos
 import SDWebImage
 import SwiftUI
-import UIKit
+import UniformTypeIdentifiers
 
 enum ReadingDirection: CaseIterable, Hashable {
   case ltr
@@ -173,7 +173,9 @@ class ReaderViewModel {
         "📥 Downloading page \(apiPageNumber) (index: \(pageIndex)) for book \(self.bookId)")
 
       do {
-        let data = try await bookService.getBookPage(bookId: self.bookId, page: apiPageNumber)
+        let result = try await bookService.getBookPage(bookId: self.bookId, page: apiPageNumber)
+        let data = result.data
+        let contentType = result.contentType
 
         let dataSize = ByteCountFormatter.string(
           fromByteCount: Int64(data.count), countStyle: .binary)
@@ -181,7 +183,8 @@ class ReaderViewModel {
           "✅ Downloaded page \(apiPageNumber) successfully (\(dataSize)) for book \(self.bookId)")
 
         // Save raw image data to disk cache (decoding is handled by SDWebImage)
-        await pageImageCache.storeImageData(data, forKey: pageIndex, bookId: self.bookId)
+        await pageImageCache.storeImageData(
+          data, forKey: pageIndex, bookId: self.bookId, contentType: contentType)
 
         // Return the cached file URL
         if let fileURL = getCachedImageFileURL(pageIndex: pageIndex) {
@@ -229,6 +232,44 @@ class ReaderViewModel {
       return fileURL
     }
     return nil
+  }
+
+  /// Get cached content type for a page
+  /// - Parameter pageIndex: Zero-based page index
+  /// - Returns: Content type string if cached, nil otherwise
+  func getCachedContentType(pageIndex: Int) -> String? {
+    return pageImageCache.getContentType(forKey: pageIndex, bookId: bookId)
+  }
+
+  /// Get page image info (file URL and content type) for saving
+  /// - Parameter pageIndex: Zero-based page index
+  /// - Returns: Tuple containing file URL and content type, or nil if not available
+  func getPageImageInfo(pageIndex: Int) -> (fileURL: URL, contentType: String)? {
+    guard pageIndex >= 0 && pageIndex < pages.count else {
+      return nil
+    }
+
+    guard !bookId.isEmpty else {
+      return nil
+    }
+
+    guard let fileURL = getCachedImageFileURL(pageIndex: pageIndex) else {
+      return nil
+    }
+
+    guard let contentType = getCachedContentType(pageIndex: pageIndex) else {
+      return nil
+    }
+
+    return (fileURL, contentType)
+  }
+
+  /// Parse MIME type from content type string (removes parameters)
+  /// - Parameter contentType: Full content type string (e.g., "image/jpeg; charset=utf-8")
+  /// - Returns: Clean MIME type string (e.g., "image/jpeg")
+  static func parseMimeType(from contentType: String) -> String {
+    return contentType.split(separator: ";").first?.trimmingCharacters(in: .whitespaces)
+      ?? contentType
   }
 
   /// Preload pages around the current page for smoother scrolling
@@ -303,16 +344,14 @@ class ReaderViewModel {
   /// - Parameter pageIndex: Zero-based page index
   /// - Returns: Result indicating success or failure with error message
   func savePageImageToPhotos(pageIndex: Int) async -> Result<Void, SaveImageError> {
-    guard pageIndex >= 0 && pageIndex < pages.count else {
-      return .failure(.invalidPageIndex)
-    }
-
-    guard !bookId.isEmpty else {
-      return .failure(.bookIdEmpty)
-    }
-
-    // Get cached image file URL
-    guard let imageURL = getCachedImageFileURL(pageIndex: pageIndex) else {
+    // Get page image info
+    guard let (imageURL, contentType) = getPageImageInfo(pageIndex: pageIndex) else {
+      if pageIndex < 0 || pageIndex >= pages.count {
+        return .failure(.invalidPageIndex)
+      }
+      if bookId.isEmpty {
+        return .failure(.bookIdEmpty)
+      }
       return .failure(.imageNotCached)
     }
 
@@ -322,14 +361,17 @@ class ReaderViewModel {
       return .failure(.photoLibraryAccessDenied)
     }
 
-    // Check image format
-    guard let imageFormat = detectImageFormat(at: imageURL) else {
+    // Check if format is supported by Photos library using UTType
+    // Photos library supports: JPEG, PNG, HEIF, but not WebP
+    let mimeType = Self.parseMimeType(from: contentType)
+    guard let utType = UTType(mimeType: mimeType) else {
       return .failure(.unsupportedImageFormat)
     }
 
-    // Check if format is supported by Photos library
-    // Photos library supports: JPEG, PNG, HEIF, but not WebP
-    if !isFormatSupportedByPhotos(format: imageFormat) {
+    // Check if the UTType conforms to any of the supported image types
+    let supportedTypes: [UTType] = [.jpeg, .png, .heic, .heif]
+    let isSupported = supportedTypes.contains { utType.conforms(to: $0) }
+    if !isSupported {
       return .failure(.unsupportedImageFormat)
     }
 
@@ -344,58 +386,6 @@ class ReaderViewModel {
     }
   }
 
-  // Detect image format from file URL
-  private func detectImageFormat(at fileURL: URL) -> String? {
-    // Read a small portion of the file to check format (more efficient than loading entire file)
-    guard let fileHandle = try? FileHandle(forReadingFrom: fileURL),
-      let imageData = try? fileHandle.read(upToCount: 12)
-    else {
-      return nil
-    }
-    defer {
-      try? fileHandle.close()
-    }
-
-    guard imageData.count >= 12 else { return nil }
-
-    // Check file signatures (magic numbers)
-    let bytes = [UInt8](imageData.prefix(12))
-
-    // JPEG: FF D8 FF
-    if bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF {
-      return "JPEG"
-    }
-
-    // PNG: 89 50 4E 47 0D 0A 1A 0A
-    if bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47 {
-      return "PNG"
-    }
-
-    // WebP: RIFF ... WEBP
-    if bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46 {
-      if bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50 {
-        return "WebP"
-      }
-    }
-
-    // HEIF: ftyp ... mif1 or msf1
-    if bytes[4] == 0x66 && bytes[5] == 0x74 && bytes[6] == 0x79 && bytes[7] == 0x70 {
-      // Check for HEIF variants
-      let heifTypes = ["mif1", "msf1", "heic", "heif"]
-      let typeString = String(bytes: Array(bytes[8...11]), encoding: .ascii) ?? ""
-      if heifTypes.contains(where: { typeString.lowercased().contains($0) }) {
-        return "HEIF"
-      }
-    }
-
-    return nil
-  }
-
-  // Check if image format is supported by Photos library
-  private func isFormatSupportedByPhotos(format: String) -> Bool {
-    let supportedFormats = ["JPEG", "PNG", "HEIF"]
-    return supportedFormats.contains(format)
-  }
 }
 
 enum SaveImageError: Error, LocalizedError {

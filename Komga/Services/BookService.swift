@@ -95,7 +95,7 @@ class BookService {
     return URL(string: baseURL + "/api/v1/books/\(id)/thumbnail")
   }
 
-  func getBookPage(bookId: String, page: Int) async throws -> Data {
+  func getBookPage(bookId: String, page: Int) async throws -> (data: Data, contentType: String?) {
     return try await apiClient.requestData(path: "/api/v1/books/\(bookId)/pages/\(page)")
   }
 

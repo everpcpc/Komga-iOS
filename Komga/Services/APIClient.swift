@@ -191,7 +191,7 @@ class APIClient {
   func requestData(
     path: String,
     method: String = "GET"
-  ) async throws -> Data {
+  ) async throws -> (data: Data, contentType: String?) {
     guard let url = URL(string: baseURL + path) else {
       throw APIError.invalidURL
     }
@@ -218,6 +218,9 @@ class APIClient {
         throw APIError.invalidResponse
       }
 
+      // Get content type from response
+      let contentType = httpResponse.value(forHTTPHeaderField: "Content-Type")
+
       // Log response with data size
       let statusEmoji = (200...299).contains(httpResponse.statusCode) ? "✅" : "❌"
       let dataSize = ByteCountFormatter.string(
@@ -235,7 +238,7 @@ class APIClient {
         throw APIError.httpError(httpResponse.statusCode, "Failed to fetch data")
       }
 
-      return data
+      return (data, contentType)
     } catch let error as APIError {
       throw error
     } catch {

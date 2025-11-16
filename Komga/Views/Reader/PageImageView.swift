@@ -8,7 +8,6 @@
 import Photos
 import SDWebImageSwiftUI
 import SwiftUI
-import UIKit
 
 struct PageImageView: View {
   var viewModel: ReaderViewModel

@@ -21,7 +21,6 @@ struct BookReaderView: View {
   @State private var isAtBottom = false
   @State private var isAtEndPage = false
   @State private var showingReadingDirectionPicker = false
-  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
 
   init(bookId: String) {
     self.initialBookId = bookId
@@ -93,7 +92,6 @@ struct BookReaderView: View {
           showingReadingDirectionPicker: $showingReadingDirectionPicker,
           viewModel: viewModel,
           currentBook: currentBook,
-          themeColorOption: themeColorOption,
           onDismiss: { dismiss() }
         )
         .opacity(shouldShowControls ? 1.0 : 0.0)

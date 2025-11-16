@@ -8,7 +8,6 @@
 import ImageIO
 import SDWebImage
 import SwiftUI
-import UIKit
 
 // MARK: - Constants
 private enum Constants {
