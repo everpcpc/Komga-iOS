@@ -225,7 +225,6 @@ struct SeriesDetailView: View {
         series = try await SeriesService.shared.getOneSeries(id: seriesId)
         thumbnail = await seriesViewModel.loadThumbnail(for: seriesId)
       } catch {
-        print("Error loading series: \(error)")
       }
     }
   }

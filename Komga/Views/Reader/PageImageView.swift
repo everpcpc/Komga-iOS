@@ -5,13 +5,15 @@
 //  Created by Komga iOS Client
 //
 
+import SDWebImageSwiftUI
 import SwiftUI
 
 struct PageImageView: View {
   var viewModel: ReaderViewModel
   let pageIndex: Int
 
-  @State private var image: Image?
+  @State private var imageURL: URL?
+  @State private var loadError: String?
   @State private var scale: CGFloat = 1.0
   @State private var lastScale: CGFloat = 1.0
   @State private var offset: CGSize = .zero
@@ -20,10 +22,10 @@ struct PageImageView: View {
   var body: some View {
     GeometryReader { geometry in
       ZStack {
-        if let image = image {
-          image
-            .resizable()
-            .aspectRatio(contentMode: .fit)
+        if let imageURL = imageURL {
+          // Use SDWebImage to load and display (handles both static and animated images)
+          AnimatedImageView(url: imageURL, contentMode: .fit)
+            .frame(width: geometry.size.width, height: geometry.size.height)
             .scaleEffect(scale)
             .offset(offset)
             .gesture(
@@ -78,12 +80,43 @@ struct PageImageView: View {
                 }
               }
             }
+        } else if let error = loadError {
+          // Show error message
+          VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle")
+              .font(.system(size: 48))
+              .foregroundColor(.white.opacity(0.7))
+            Text("Failed to load image")
+              .font(.headline)
+              .foregroundColor(.white)
+            Text(error)
+              .font(.caption)
+              .foregroundColor(.white.opacity(0.7))
+              .multilineTextAlignment(.center)
+              .padding(.horizontal)
+            Button("Retry") {
+              Task {
+                loadError = nil
+                imageURL = await viewModel.getPageImageFileURL(pageIndex: pageIndex)
+                if imageURL == nil {
+                  loadError = "Please check your network connection"
+                }
+              }
+            }
+            .buttonStyle(.borderedProminent)
+            .padding(.top, 8)
+          }
+          .frame(width: geometry.size.width, height: geometry.size.height)
         } else {
-          ProgressView()
-            .tint(.white)
+          // Show loading indicator
+          ZStack(alignment: .center) {
+            ProgressView()
+              .frame(width: geometry.size.width, height: geometry.size.height)
+              .tint(.white)
+              .padding()
+          }
         }
       }
-      .frame(width: geometry.size.width, height: geometry.size.height)
     }
     .task(id: pageIndex) {
       // Reset zoom state when switching pages
@@ -92,9 +125,22 @@ struct PageImageView: View {
       offset = .zero
       lastOffset = .zero
 
-      // Load image (will check cache first: memory -> disk -> network)
-      let loadedImage = await viewModel.loadPageImage(pageIndex: pageIndex)
-      image = loadedImage
+      // Clear previous URL and error
+      imageURL = nil
+      loadError = nil
+
+      // Download to cache if needed, then get file URL
+      // SDWebImage will handle decoding and display
+      imageURL = await viewModel.getPageImageFileURL(pageIndex: pageIndex)
+
+      // If download failed, show error
+      if imageURL == nil {
+        loadError = "Failed to load page image. Please check your network connection."
+      }
+    }
+    .onDisappear {
+      // Clear URL when view disappears
+      imageURL = nil
     }
   }
 }

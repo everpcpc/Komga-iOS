@@ -5,6 +5,8 @@
 //  Created by Komga iOS Client
 //
 
+import ImageIO
+import SDWebImage
 import SwiftUI
 import UIKit
 
@@ -487,62 +489,76 @@ struct WebtoonReaderView: UIViewRepresentable {
         return
       }
 
-      // Try to get image from cache first, otherwise load from network
-      let image: UIImage?
-      let isFromCache = viewModel.pageImageCache.hasImage(
-        forKey: pageIndex, bookId: viewModel.bookId)
-
-      if isFromCache {
-        image = await viewModel.pageImageCache.getUIImage(
-          forKey: pageIndex, bookId: viewModel.bookId)
-      } else {
-        loadingPages.insert(pageIndex)
-        defer { loadingPages.remove(pageIndex) }
-        image = await viewModel.loadPageImageUIImage(pageIndex: pageIndex)
-      }
-
-      guard let image = image else {
-        if !isFromCache {
-          showImageError(for: pageIndex)
-        }
+      // Get file URL (downloads to cache if needed)
+      guard let imageURL = await viewModel.getPageImageFileURL(pageIndex: pageIndex) else {
+        showImageError(for: pageIndex)
         return
       }
 
-      // Process image: calculate height, update cell, and update layout
-      processLoadedImage(pageIndex: pageIndex, image: image, isFromCache: isFromCache)
-    }
+      // Check if already cached
+      let isFromCache = viewModel.pageImageCache.hasImage(
+        forKey: pageIndex, bookId: viewModel.bookId)
 
-    /// Processes a loaded image: calculates height, updates cell, and updates layout
-    @MainActor
-    private func processLoadedImage(pageIndex: Int, image: UIImage, isFromCache: Bool) {
-      let (height, oldHeight) = calculateAndCacheHeight(for: pageIndex, image: image)
+      // Get image size for layout calculation (without fully loading)
+      let imageSize = await getImageSize(from: imageURL)
 
-      // Update visible cell if available
+      // Update cell with URL and size
       if let collectionView = collectionView {
         let indexPath = IndexPath(item: pageIndex, section: 0)
         if let cell = collectionView.cellForItem(at: indexPath) as? WebtoonPageCell {
-          cell.updateImage(image)
+          cell.setImageURL(imageURL, imageSize: imageSize, pageWidth: pageWidth)
         }
       }
 
-      // Update layout to reflect correct height
-      updateLayoutIfNeeded(pageIndex: pageIndex, height: height, oldHeight: oldHeight)
+      // Calculate and cache height
+      if let size = imageSize {
+        let aspectRatio = size.height / size.width
+        let height = pageWidth * aspectRatio
+        let oldHeight = pageHeights[pageIndex] ?? pageWidth
+        pageHeights[pageIndex] = height
 
-      // Try to scroll to initial page if needed (only for newly loaded images)
-      if !isFromCache {
-        tryScrollToInitialPageIfNeeded(pageIndex: pageIndex)
+        // Update layout if height changed
+        updateLayoutIfNeeded(pageIndex: pageIndex, height: height, oldHeight: oldHeight)
+
+        // Try to scroll to initial page if needed (only for newly loaded images)
+        if !isFromCache {
+          tryScrollToInitialPageIfNeeded(pageIndex: pageIndex)
+        }
       }
     }
 
-    /// Calculates and caches height for a page image
-    private func calculateAndCacheHeight(for pageIndex: Int, image: UIImage) -> (
-      height: CGFloat, oldHeight: CGFloat
-    ) {
-      let aspectRatio = image.size.height / image.size.width
-      let height = pageWidth * aspectRatio
-      let oldHeight = pageHeights[pageIndex] ?? pageWidth
-      pageHeights[pageIndex] = height
-      return (height, oldHeight)
+    /// Get image size from URL without fully loading the image
+    private func getImageSize(from url: URL) async -> CGSize? {
+      return await Task.detached {
+        // Try to get from SDWebImage cache first
+        let cacheKey = SDWebImageManager.shared.cacheKey(for: url)
+        if let cachedImage = SDImageCache.shared.imageFromCache(forKey: cacheKey) {
+          return cachedImage.size
+        }
+
+        // If not in SDWebImage cache, try to read from file
+        if url.isFileURL {
+          // Use ImageIO to get image dimensions without decoding
+          guard let data = try? Data(contentsOf: url),
+            let imageSource = CGImageSourceCreateWithData(data as CFData, nil)
+          else {
+            return nil
+          }
+
+          guard
+            let properties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil)
+              as? [String: Any],
+            let width = properties[kCGImagePropertyPixelWidth as String] as? CGFloat,
+            let height = properties[kCGImagePropertyPixelHeight as String] as? CGFloat
+          else {
+            return nil
+          }
+
+          return CGSize(width: width, height: height)
+        }
+
+        return nil
+      }.value
     }
 
     /// Updates layout if height changed significantly
@@ -747,7 +763,7 @@ class WebtoonLayout: UICollectionViewFlowLayout {
 // MARK: - Custom Cell
 
 class WebtoonPageCell: UICollectionViewCell {
-  private let imageView = UIImageView()
+  private let imageView = SDAnimatedImageView()
   private let loadingIndicator = UIActivityIndicatorView(style: .medium)
   private var pageIndex: Int = -1
   private var loadImage: ((Int) async -> Void)?
@@ -786,27 +802,45 @@ class WebtoonPageCell: UICollectionViewCell {
     // Ensure frame is set correctly
     updateFrame()
 
-    if let image = image {
-      imageView.image = image
-      loadingIndicator.stopAnimating()
-      imageView.alpha = 1.0
-    } else {
-      imageView.image = nil
-      imageView.alpha = 0.0
-      loadingIndicator.startAnimating()
-    }
+    // Show loading indicator
+    imageView.image = nil
+    imageView.alpha = 0.0
+    loadingIndicator.startAnimating()
   }
 
-  func updateImage(_ image: UIImage) {
-    imageView.image = image
+  func setImageURL(_ url: URL, imageSize: CGSize?, pageWidth: CGFloat) {
+    // Stop loading indicator
     loadingIndicator.stopAnimating()
 
-    // Force layout update to ensure frame is correct
-    setNeedsLayout()
-    layoutIfNeeded()
+    // Load image using SDWebImage
+    imageView.sd_setImage(
+      with: url,
+      placeholderImage: nil,
+      options: [.retryFailed, .scaleDownLargeImages],
+      context: [
+        .imageScaleDownLimitBytes: 50 * 1024 * 1024
+      ],
+      progress: nil
+    ) { [weak self] image, error, cacheType, imageURL in
+      guard let self = self else { return }
 
-    UIView.animate(withDuration: 0.2) {
-      self.imageView.alpha = 1.0
+      if error != nil {
+        // Handle error
+        self.imageView.image = nil
+        self.imageView.alpha = 0.0
+        self.loadingIndicator.stopAnimating()
+      } else if image != nil {
+        // Image loaded successfully
+        self.loadingIndicator.stopAnimating()
+
+        // Force layout update to ensure frame is correct
+        self.setNeedsLayout()
+        self.layoutIfNeeded()
+
+        UIView.animate(withDuration: 0.2) {
+          self.imageView.alpha = 1.0
+        }
+      }
     }
   }
 
@@ -841,6 +875,8 @@ class WebtoonPageCell: UICollectionViewCell {
 
   override func prepareForReuse() {
     super.prepareForReuse()
+    // Cancel SDWebImage loading
+    imageView.sd_cancelCurrentImageLoad()
     imageView.image = nil
     imageView.alpha = 0.0
     loadingIndicator.stopAnimating()

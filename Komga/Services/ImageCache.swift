@@ -6,21 +6,17 @@
 //
 
 import Foundation
-import ImageIO
+import OSLog
 import SwiftUI
 import UIKit
 
-/// A two-tier cache system: disk cache + memory cache
-/// Disk cache stores raw image data to avoid re-downloading
-/// Memory cache stores decoded images for fast display
+/// Disk cache system for storing raw image data
+/// Used to avoid re-downloading images. Decoding is handled by SDWebImage or on-demand.
 @MainActor
 class ImageCache {
-  // Memory cache (LRU)
-  private var memoryCache: [Int: CacheEntry] = [:]
-  private var accessOrder: [Int] = []  // LRU order: most recently used at the end
-  private let maxMemoryCount: Int
-  private let maxMemoryBytes: Int
-  private var currentMemoryBytes: Int = 0
+  // Logger for cache operations
+  private let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "Komga", category: "ImageCache")
 
   // Disk cache
   private let diskCacheURL: URL
@@ -75,21 +71,7 @@ class ImageCache {
     }
   }
 
-  struct CacheEntry {
-    let image: Image
-    var lastAccessed: Date
-
-    var memorySize: Int {
-      // Estimate memory size: width * height * 4 bytes (RGBA)
-      // For SwiftUI Image, we estimate based on typical display size
-      // This is approximate since SwiftUI Image doesn't expose size directly
-      return 4 * 1024 * 1024  // Estimate 4MB per image
-    }
-  }
-
-  init(maxMemoryCount: Int = 50, maxMemoryMB: Int = 200, maxDiskCacheMB: Int = 2048) {
-    self.maxMemoryCount = maxMemoryCount
-    self.maxMemoryBytes = maxMemoryMB * 1024 * 1024
+  init(maxDiskCacheMB: Int = 2048) {
     self.maxDiskCacheSizeMB = maxDiskCacheMB
 
     // Setup disk cache directory
@@ -99,73 +81,21 @@ class ImageCache {
     // Create cache directory if needed
     try? fileManager.createDirectory(at: diskCacheURL, withIntermediateDirectories: true)
 
-    // Listen for memory warnings
-    NotificationCenter.default.addObserver(
-      self,
-      selector: #selector(handleMemoryWarning),
-      name: UIApplication.didReceiveMemoryWarningNotification,
-      object: nil
-    )
-
     // Clean up old disk cache on init
     Task {
       await cleanupDiskCache()
     }
   }
 
-  deinit {
-    NotificationCenter.default.removeObserver(self)
-  }
-
   // MARK: - Public API
 
-  /// Get image from cache (memory first, then disk)
-  func getImage(forKey key: Int, bookId: String) async -> Image? {
-    // Try memory cache first
-    if let entry = memoryCache[key] {
-      // Update access order and timestamp
-      updateAccessOrder(key: key)
-      memoryCache[key] = CacheEntry(image: entry.image, lastAccessed: Date())
-      return entry.image
-    }
-
-    // Try disk cache
-    if let image = await loadFromDisk(key: key, bookId: bookId) {
-      // Load into memory cache
-      addToMemoryCache(key: key, entry: CacheEntry(image: image, lastAccessed: Date()))
-      return image
-    }
-
-    return nil
-  }
-
-  /// Get raw image data from disk cache (for re-decoding)
-  func getImageData(forKey key: Int, bookId: String) async -> Data? {
-    let fileURL = diskCacheFileURL(key: key, bookId: bookId)
-    return try? Data(contentsOf: fileURL)
-  }
-
-  /// Check if image exists in cache (memory or disk)
+  /// Check if image exists in disk cache
   func hasImage(forKey key: Int, bookId: String) -> Bool {
-    // Check memory cache
-    if memoryCache[key] != nil {
-      return true
-    }
-    // Check disk cache
     let fileURL = diskCacheFileURL(key: key, bookId: bookId)
     return fileManager.fileExists(atPath: fileURL.path)
   }
 
-  /// Get UIImage from cache (for UIKit compatibility)
-  func getUIImage(forKey key: Int, bookId: String) async -> UIImage? {
-    // Try to get from disk cache and decode
-    if let data = await getImageData(forKey: key, bookId: bookId) {
-      return await decodeImage(from: data)
-    }
-    return nil
-  }
-
-  /// Store image data to disk cache and optionally to memory cache
+  /// Store image data to disk cache
   func storeImageData(_ data: Data, forKey key: Int, bookId: String) async {
     let fileURL = diskCacheFileURL(key: key, bookId: bookId)
     let oldFileSize: Int64?
@@ -204,7 +134,21 @@ class ImageCache {
     }
 
     let fileExisted = fileManager.fileExists(atPath: fileURL.path)
-    try? data.write(to: fileURL)
+
+    // Write data to disk cache
+    do {
+      try data.write(to: fileURL)
+    } catch {
+      // Log write failure
+      let dataSize = ByteCountFormatter.string(
+        fromByteCount: Int64(data.count), countStyle: .binary)
+      logger.error(
+        "❌ Failed to write image cache: page_\(key) for bookId \(bookId) (\(dataSize)): \(error.localizedDescription)"
+      )
+      // If write fails, don't update cache size/count
+      // This ensures cache state remains consistent
+      return
+    }
 
     // Update cached size and count (only if cache is valid, otherwise it will be recalculated on next get)
     await Self.cacheSizeActor.updateSize(delta: newFileSize - (oldFileSize ?? 0))
@@ -218,32 +162,6 @@ class ImageCache {
     if isValidAfter, let size = sizeAfterStore, size > maxSize {
       // Cache exceeded limit after storing, trigger immediate cleanup
       triggerCleanupIfNeeded()
-    }
-  }
-
-  /// Store decoded image to memory cache
-  func storeImage(_ image: Image, forKey key: Int) {
-    addToMemoryCache(key: key, entry: CacheEntry(image: image, lastAccessed: Date()))
-  }
-
-  func remove(_ key: Int) {
-    evictFromMemory(key: key)
-  }
-
-  func removeAll() {
-    memoryCache.removeAll()
-    accessOrder.removeAll()
-    currentMemoryBytes = 0
-  }
-
-  func removePagesNotInRange(_ range: Range<Int>, keepCount: Int = 3) {
-    // Keep pages in range and a few pages outside the range
-    let keepRange =
-      max(0, range.lowerBound - keepCount)..<min(Int.max, range.upperBound + keepCount)
-
-    let keysToRemove = memoryCache.keys.filter { !keepRange.contains($0) }
-    for key in keysToRemove {
-      evictFromMemory(key: key)
     }
   }
 
@@ -449,151 +367,6 @@ class ImageCache {
     return bookCacheDir.appendingPathComponent("page_\(key).data")
   }
 
-  private func loadFromDisk(key: Int, bookId: String) async -> Image? {
-    let fileURL = diskCacheFileURL(key: key, bookId: bookId)
-    guard fileManager.fileExists(atPath: fileURL.path),
-      let data = try? Data(contentsOf: fileURL),
-      let uiImage = await decodeImage(from: data)
-    else {
-      return nil
-    }
-
-    return Image(uiImage: uiImage)
-  }
-
-  func decodeImage(from data: Data) async -> UIImage? {
-    // Validate data before decoding
-    guard data.count > 0 else { return nil }
-
-    // Check for minimum valid image data size (at least 8 bytes for basic image headers)
-    guard data.count >= 8 else { return nil }
-
-    // Get screen size on main thread before background processing
-    let screenSize = await MainActor.run {
-      UIScreen.main.bounds.size
-    }
-    let screenScale = await MainActor.run {
-      UIScreen.main.scale
-    }
-
-    return await Task.detached(priority: .userInitiated) {
-      // Use ImageIO for safer decoding to avoid EOF warnings
-      guard let imageSource = CGImageSourceCreateWithData(data as CFData, nil),
-        let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil)
-      else {
-        // Fallback to UIImage if ImageIO fails
-        return UIImage(data: data)
-      }
-
-      let image = UIImage(cgImage: cgImage)
-
-      // Use pre-fetched screen size for downscaling
-      let maxDisplaySize = CGSize(
-        width: screenSize.width * screenScale * 2,
-        height: screenSize.height * screenScale * 2
-      )
-
-      // Downscale if needed
-      // For long strip images (webtoon style), we should only scale based on width
-      // to preserve the aspect ratio and avoid over-shrinking
-      if image.size.width > maxDisplaySize.width || image.size.height > maxDisplaySize.height {
-        // Calculate scale for width and height separately
-        let widthScale =
-          image.size.width > maxDisplaySize.width
-          ? maxDisplaySize.width / image.size.width
-          : 1.0
-        let heightScale =
-          image.size.height > maxDisplaySize.height
-          ? maxDisplaySize.height / image.size.height
-          : 1.0
-
-        // For long strip images, use the scale that prevents over-shrinking
-        // If image is much taller than wide (webtoon), prioritize width scaling
-        // If image is much wider than tall, prioritize height scaling
-        let imageAspectRatio = image.size.width / image.size.height
-
-        let scale: CGFloat
-        if imageAspectRatio < 0.5 {
-          // Very tall image (webtoon style): scale by width only
-          scale = widthScale
-        } else if imageAspectRatio > 2.0 {
-          // Very wide image: scale by height only
-          scale = heightScale
-        } else {
-          // Normal aspect ratio: use min to fit both dimensions
-          scale = min(widthScale, heightScale)
-        }
-
-        let scaledSize = CGSize(
-          width: image.size.width * scale,
-          height: image.size.height * scale
-        )
-
-        UIGraphicsBeginImageContextWithOptions(scaledSize, false, 1.0)
-        image.draw(in: CGRect(origin: .zero, size: scaledSize))
-        let scaledImage = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-
-        return scaledImage ?? image
-      }
-
-      // Decode image
-      UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
-      image.draw(at: .zero)
-      let decodedImage = UIGraphicsGetImageFromCurrentImageContext()
-      UIGraphicsEndImageContext()
-
-      return decodedImage ?? image
-    }.value
-  }
-
-  private func addToMemoryCache(key: Int, entry: CacheEntry) {
-    let entrySize = entry.memorySize
-
-    // Remove existing entry if present
-    if let existingEntry = memoryCache[key] {
-      currentMemoryBytes -= existingEntry.memorySize
-      if let index = accessOrder.firstIndex(of: key) {
-        accessOrder.remove(at: index)
-      }
-    }
-
-    // Check if we need to evict entries
-    while !accessOrder.isEmpty
-      && (memoryCache.count >= maxMemoryCount || currentMemoryBytes + entrySize > maxMemoryBytes)
-    {
-      if let lruKey = accessOrder.first {
-        evictFromMemory(key: lruKey)
-      } else {
-        break
-      }
-    }
-
-    // Add new entry
-    memoryCache[key] = entry
-    accessOrder.append(key)
-    currentMemoryBytes += entrySize
-  }
-
-  private func evictFromMemory(key: Int) {
-    guard let entry = memoryCache[key] else {
-      return
-    }
-
-    currentMemoryBytes -= entry.memorySize
-    memoryCache.removeValue(forKey: key)
-    if let index = accessOrder.firstIndex(of: key) {
-      accessOrder.remove(at: index)
-    }
-  }
-
-  private func updateAccessOrder(key: Int) {
-    if let index = accessOrder.firstIndex(of: key) {
-      accessOrder.remove(at: index)
-    }
-    accessOrder.append(key)
-  }
-
   private func cleanupDiskCache() async {
     // Calculate total disk cache size and clean up in background task
     let maxCacheSizeMB = Self.getMaxDiskCacheSizeMB()
@@ -606,23 +379,4 @@ class ImageCache {
     }.value
   }
 
-  @objc private func handleMemoryWarning() {
-    // On memory warning, reduce cache to half
-    let targetCount = max(3, maxMemoryCount / 2)
-    while memoryCache.count > targetCount {
-      if let lruKey = accessOrder.first {
-        evictFromMemory(key: lruKey)
-      } else {
-        break
-      }
-    }
-  }
-
-  var memoryCacheCount: Int {
-    memoryCache.count
-  }
-
-  var memoryUsageMB: Double {
-    Double(currentMemoryBytes) / (1024 * 1024)
-  }
 }

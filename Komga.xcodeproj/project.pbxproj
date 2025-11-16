@@ -10,6 +10,25 @@
 		192E6F7D2EC4B4E20040D165 /* Komga.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Komga.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		2613A3AD30B447F5930F404F87737776 /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SDWebImage/SDWebImageSwiftUI.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+		E33A9BBEAD1748D5A8E6C01BF9317DFD /* XCRemoteSwiftPackageReference "SDWebImageWebPCoder" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SDWebImage/SDWebImageWebPCoder.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.1.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
 		19BDCCB02EC5A7AB00CF5F26 /* Exceptions for "Komga" folder in "Komga" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
@@ -46,6 +65,7 @@
 			isa = PBXGroup;
 			children = (
 				192E6F7F2EC4B4E20040D165 /* Komga */,
+				19FDEDCF2EC9DCF000F7C3D9 /* Frameworks */,
 				192E6F7E2EC4B4E20040D165 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -56,6 +76,13 @@
 				192E6F7D2EC4B4E20040D165 /* Komga.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		19FDEDCF2EC9DCF000F7C3D9 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -78,6 +105,9 @@
 			);
 			name = Komga;
 			packageProductDependencies = (
+				6ACB831E4AA344E7B2C3D4DB1846B6A4 /* SDWebImageSwiftUI */,
+				585D1923D403492AAB307C02B56DBF71 /* SDWebImage */,
+				366522FBE7874AE69F5766E100695813 /* SDWebImageWebPCoder */,
 			);
 			productName = Komga;
 			productReference = 192E6F7D2EC4B4E20040D165 /* Komga.app */;
@@ -108,6 +138,10 @@
 			mainGroup = 192E6F742EC4B4E20040D165;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
+			packageReferences = (
+				2613A3AD30B447F5930F404F87737776 /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */,
+				E33A9BBEAD1748D5A8E6C01BF9317DFD /* XCRemoteSwiftPackageReference "SDWebImageWebPCoder" */,
+			);
 			productRefGroup = 192E6F7E2EC4B4E20040D165 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -116,6 +150,24 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		585D1923D403492AAB307C02B56DBF71 /* SDWebImage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2613A3AD30B447F5930F404F87737776 /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */;
+			productName = SDWebImage;
+		};
+		6ACB831E4AA344E7B2C3D4DB1846B6A4 /* SDWebImageSwiftUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2613A3AD30B447F5930F404F87737776 /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */;
+			productName = SDWebImageSwiftUI;
+		};
+		366522FBE7874AE69F5766E100695813 /* SDWebImageWebPCoder */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E33A9BBEAD1748D5A8E6C01BF9317DFD /* XCRemoteSwiftPackageReference "SDWebImageWebPCoder" */;
+			productName = SDWebImageWebPCoder;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin PBXResourcesBuildPhase section */
 		192E6F7B2EC4B4E20040D165 /* Resources */ = {
