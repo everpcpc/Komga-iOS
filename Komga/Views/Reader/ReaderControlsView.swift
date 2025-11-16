@@ -27,7 +27,7 @@ struct ReaderControlsView: View {
   var body: some View {
     VStack {
       // Top bar
-      VStack(spacing: 8) {
+      VStack(spacing: 12) {
         HStack {
           Button {
             onDismiss()
@@ -39,82 +39,24 @@ struct ReaderControlsView: View {
               .background(themeColorOption.color.opacity(0.8))
               .clipShape(Circle())
           }
-          .frame(minWidth: 44, minHeight: 44)
+          .frame(minWidth: 40, minHeight: 40)
           .contentShape(Rectangle())
 
           Spacer()
 
-          // Page count in the middle
-          Text("\(viewModel.currentPage + 1) / \(viewModel.pages.count)")
-            .foregroundColor(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(themeColorOption.color.opacity(0.8))
-            .cornerRadius(20)
-
-          Spacer()
-
-          // Action buttons
-          HStack(spacing: 12) {
-            // Share button
-            if let shareURL = shareURL {
-              ShareLink(item: shareURL) {
-                Image(systemName: "square.and.arrow.up")
-                  .font(.title3)
-                  .foregroundColor(.white)
-                  .padding()
-                  .background(themeColorOption.color.opacity(0.8))
-                  .clipShape(Circle())
-              }
-              .frame(minWidth: 44, minHeight: 44)
-              .contentShape(Rectangle())
-            } else {
-              Button {
-                Task {
-                  await prepareShare()
-                }
-              } label: {
-                Image(systemName: "square.and.arrow.up")
-                  .font(.title3)
-                  .foregroundColor(.white)
-                  .padding()
-                  .background(themeColorOption.color.opacity(0.8))
-                  .clipShape(Circle())
-              }
-              .frame(minWidth: 44, minHeight: 44)
-              .contentShape(Rectangle())
-            }
-
-            // Save button
-            Button {
-              Task {
-                await saveCurrentPage()
-              }
-            } label: {
-              Image(systemName: "square.and.arrow.down")
-                .font(.title3)
-                .foregroundColor(.white)
-                .padding()
-                .background(themeColorOption.color.opacity(0.8))
-                .clipShape(Circle())
-            }
-            .frame(minWidth: 44, minHeight: 44)
-            .contentShape(Rectangle())
-
-            // Display mode toggle button
-            Button {
-              showingReadingDirectionPicker = true
-            } label: {
-              Image(systemName: viewModel.readingDirection.icon)
-                .font(.title3)
-                .foregroundColor(.white)
-                .padding()
-                .background(themeColorOption.color.opacity(0.8))
-                .clipShape(Circle())
-            }
-            .frame(minWidth: 44, minHeight: 44)
-            .contentShape(Rectangle())
+          // Display mode toggle button
+          Button {
+            showingReadingDirectionPicker = true
+          } label: {
+            Image(systemName: viewModel.readingDirection.icon)
+              .font(.title3)
+              .foregroundColor(.white)
+              .padding()
+              .background(themeColorOption.color.opacity(0.8))
+              .clipShape(Circle())
           }
+          .frame(minWidth: 40, minHeight: 40)
+          .contentShape(Rectangle())
         }
         .padding(.horizontal)
       }
@@ -140,7 +82,67 @@ struct ReaderControlsView: View {
       Spacer()
 
       // Bottom slider
-      VStack {
+      VStack(spacing: 12) {
+        HStack(spacing: 12) {
+          // Share button
+          if let shareURL = shareURL {
+            ShareLink(item: shareURL) {
+              Image(systemName: "square.and.arrow.up.circle")
+                .font(.title3)
+                .foregroundColor(.white)
+                .padding()
+                .background(themeColorOption.color.opacity(0.8))
+                .clipShape(Circle())
+            }
+            .frame(minWidth: 40, minHeight: 40)
+            .contentShape(Rectangle())
+          } else {
+            Button {
+              Task {
+                await prepareShare()
+              }
+            } label: {
+              Image(systemName: "square.and.arrow.up.circle")
+                .font(.title3)
+                .foregroundColor(.white)
+                .padding()
+                .background(themeColorOption.color.opacity(0.8))
+                .clipShape(Circle())
+            }
+            .frame(minWidth: 40, minHeight: 40)
+            .contentShape(Rectangle())
+          }
+
+          Spacer()
+
+          // Page count
+          Text("\(viewModel.currentPage + 1) / \(viewModel.pages.count)")
+            .foregroundColor(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(themeColorOption.color.opacity(0.8))
+            .cornerRadius(20)
+            .monospacedDigit()
+
+          Spacer()
+
+          // Save button
+          Button {
+            Task {
+              await saveCurrentPage()
+            }
+          } label: {
+            Image(systemName: "photo.badge.arrow.down.fill")
+              .font(.title3)
+              .foregroundColor(.white)
+              .padding()
+              .background(themeColorOption.color.opacity(0.8))
+              .clipShape(Circle())
+          }
+          .frame(minWidth: 40, minHeight: 40)
+          .contentShape(Rectangle())
+        }
+
         ProgressView(
           value: Double(min(viewModel.currentPage + 1, viewModel.pages.count)),
           total: Double(viewModel.pages.count)

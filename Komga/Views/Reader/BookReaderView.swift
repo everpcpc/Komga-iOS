@@ -28,6 +28,10 @@ struct BookReaderView: View {
     self._currentBookId = State(initialValue: bookId)
   }
 
+  var shouldShowControls: Bool {
+    showingControls || isAtEndPage || (viewModel.readingDirection == .webtoon && isAtBottom)
+  }
+
   var body: some View {
     ZStack {
       Color.black.ignoresSafeArea()
@@ -83,18 +87,17 @@ struct BookReaderView: View {
           }
         }
 
-        // Controls overlay (always show when at end page or webtoon at bottom)
-        if showingControls || isAtEndPage || (viewModel.readingDirection == .webtoon && isAtBottom)
-        {
-          ReaderControlsView(
-            showingControls: $showingControls,
-            showingReadingDirectionPicker: $showingReadingDirectionPicker,
-            viewModel: viewModel,
-            currentBook: currentBook,
-            themeColorOption: themeColorOption,
-            onDismiss: { dismiss() }
-          )
-        }
+        // Controls overlay (always rendered, use opacity to control visibility)
+        ReaderControlsView(
+          showingControls: $showingControls,
+          showingReadingDirectionPicker: $showingReadingDirectionPicker,
+          viewModel: viewModel,
+          currentBook: currentBook,
+          themeColorOption: themeColorOption,
+          onDismiss: { dismiss() }
+        )
+        .opacity(shouldShowControls ? 1.0 : 0.0)
+        .allowsHitTesting(shouldShowControls)
       }
     }
     .statusBar(hidden: !showingControls)
