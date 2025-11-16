@@ -22,7 +22,6 @@ struct BookReaderView: View {
   @State private var isAtEndPage = false
   @State private var showingReadingDirectionPicker = false
   @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
-  @AppStorage("webtoonPageWidthPercentage") private var webtoonPageWidthPercentage: Double = 100.0
 
   init(bookId: String) {
     self.initialBookId = bookId
@@ -65,7 +64,15 @@ struct BookReaderView: View {
               toggleControls: toggleControls
             )
           case .webtoon:
-            webtoonPageView
+            WebtoonPageView(
+              viewModel: viewModel,
+              currentPage: currentPageBinding,
+              isAtBottom: $isAtBottom,
+              nextBook: nextBook,
+              onDismiss: { dismiss() },
+              onNextBook: { openNextBook(nextBookId: $0) },
+              toggleControls: toggleControls
+            )
           }
         }
         .onChange(of: viewModel.currentPage) { _, _ in
@@ -161,47 +168,6 @@ struct BookReaderView: View {
         }
       }
     )
-  }
-
-  // Webtoon page view (WEBTOON - continuous vertical scroll)
-  private var webtoonPageView: some View {
-    let vm = viewModel
-    return GeometryReader { geometry in
-      let screenWidth = geometry.size.width
-      let pageWidth = screenWidth * (webtoonPageWidthPercentage / 100.0)
-
-      ZStack {
-        WebtoonReaderView(
-          pages: vm.pages,
-          currentPage: currentPageBinding,
-          viewModel: vm,
-          pageWidth: pageWidth,
-          onPageChange: { pageIndex in
-            vm.currentPage = pageIndex
-          },
-          onCenterTap: {
-            toggleControls()
-          },
-          onScrollToBottom: { atBottom in
-            isAtBottom = atBottom
-          }
-        )
-
-        if isAtBottom {
-          VStack {
-            Spacer()
-            EndPageView(
-              nextBook: nextBook,
-              onDismiss: { dismiss() },
-              onNextBook: { openNextBook(nextBookId: $0) }
-            )
-            .padding(.bottom, 120)
-          }
-          .transition(.opacity)
-        }
-      }
-      .ignoresSafeArea()
-    }
   }
 
   private func goToNextPage() {

@@ -27,27 +27,10 @@ private enum Constants {
   static let centerAreaMax: CGFloat = 0.7
 }
 
-// Wrapper class to avoid closure capture issues
-@MainActor
-class ImageLoader: @unchecked Sendable {
-  weak var viewModel: ReaderViewModel?
-
-  init(viewModel: ReaderViewModel) {
-    self.viewModel = viewModel
-  }
-
-  func loadImage(_ pageIndex: Int) async -> UIImage? {
-    guard let viewModel = viewModel else {
-      return nil
-    }
-    return await viewModel.loadPageImageUIImage(pageIndex: pageIndex)
-  }
-}
-
 struct WebtoonReaderView: UIViewRepresentable {
   let pages: [BookPage]
   @Binding var currentPage: Int
-  let imageLoader: ImageLoader
+  let viewModel: ReaderViewModel
   let onPageChange: ((Int) -> Void)?
   let onCenterTap: (() -> Void)?
   let onScrollToBottom: ((Bool) -> Void)?
@@ -62,7 +45,7 @@ struct WebtoonReaderView: UIViewRepresentable {
   ) {
     self.pages = pages
     self._currentPage = currentPage
-    self.imageLoader = ImageLoader(viewModel: viewModel)
+    self.viewModel = viewModel
     self.pageWidth = pageWidth
     self.onPageChange = onPageChange
     self.onCenterTap = onCenterTap
@@ -107,7 +90,7 @@ struct WebtoonReaderView: UIViewRepresentable {
     context.coordinator.update(
       pages: pages,
       currentPage: currentPage,
-      imageLoader: imageLoader,
+      viewModel: viewModel,
       onPageChange: onPageChange,
       onCenterTap: onCenterTap,
       onScrollToBottom: onScrollToBottom,
@@ -128,14 +111,13 @@ struct WebtoonReaderView: UIViewRepresentable {
     var layout: WebtoonLayout?
     var pages: [BookPage] = []
     var currentPage: Int = 0
-    var imageLoader: ImageLoader?
+    weak var viewModel: ReaderViewModel?
     var onPageChange: ((Int) -> Void)?
     var onCenterTap: (() -> Void)?
     var onScrollToBottom: ((Bool) -> Void)?
     var lastPagesCount: Int = 0
     var lastExternalCurrentPage: Int = -1
     var isUserScrolling: Bool = false
-    var isProgrammaticScrolling: Bool = false
     var hasScrolledToInitialPage: Bool = false
     var lastPreloadTime: Date?
     var pageWidth: CGFloat = 0
@@ -153,7 +135,7 @@ struct WebtoonReaderView: UIViewRepresentable {
       self.pages = parent.pages
       self.currentPage = parent.currentPage
       self.lastExternalCurrentPage = parent.currentPage
-      self.imageLoader = parent.imageLoader
+      self.viewModel = parent.viewModel
       self.onPageChange = parent.onPageChange
       self.onCenterTap = parent.onCenterTap
       self.onScrollToBottom = parent.onScrollToBottom
@@ -210,7 +192,7 @@ struct WebtoonReaderView: UIViewRepresentable {
     func update(
       pages: [BookPage],
       currentPage: Int,
-      imageLoader: ImageLoader,
+      viewModel: ReaderViewModel,
       onPageChange: ((Int) -> Void)?,
       onCenterTap: (() -> Void)?,
       onScrollToBottom: ((Bool) -> Void)?,
@@ -219,7 +201,7 @@ struct WebtoonReaderView: UIViewRepresentable {
     ) {
       self.pages = pages
       self.currentPage = currentPage
-      self.imageLoader = imageLoader
+      self.viewModel = viewModel
       self.onPageChange = onPageChange
       self.onCenterTap = onCenterTap
       self.onScrollToBottom = onScrollToBottom
@@ -358,34 +340,15 @@ struct WebtoonReaderView: UIViewRepresentable {
 
       let pageIndex = indexPath.item
 
-      // Check if image is cached (synchronously check disk cache existence)
-      let cachedImage: UIImage? = nil  // Will be loaded asynchronously if cached
-      if let viewModel = imageLoader?.viewModel,
-        viewModel.pageImageCache.hasImage(forKey: pageIndex, bookId: viewModel.bookId)
-      {
-        // Load from cache asynchronously
-        Task { @MainActor [weak viewModel, weak collectionView] in
-          guard let viewModel = viewModel, let collectionView = collectionView else { return }
-          if let image = await viewModel.pageImageCache.getUIImage(
-            forKey: pageIndex, bookId: viewModel.bookId)
-          {
-            let indexPath = IndexPath(item: pageIndex, section: 0)
-            if let cell = collectionView.cellForItem(at: indexPath) as? WebtoonPageCell {
-              cell.updateImage(image)
-            }
-          }
-        }
-      } else {
-        // Not cached, load it
-        Task { @MainActor [weak self] in
-          guard let self = self else { return }
-          await self.loadImageForPage(pageIndex)
-        }
+      // Load image asynchronously (loadImageForPage handles both cached and uncached images)
+      Task { @MainActor [weak self] in
+        guard let self = self else { return }
+        await self.loadImageForPage(pageIndex)
       }
 
       cell.configure(
         pageIndex: pageIndex,
-        image: cachedImage,
+        image: nil,
         loadImage: { [weak self] index in
           guard let self = self else { return }
           Task { @MainActor [weak self] in
@@ -413,11 +376,6 @@ struct WebtoonReaderView: UIViewRepresentable {
         return CGSize(width: pageWidth, height: height)
       }
 
-      // If we have the image, calculate height from aspect ratio
-      // Note: We can't directly get UIImage from cache here synchronously,
-      // so we'll rely on pageHeights cache which is updated when image loads
-      // This is a fallback for when height hasn't been calculated yet
-
       // Default height (will be updated when image loads)
       return CGSize(width: pageWidth, height: pageWidth)
     }
@@ -428,7 +386,7 @@ struct WebtoonReaderView: UIViewRepresentable {
       _ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell,
       forItemAt indexPath: IndexPath
     ) {
-      // Standard implementation - no special handling needed
+      // Cell frame will be updated in layoutSubviews
     }
 
     func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
@@ -474,10 +432,6 @@ struct WebtoonReaderView: UIViewRepresentable {
     func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
       isUserScrolling = false
       checkIfAtBottom(scrollView)
-      // Delay clearing programmatic scrolling flag to prevent updateUIView from triggering additional scroll
-      executeAfterDelay(0.1) { [weak self] in
-        self?.isProgrammaticScrolling = false
-      }
       updateCurrentPage()
       preloadNearbyPages()
     }
@@ -528,51 +482,56 @@ struct WebtoonReaderView: UIViewRepresentable {
     @MainActor
     func loadImageForPage(_ pageIndex: Int) async {
       guard isValidPageIndex(pageIndex),
-        let imageLoader = imageLoader,
-        let viewModel = imageLoader.viewModel
+        let viewModel = viewModel
       else {
         return
       }
 
-      // Check if already cached
-      let hasCached = viewModel.pageImageCache.hasImage(forKey: pageIndex, bookId: viewModel.bookId)
-      if hasCached {
-        // Image already cached, update cell if visible
-        if let collectionView = collectionView,
-          let image = await viewModel.pageImageCache.getUIImage(
-            forKey: pageIndex, bookId: viewModel.bookId)
-        {
-          let indexPath = IndexPath(item: pageIndex, section: 0)
-          if let cell = collectionView.cellForItem(at: indexPath) as? WebtoonPageCell {
-            cell.updateImage(image)
-          }
+      // Try to get image from cache first, otherwise load from network
+      let image: UIImage?
+      let isFromCache = viewModel.pageImageCache.hasImage(
+        forKey: pageIndex, bookId: viewModel.bookId)
+
+      if isFromCache {
+        image = await viewModel.pageImageCache.getUIImage(
+          forKey: pageIndex, bookId: viewModel.bookId)
+      } else {
+        loadingPages.insert(pageIndex)
+        defer { loadingPages.remove(pageIndex) }
+        image = await viewModel.loadPageImageUIImage(pageIndex: pageIndex)
+      }
+
+      guard let image = image else {
+        if !isFromCache {
+          showImageError(for: pageIndex)
         }
         return
       }
 
-      loadingPages.insert(pageIndex)
-      defer { loadingPages.remove(pageIndex) }
+      // Process image: calculate height, update cell, and update layout
+      processLoadedImage(pageIndex: pageIndex, image: image, isFromCache: isFromCache)
+    }
 
-      guard let image = await imageLoader.loadImage(pageIndex) else {
-        showImageError(for: pageIndex)
-        return
-      }
-
-      // Image is now cached in viewModel.pageImageCache
+    /// Processes a loaded image: calculates height, updates cell, and updates layout
+    @MainActor
+    private func processLoadedImage(pageIndex: Int, image: UIImage, isFromCache: Bool) {
       let (height, oldHeight) = calculateAndCacheHeight(for: pageIndex, image: image)
 
-      // Update visible cell immediately with correct width
+      // Update visible cell if available
       if let collectionView = collectionView {
         let indexPath = IndexPath(item: pageIndex, section: 0)
-        let isVisible = collectionView.indexPathsForVisibleItems.contains(indexPath)
-
-        if isVisible, let cell = collectionView.cellForItem(at: indexPath) as? WebtoonPageCell {
+        if let cell = collectionView.cellForItem(at: indexPath) as? WebtoonPageCell {
           cell.updateImage(image)
         }
       }
 
+      // Update layout to reflect correct height
       updateLayoutIfNeeded(pageIndex: pageIndex, height: height, oldHeight: oldHeight)
-      tryScrollToInitialPageIfNeeded(pageIndex: pageIndex)
+
+      // Try to scroll to initial page if needed (only for newly loaded images)
+      if !isFromCache {
+        tryScrollToInitialPageIfNeeded(pageIndex: pageIndex)
+      }
     }
 
     /// Calculates and caches height for a page image
@@ -590,18 +549,23 @@ struct WebtoonReaderView: UIViewRepresentable {
     private func updateLayoutIfNeeded(pageIndex: Int, height: CGFloat, oldHeight: CGFloat) {
       let heightDiff = abs(height - oldHeight)
 
-      // Always update layout for visible cells to ensure correct width
-      // This is especially important during fast scrolling
       if let collectionView = collectionView, let layout = layout {
         let indexPath = IndexPath(item: pageIndex, section: 0)
         let isVisible = collectionView.indexPathsForVisibleItems.contains(indexPath)
 
         if isVisible {
-          // For visible cells, invalidate layout to ensure correct sizing
+          // For visible cells, always invalidate layout to ensure correct sizing
           layout.invalidateLayout()
           collectionView.layoutIfNeeded()
 
-          // Width is set when image loads, no need to adjust here
+          // Force cell to update its frame after layout
+          if let cell = collectionView.cellForItem(at: indexPath) as? WebtoonPageCell {
+            DispatchQueue.main.async {
+              cell.setNeedsLayout()
+              cell.layoutIfNeeded()
+              cell.updateFrame()
+            }
+          }
         } else if heightDiff > Constants.heightChangeThreshold {
           // For non-visible cells, only update if height changed significantly
           if !isUserScrolling {
@@ -668,13 +632,15 @@ struct WebtoonReaderView: UIViewRepresentable {
       let maxVisible = visibleIndices.max() ?? pages.count - 1
 
       // Preload nearby pages (reduced from 3 to 2 to save memory)
-      if let viewModel = imageLoader?.viewModel {
-        for i in max(0, minVisible - 2)...min(pages.count - 1, maxVisible + 2) {
+      // Access viewModel in MainActor context to ensure thread safety
+      Task { @MainActor [weak self] in
+        guard let self = self,
+          let viewModel = self.viewModel
+        else { return }
+
+        for i in max(0, minVisible - 2)...min(self.pages.count - 1, maxVisible + 2) {
           if !viewModel.pageImageCache.hasImage(forKey: i, bookId: viewModel.bookId) {
-            Task { @MainActor [weak self] in
-              guard let self = self else { return }
-              await self.loadImageForPage(i)
-            }
+            await self.loadImageForPage(i)
           }
         }
       }
@@ -747,7 +713,6 @@ struct WebtoonReaderView: UIViewRepresentable {
 
     /// Scrolls up
     private func scrollUp(collectionView: UICollectionView, screenHeight: CGFloat) {
-      isProgrammaticScrolling = true
       let currentOffset = collectionView.contentOffset.y
       let scrollAmount = screenHeight * Constants.scrollAmountMultiplier
       let targetOffset = max(currentOffset - scrollAmount, 0)
@@ -756,7 +721,6 @@ struct WebtoonReaderView: UIViewRepresentable {
 
     /// Scrolls down
     private func scrollDown(collectionView: UICollectionView, screenHeight: CGFloat) {
-      isProgrammaticScrolling = true
       let currentOffset = collectionView.contentOffset.y
       let scrollAmount = screenHeight * Constants.scrollAmountMultiplier
       let targetOffset = min(
@@ -800,25 +764,17 @@ class WebtoonPageCell: UICollectionViewCell {
   private func setupUI() {
     contentView.backgroundColor = .black
 
+    // Use scaleAspectFit to maintain aspect ratio while filling width
+    // The cell height is calculated based on image aspect ratio, so this should work
     imageView.contentMode = .scaleAspectFit
     imageView.backgroundColor = .black
-    imageView.clipsToBounds = true
-    imageView.translatesAutoresizingMaskIntoConstraints = false
+    imageView.clipsToBounds = false  // Don't clip, let image fill the space
+    // Use frame-based layout - will be set in layoutSubviews
     contentView.addSubview(imageView)
 
     loadingIndicator.color = .white
-    loadingIndicator.translatesAutoresizingMaskIntoConstraints = false
+    loadingIndicator.hidesWhenStopped = true
     contentView.addSubview(loadingIndicator)
-
-    NSLayoutConstraint.activate([
-      imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
-      imageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-      imageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-      imageView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
-
-      loadingIndicator.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-      loadingIndicator.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-    ])
   }
 
   func configure(
@@ -827,26 +783,46 @@ class WebtoonPageCell: UICollectionViewCell {
     self.pageIndex = pageIndex
     self.loadImage = loadImage
 
+    // Ensure frame is set correctly
+    updateFrame()
+
     if let image = image {
       imageView.image = image
       loadingIndicator.stopAnimating()
-      loadingIndicator.isHidden = true
       imageView.alpha = 1.0
     } else {
       imageView.image = nil
       imageView.alpha = 0.0
       loadingIndicator.startAnimating()
-      loadingIndicator.isHidden = false
     }
   }
 
   func updateImage(_ image: UIImage) {
     imageView.image = image
     loadingIndicator.stopAnimating()
-    loadingIndicator.isHidden = true
+
+    // Force layout update to ensure frame is correct
+    setNeedsLayout()
+    layoutIfNeeded()
 
     UIView.animate(withDuration: 0.2) {
       self.imageView.alpha = 1.0
+    }
+  }
+
+  func updateFrame() {
+    // Ensure image view frame matches content view bounds
+    // This is critical for webtoon reading where images must fill the width
+    let bounds = contentView.bounds
+    let cellBounds = self.bounds
+
+    // Prefer contentView bounds, fallback to cell bounds if contentView is zero
+    if bounds.width > 0 && bounds.height > 0 {
+      imageView.frame = CGRect(x: 0, y: 0, width: bounds.width, height: bounds.height)
+      loadingIndicator.center = CGPoint(x: bounds.midX, y: bounds.midY)
+    } else if cellBounds.width > 0 && cellBounds.height > 0 {
+      imageView.frame = CGRect(x: 0, y: 0, width: cellBounds.width, height: cellBounds.height)
+      loadingIndicator.center = CGPoint(x: cellBounds.midX, y: cellBounds.midY)
     }
   }
 
@@ -854,8 +830,13 @@ class WebtoonPageCell: UICollectionViewCell {
     imageView.image = nil
     imageView.alpha = 0.0
     loadingIndicator.stopAnimating()
-    loadingIndicator.isHidden = true
     // Could show an error indicator here if needed
+  }
+
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    // Directly set frame to ensure image view fills the entire cell
+    updateFrame()
   }
 
   override func prepareForReuse() {
