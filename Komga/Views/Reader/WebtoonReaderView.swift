@@ -9,11 +9,9 @@ import ImageIO
 import SDWebImage
 import SwiftUI
 
-// MARK: - Constants
 private enum Constants {
   static let initialScrollDelay: TimeInterval = 0.3
   static let layoutReadyDelay: TimeInterval = 0.2
-  static let scrollRestoreDelay: TimeInterval = 0.3
   static let centerTapHandlingDelay: TimeInterval = 0.2
   static let preloadThrottleInterval: TimeInterval = 0.3
   static let scrollPositionThreshold: CGFloat = 50
@@ -123,6 +121,7 @@ struct WebtoonReaderView: UIViewRepresentable {
     var isHandlingCenterTap: Bool = false
     var savedScrollOffset: CGFloat = 0
     var lastVisibleCellsUpdateTime: Date?
+    var frameMonitorTimer: Timer?
 
     var pageHeights: [Int: CGFloat] = [:]
     var loadingPages: Set<Int> = []
@@ -219,16 +218,22 @@ struct WebtoonReaderView: UIViewRepresentable {
       if !hasScrolledToInitialPage && pages.count > 0 && isValidPageIndex(currentPage) {
         scrollToInitialPage(currentPage)
       }
+
+      // Start frame monitor to continuously correct frame of visible cells
+      startFrameMonitor()
     }
 
-    /// Updates pageWidth for all visible cells
     private func updateVisibleCellsPageWidth(collectionView: UICollectionView) {
       let visibleIndexPaths = collectionView.indexPathsForVisibleItems
       for indexPath in visibleIndexPaths {
         if indexPath.item < pages.count,
           let cell = collectionView.cellForItem(at: indexPath) as? WebtoonPageCell
         {
+          // Always set pageWidth first
           cell.setPageWidth(pageWidth)
+          // Force update frame immediately - call multiple times to ensure it sticks
+          cell.forceUpdateFrame()
+          cell.forceUpdateFrame()
         }
       }
     }
@@ -346,7 +351,16 @@ struct WebtoonReaderView: UIViewRepresentable {
         as! WebtoonPageCell
 
       let pageIndex = indexPath.item
+
+      // Set pageWidth and force update frame immediately, even if cell is not yet visible
+      // This ensures correct width from the start
       cell.setPageWidth(pageWidth)
+      cell.forceUpdateFrame()
+
+      // Also update asynchronously to catch any delayed bounds updates
+      DispatchQueue.main.async {
+        cell.forceUpdateFrame()
+      }
 
       Task { @MainActor [weak self] in
         guard let self = self else { return }
@@ -365,8 +379,8 @@ struct WebtoonReaderView: UIViewRepresentable {
         }
       )
 
-      // Ensure pageWidth is set again after configure (in case it was reset)
-      cell.setPageWidth(pageWidth)
+      // Force update frame again after configure
+      cell.forceUpdateFrame()
 
       return cell
     }
@@ -396,13 +410,19 @@ struct WebtoonReaderView: UIViewRepresentable {
     ) {
       if let webtoonCell = cell as? WebtoonPageCell {
         webtoonCell.setPageWidth(pageWidth)
-        // Update frame synchronously to ensure correct width during fast scrolling
-        webtoonCell.updateFrame()
+        // Force update frame immediately when cell is about to display
+        webtoonCell.forceUpdateFrame()
+        // Also update asynchronously to catch any delayed bounds updates
+        DispatchQueue.main.async {
+          webtoonCell.forceUpdateFrame()
+        }
       }
     }
 
     func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
       isUserScrolling = true
+      // Ensure frame monitor is running during scrolling
+      startFrameMonitor()
     }
 
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
@@ -411,7 +431,10 @@ struct WebtoonReaderView: UIViewRepresentable {
       if isUserScrolling {
         updateCurrentPage()
         throttlePreload()
-        throttleUpdateVisibleCellsPageWidth()
+        // Update visible cells on every scroll event, no throttling
+        if let collectionView = collectionView {
+          updateVisibleCellsPageWidth(collectionView: collectionView)
+        }
       }
     }
 
@@ -426,17 +449,22 @@ struct WebtoonReaderView: UIViewRepresentable {
       }
     }
 
-    /// Throttles visible cells pageWidth update during scrolling
-    private func throttleUpdateVisibleCellsPageWidth() {
-      let now = Date()
-      if lastVisibleCellsUpdateTime == nil
-        || now.timeIntervalSince(lastVisibleCellsUpdateTime!) > 0.1
-      {
-        lastVisibleCellsUpdateTime = now
-        if let collectionView = collectionView {
-          updateVisibleCellsPageWidth(collectionView: collectionView)
-        }
+    /// Starts a timer to continuously monitor and correct frame of visible cells
+    private func startFrameMonitor() {
+      stopFrameMonitor()
+      frameMonitorTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) {
+        [weak self] _ in
+        guard let self = self, let collectionView = self.collectionView else { return }
+        self.updateVisibleCellsPageWidth(collectionView: collectionView)
       }
+      // Add timer to common run loop modes so it runs during scrolling
+      RunLoop.current.add(frameMonitorTimer!, forMode: .common)
+    }
+
+    /// Stops the frame monitor timer
+    private func stopFrameMonitor() {
+      frameMonitorTimer?.invalidate()
+      frameMonitorTimer = nil
     }
 
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
@@ -444,6 +472,10 @@ struct WebtoonReaderView: UIViewRepresentable {
       checkIfAtBottom(scrollView)
       updateCurrentPage()
       preloadNearbyPages()
+      if let collectionView = collectionView {
+        updateVisibleCellsPageWidth(collectionView: collectionView)
+      }
+      // Keep frame monitor running to catch any delayed frame changes
     }
 
     func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
@@ -452,6 +484,10 @@ struct WebtoonReaderView: UIViewRepresentable {
         checkIfAtBottom(scrollView)
         updateCurrentPage()
         preloadNearbyPages()
+        if let collectionView = collectionView {
+          updateVisibleCellsPageWidth(collectionView: collectionView)
+        }
+        // Keep frame monitor running to catch any delayed frame changes
       }
     }
 
@@ -481,11 +517,46 @@ struct WebtoonReaderView: UIViewRepresentable {
       if isAtBottomNow != isAtBottom {
         isAtBottom = isAtBottomNow
         onScrollToBottom?(isAtBottom)
+
+        if isAtBottomNow && pages.count > 0 {
+          let lastPageIndex = pages.count - 1
+          if let collectionView = collectionView {
+            let visibleIndexPaths = collectionView.indexPathsForVisibleItems
+              .filter { $0.item < pages.count }
+            if visibleIndexPaths.contains(where: { $0.item == lastPageIndex }) {
+              if currentPage != lastPageIndex {
+                currentPage = lastPageIndex
+                onPageChange?(lastPageIndex)
+              }
+            }
+          }
+        }
       }
     }
 
     private func updateCurrentPage() {
       guard let collectionView = collectionView else { return }
+
+      let visibleIndexPaths = collectionView.indexPathsForVisibleItems
+        .filter { $0.item < pages.count }
+        .sorted { $0.item < $1.item }
+
+      if pages.count > 0 {
+        let lastPageIndex = pages.count - 1
+        if visibleIndexPaths.contains(where: { $0.item == lastPageIndex }) {
+          let contentHeight = collectionView.contentSize.height
+          let scrollOffset = collectionView.contentOffset.y
+          let scrollViewHeight = collectionView.bounds.height
+
+          if scrollOffset + scrollViewHeight >= contentHeight - Constants.bottomThreshold {
+            if currentPage != lastPageIndex {
+              currentPage = lastPageIndex
+              onPageChange?(lastPageIndex)
+              return
+            }
+          }
+        }
+      }
 
       let centerY = collectionView.contentOffset.y + collectionView.bounds.height / 2
       let centerPoint = CGPoint(x: collectionView.bounds.width / 2, y: centerY)
@@ -498,9 +569,6 @@ struct WebtoonReaderView: UIViewRepresentable {
         currentPage = indexPath.item
         onPageChange?(indexPath.item)
       } else {
-        let visibleIndexPaths = collectionView.indexPathsForVisibleItems
-          .filter { $0.item < pages.count }
-          .sorted { $0.item < $1.item }
         if let firstVisible = visibleIndexPaths.first {
           let midIndex = firstVisible.item + visibleIndexPaths.count / 2
           if isValidPageIndex(midIndex) && midIndex != currentPage {
@@ -550,6 +618,11 @@ struct WebtoonReaderView: UIViewRepresentable {
           let indexPath = IndexPath(item: pageIndex, section: 0)
           if let cell = collectionView.cellForItem(at: indexPath) as? WebtoonPageCell {
             cell.setPageWidth(pageWidth)
+            // Force update frame after height is determined
+            cell.forceUpdateFrame()
+            DispatchQueue.main.async {
+              cell.forceUpdateFrame()
+            }
           }
         }
 
@@ -603,10 +676,16 @@ struct WebtoonReaderView: UIViewRepresentable {
           collectionView.layoutIfNeeded()
 
           if let cell = collectionView.cellForItem(at: indexPath) as? WebtoonPageCell {
+            // Force update immediately
+            cell.forceUpdateFrame()
             DispatchQueue.main.async {
               cell.setNeedsLayout()
               cell.layoutIfNeeded()
-              cell.updateFrame()
+              cell.forceUpdateFrame()
+              // One more update after layout
+              DispatchQueue.main.async {
+                cell.forceUpdateFrame()
+              }
             }
           }
         } else if heightDiff > Constants.heightChangeThreshold {
@@ -790,6 +869,7 @@ class WebtoonPageCell: UICollectionViewCell {
   private var pageIndex: Int = -1
   private var loadImage: ((Int) async -> Void)?
   private var pageWidth: CGFloat = 0
+  private var frameObserver: NSKeyValueObservation?
 
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -806,7 +886,18 @@ class WebtoonPageCell: UICollectionViewCell {
     imageView.contentMode = .scaleAspectFit
     imageView.backgroundColor = .black
     imageView.clipsToBounds = false
+    imageView.translatesAutoresizingMaskIntoConstraints = false
     contentView.addSubview(imageView)
+
+    frameObserver = imageView.observe(\.frame, options: [.new]) { [weak self] imageView, _ in
+      guard let self = self, self.pageWidth > 0 else { return }
+      let currentWidth = imageView.frame.width
+      // Correct frame immediately if width is wrong - use very small threshold
+      if currentWidth > 0 && abs(currentWidth - self.pageWidth) > 0.1 {
+        // Force update immediately on main thread
+        self.forceUpdateFrame()
+      }
+    }
 
     loadingIndicator.color = .white
     loadingIndicator.hidesWhenStopped = true
@@ -819,10 +910,8 @@ class WebtoonPageCell: UICollectionViewCell {
     self.pageIndex = pageIndex
     self.loadImage = loadImage
 
-    // Update frame immediately with current pageWidth
-    // This ensures correct width even if bounds haven't updated yet
     if pageWidth > 0 {
-      updateFrame()
+      forceUpdateFrame()
     }
 
     imageView.image = nil
@@ -832,21 +921,23 @@ class WebtoonPageCell: UICollectionViewCell {
 
   func setPageWidth(_ width: CGFloat) {
     pageWidth = width
-    // Always update frame immediately when pageWidth is set
-    // This is critical during fast scrolling when cell is reused with stale bounds
-    updateFrame()
+    if pageWidth > 0 {
+      forceUpdateFrame()
+    }
+  }
+
+  func updateFrameWithAsyncFallback() {
+    forceUpdateFrame()
+    DispatchQueue.main.async { [weak self] in
+      guard let self = self, self.pageWidth > 0 else { return }
+      self.forceUpdateFrame()
+    }
   }
 
   func setImageURL(_ url: URL, imageSize: CGSize?, pageWidth: CGFloat) {
-    // Set pageWidth first and update frame immediately
-    // This ensures imageView has correct width before image loads
     self.pageWidth = pageWidth
-    updateFrame()
-
+    forceUpdateFrame()
     loadingIndicator.stopAnimating()
-
-    // Update frame again to ensure it's correct (in case bounds updated)
-    updateFrame()
 
     imageView.sd_setImage(
       with: url,
@@ -855,49 +946,47 @@ class WebtoonPageCell: UICollectionViewCell {
       context: [
         .imageScaleDownLimitBytes: 50 * 1024 * 1024
       ],
-      progress: nil
-    ) { [weak self] image, error, cacheType, imageURL in
-      guard let self = self else { return }
+      progress: nil,
+      completed: { [weak self] image, error, cacheType, imageURL in
+        guard let self = self else { return }
 
-      if error != nil {
-        self.imageView.image = nil
-        self.imageView.alpha = 0.0
-        self.loadingIndicator.stopAnimating()
-      } else if image != nil {
-        self.loadingIndicator.stopAnimating()
-        self.updateFrame()
-        self.setNeedsLayout()
-        self.layoutIfNeeded()
+        if error != nil {
+          self.imageView.image = nil
+          self.imageView.alpha = 0.0
+          self.loadingIndicator.stopAnimating()
+        } else if image != nil {
+          self.loadingIndicator.stopAnimating()
+          // Force update frame multiple times after image is set
+          // SDWebImage may change frame during/after image display
+          self.forceUpdateFrame()
+          self.setNeedsLayout()
+          self.layoutIfNeeded()
+          self.forceUpdateFrame()
 
-        UIView.animate(withDuration: 0.2) {
-          self.imageView.alpha = 1.0
+          // Update frame asynchronously to catch any delayed changes
+          DispatchQueue.main.async { [weak self] in
+            guard let self = self, self.pageWidth > 0 else { return }
+            self.forceUpdateFrame()
+          }
+
+          UIView.animate(withDuration: 0.2) {
+            self.imageView.alpha = 1.0
+          } completion: { _ in
+            // One more update after animation completes
+            self.forceUpdateFrame()
+          }
         }
       }
-    }
+    )
   }
 
-  func updateFrame() {
-    // Always use pageWidth if available, regardless of bounds
-    // This is critical during fast scrolling when cell bounds may be stale
-    guard pageWidth > 0 else {
-      // If no pageWidth, fall back to bounds (shouldn't happen in normal flow)
-      let bounds = contentView.bounds
-      let cellBounds = self.bounds
-      let targetWidth =
-        bounds.width > 0 ? bounds.width : (cellBounds.width > 0 ? cellBounds.width : 0)
-      let targetHeight =
-        bounds.height > 0 ? bounds.height : (cellBounds.height > 0 ? cellBounds.height : 0)
-      if targetWidth > 0 && targetHeight > 0 {
-        imageView.frame = CGRect(x: 0, y: 0, width: targetWidth, height: targetHeight)
-        loadingIndicator.center = CGPoint(x: targetWidth / 2, y: targetHeight / 2)
-      }
-      return
-    }
+  func forceUpdateFrame() {
+    guard pageWidth > 0 else { return }
 
-    // Use pageWidth as the source of truth for width
+    // Width must ALWAYS be pageWidth, never depend on bounds or any other value
     let targetWidth = pageWidth
 
-    // For height, prefer bounds if available, otherwise use estimated height
+    // Height: use bounds if available, otherwise keep current height
     let bounds = contentView.bounds
     let cellBounds = self.bounds
     let targetHeight: CGFloat
@@ -906,19 +995,26 @@ class WebtoonPageCell: UICollectionViewCell {
     } else if cellBounds.height > 0 {
       targetHeight = cellBounds.height
     } else {
-      // Use estimated height based on pageWidth
-      targetHeight = pageWidth * 1.5
+      // If no bounds available, keep current height
+      targetHeight = imageView.frame.height > 0 ? imageView.frame.height : 0
     }
 
-    // Always update frame to ensure correct width, especially during fast scrolling
+    // Only update if we have valid dimensions
+    guard targetHeight > 0 else { return }
+
     let newFrame = CGRect(x: 0, y: 0, width: targetWidth, height: targetHeight)
-    // Force update if width doesn't match exactly (critical for fast scrolling)
-    if abs(imageView.frame.width - targetWidth) > 0.1
-      || abs(imageView.frame.height - targetHeight) > 0.1
-    {
+
+    // Only set frame if it's different
+    if imageView.frame != newFrame {
       imageView.frame = newFrame
-      loadingIndicator.center = CGPoint(x: targetWidth / 2, y: targetHeight / 2)
     }
+
+    // Also set bounds directly as a backup to ensure width is correct
+    if abs(imageView.bounds.width - targetWidth) > 0.1 {
+      imageView.bounds = CGRect(x: 0, y: 0, width: targetWidth, height: targetHeight)
+    }
+
+    loadingIndicator.center = CGPoint(x: targetWidth / 2, y: targetHeight / 2)
   }
 
   func showError() {
@@ -929,14 +1025,26 @@ class WebtoonPageCell: UICollectionViewCell {
 
   override func layoutSubviews() {
     super.layoutSubviews()
-    updateFrame()
+    if pageWidth > 0 {
+      forceUpdateFrame()
+      // Also update asynchronously to catch any delayed bounds updates
+      DispatchQueue.main.async { [weak self] in
+        guard let self = self, self.pageWidth > 0 else { return }
+        self.forceUpdateFrame()
+      }
+    }
   }
 
   override func apply(_ layoutAttributes: UICollectionViewLayoutAttributes) {
     super.apply(layoutAttributes)
-    // Update frame immediately when layout attributes are applied
-    // This is critical during fast scrolling when cells are reused
-    updateFrame()
+    if pageWidth > 0 {
+      forceUpdateFrame()
+      // Also update asynchronously to catch any delayed bounds updates
+      DispatchQueue.main.async { [weak self] in
+        guard let self = self, self.pageWidth > 0 else { return }
+        self.forceUpdateFrame()
+      }
+    }
   }
 
   override func prepareForReuse() {
@@ -948,8 +1056,15 @@ class WebtoonPageCell: UICollectionViewCell {
     loadingIndicator.isHidden = true
     pageIndex = -1
     loadImage = nil
-    // Don't reset pageWidth - it will be set again in cellForItemAt
-    // This helps maintain correct width during fast scrolling
+    // Don't reset pageWidth - keep it so reused cells maintain correct width
+    // Force update frame to ensure correct width is maintained
+    if pageWidth > 0 {
+      forceUpdateFrame()
+    }
+  }
+
+  deinit {
+    frameObserver?.invalidate()
   }
 }
 
