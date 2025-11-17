@@ -21,6 +21,7 @@ struct BookReaderView: View {
   @State private var isAtBottom = false
   @State private var isAtEndPage = false
   @State private var showingReadingDirectionPicker = false
+  @State private var hasStartedLoading = false
 
   init(bookId: String) {
     self.initialBookId = bookId
@@ -37,10 +38,7 @@ struct BookReaderView: View {
     ZStack {
       Color.black.ignoresSafeArea()
 
-      if viewModel.isLoading && viewModel.pages.isEmpty {
-        ProgressView()
-          .tint(.white)
-      } else if !viewModel.pages.isEmpty {
+      if !viewModel.pages.isEmpty {
         // Page viewer based on reading direction
         Group {
           switch viewModel.readingDirection {
@@ -80,19 +78,27 @@ struct BookReaderView: View {
             ).ignoresSafeArea()
           }
         }
-        .onChange(of: viewModel.currentPage) { _, _ in
+        .onChange(of: viewModel.currentPage) {
           // Update progress and preload pages in background without blocking UI
           Task(priority: .userInitiated) {
             await viewModel.updateProgress()
             await viewModel.preloadPages()
           }
         }
-      } else {
-        // No pages available - show error message with dismiss button
+      } else if viewModel.isLoading {
+        // Show loading indicator when loading
+        ProgressView()
+          .tint(.white)
+      } else if hasStartedLoading {
+        // No pages available - only show error when loading has started and is complete
         NoPagesView(
           errorMessage: viewModel.errorMessage,
           onDismiss: { dismiss() }
         )
+      } else {
+        // Show loading indicator for initial state (before loading starts)
+        ProgressView()
+          .tint(.white)
       }
 
       // Controls overlay (always rendered, use opacity to control visibility)
@@ -127,6 +133,9 @@ struct BookReaderView: View {
       }
     }
     .task(id: currentBookId) {
+      // Mark that loading has started
+      hasStartedLoading = true
+
       // Reset isAtBottom and isAtEndPage when switching to a new book
       isAtBottom = false
       isAtEndPage = false
@@ -322,6 +331,8 @@ struct BookReaderView: View {
     currentBookId = nextBookId
     // Reset viewModel state for new book
     viewModel = ReaderViewModel()
+    // Reset hasStartedLoading so initial state shows ProgressView
+    hasStartedLoading = false
     // Reset isAtBottom so buttons hide until user scrolls to bottom
     isAtBottom = false
   }
