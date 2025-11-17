@@ -21,7 +21,6 @@ struct BookReaderView: View {
   @State private var isAtBottom = false
   @State private var isAtEndPage = false
   @State private var showingReadingDirectionPicker = false
-  @State private var hasStartedLoading = false
 
   init(bookId: String) {
     self.initialBookId = bookId
@@ -89,16 +88,12 @@ struct BookReaderView: View {
         // Show loading indicator when loading
         ProgressView()
           .tint(.white)
-      } else if hasStartedLoading {
-        // No pages available - only show error when loading has started and is complete
+      } else {
+        // No pages available - only show error when loading has completed
         NoPagesView(
           errorMessage: viewModel.errorMessage,
           onDismiss: { dismiss() }
         )
-      } else {
-        // Show loading indicator for initial state (before loading starts)
-        ProgressView()
-          .tint(.white)
       }
 
       // Controls overlay (always rendered, use opacity to control visibility)
@@ -134,7 +129,7 @@ struct BookReaderView: View {
     }
     .task(id: currentBookId) {
       // Mark that loading has started
-      hasStartedLoading = true
+      viewModel.isLoading = true
 
       // Reset isAtBottom and isAtEndPage when switching to a new book
       isAtBottom = false
@@ -331,8 +326,6 @@ struct BookReaderView: View {
     currentBookId = nextBookId
     // Reset viewModel state for new book
     viewModel = ReaderViewModel()
-    // Reset hasStartedLoading so initial state shows ProgressView
-    hasStartedLoading = false
     // Reset isAtBottom so buttons hide until user scrolls to bottom
     isAtBottom = false
   }

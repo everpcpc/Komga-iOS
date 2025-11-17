@@ -79,7 +79,7 @@ enum ReadingDirection: CaseIterable, Hashable {
 class ReaderViewModel {
   var pages: [BookPage] = []
   var currentPage = 0
-  var isLoading = false
+  var isLoading = true
   var errorMessage: String?
   var pageImageCache: ImageCache
   var readingDirection: ReadingDirection = .ltr
