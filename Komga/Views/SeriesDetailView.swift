@@ -90,7 +90,7 @@ struct SeriesDetailView: View {
 
               // Reading Direction
               if let direction = series.metadata.readingDirection, !direction.isEmpty {
-                Text(direction)
+                Text(ReadingDirection.fromString(direction).displayName)
                   .font(.caption)
                   .padding(.horizontal, 8)
                   .padding(.vertical, 4)
