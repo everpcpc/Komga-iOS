@@ -11,7 +11,6 @@ import SwiftUI
 /// A reusable thumbnail image component using SDWebImageSwiftUI
 struct ThumbnailImage: View {
   let url: URL?
-  let contentMode: ContentMode
   let showPlaceholder: Bool
   let width: CGFloat
   let cornerRadius: CGFloat
@@ -19,23 +18,22 @@ struct ThumbnailImage: View {
 
   init(
     url: URL?,
-    contentMode: ContentMode = .fill,
     showPlaceholder: Bool = true,
     width: CGFloat,
     cornerRadius: CGFloat = 8
   ) {
     self.url = url
-    self.contentMode = contentMode
     self.showPlaceholder = showPlaceholder
     self.width = width
     self.cornerRadius = cornerRadius
   }
 
-  private var effectiveContentMode: ContentMode {
+  private var contentMode: ContentMode {
     if thumbnailPreserveAspectRatio {
       return .fit
+    } else {
+      return .fill
     }
-    return contentMode
   }
 
   var body: some View {
@@ -64,9 +62,10 @@ struct ThumbnailImage: View {
             }
             .indicator(.activity)
             .transition(.fade(duration: 0.2))
-            .aspectRatio(contentMode: effectiveContentMode)
+            .aspectRatio(contentMode: contentMode)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
         } else {
-          Rectangle()
+          RoundedRectangle(cornerRadius: cornerRadius)
             .fill(Color.gray.opacity(0.3))
             .overlay {
               if showPlaceholder {
