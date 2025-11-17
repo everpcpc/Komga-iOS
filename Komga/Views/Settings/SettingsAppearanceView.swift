@@ -36,10 +36,10 @@ struct SettingsAppearanceView: View {
 
   var body: some View {
     Form {
-      Section(header: Text("Theme Color")) {
+      Section(header: Text("Theme")) {
         VStack(alignment: .leading, spacing: 12) {
           HStack {
-            Text("Theme Color")
+            Text("Color")
             Spacer()
             Text(themeColor.displayName)
               .foregroundColor(.secondary)
@@ -81,20 +81,18 @@ struct SettingsAppearanceView: View {
         }
       }
 
-      Section(header: Text("Grid Columns")) {
+      Section(header: Text("Browse Columns")) {
         VStack(alignment: .leading, spacing: 8) {
-          HStack {
-            Text("Portrait Columns")
-            Spacer()
-            Text("\(browseColumns.portrait)")
-              .foregroundColor(.secondary)
-          }
           Stepper(
             value: portraitColumnsBinding,
             in: 1...8,
             step: 1
           ) {
-            EmptyView()
+            HStack {
+              Text("Portrait")
+              Text("\(browseColumns.portrait)")
+                .foregroundColor(.secondary)
+            }
           }
           Text("Number of columns in portrait orientation")
             .font(.caption)
@@ -102,18 +100,16 @@ struct SettingsAppearanceView: View {
         }
 
         VStack(alignment: .leading, spacing: 8) {
-          HStack {
-            Text("Landscape Columns")
-            Spacer()
-            Text("\(browseColumns.landscape)")
-              .foregroundColor(.secondary)
-          }
           Stepper(
             value: landscapeColumnsBinding,
             in: 1...8,
             step: 1
           ) {
-            EmptyView()
+            HStack {
+              Text("Landscape")
+              Text("\(browseColumns.landscape)")
+                .foregroundColor(.secondary)
+            }
           }
           Text("Number of columns in landscape orientation")
             .font(.caption)

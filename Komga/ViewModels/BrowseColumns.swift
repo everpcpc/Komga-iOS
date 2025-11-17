@@ -8,7 +8,7 @@
 import Foundation
 import SwiftUI
 
-struct BrowseColumns: Equatable, RawRepresentable, Codable {
+struct BrowseColumns: Equatable, RawRepresentable {
   typealias RawValue = String
 
   var portrait: Int
@@ -22,24 +22,29 @@ struct BrowseColumns: Equatable, RawRepresentable, Codable {
   // MARK: - RawRepresentable
 
   var rawValue: String {
-    guard let data = try? JSONEncoder().encode(self),
-      let jsonString = String(data: data, encoding: .utf8)
-    else {
-      // Fallback to default JSON if encoding fails
-      return
-        "{\"portrait\":\(getDefaultPortraitColumns()),\"landscape\":\(getDefaultLandscapeColumns())}"
+    let dict: [String: Int] = [
+      "portrait": portrait,
+      "landscape": landscape,
+    ]
+    if let data = try? JSONSerialization.data(withJSONObject: dict),
+      let json = String(data: data, encoding: .utf8)
+    {
+      return json
     }
-    return jsonString
+    return "{}"
   }
 
   init?(rawValue: String) {
+    guard !rawValue.isEmpty else {
+      return nil
+    }
     guard let data = rawValue.data(using: .utf8),
-      let decoded = try? JSONDecoder().decode(BrowseColumns.self, from: data)
+      let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Int]
     else {
       return nil
     }
-    self.portrait = decoded.portrait
-    self.landscape = decoded.landscape
+    self.portrait = dict["portrait"] ?? getDefaultPortraitColumns()
+    self.landscape = dict["landscape"] ?? getDefaultLandscapeColumns()
   }
 }
 
