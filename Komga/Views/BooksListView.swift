@@ -15,7 +15,7 @@ extension SortDirection {
 
 struct BooksListView: View {
   let seriesId: String
-  @State private var bookViewModel = BookViewModel()
+  @Bindable var bookViewModel: BookViewModel
   @Binding var selectedBookId: String?
   @AppStorage("bookListSortDirection") private var sortDirection: SortDirection = .ascending
 

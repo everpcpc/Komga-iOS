@@ -11,8 +11,11 @@ struct SeriesDetailView: View {
   let seriesId: String
 
   @State private var seriesViewModel = SeriesViewModel()
+  @State private var bookViewModel = BookViewModel()
   @State private var series: Series?
   @State private var selectedBookId: String?
+  @State private var bookSummary: String?
+  @State private var bookSummaryNumber: String?
   @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
 
   private var thumbnailURL: URL? {
@@ -48,7 +51,7 @@ struct SeriesDetailView: View {
                 }
               }
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading) {
               Text(series.metadata.title)
                 .font(.title2)
 
@@ -63,37 +66,39 @@ struct SeriesDetailView: View {
                   .cornerRadius(4)
               }
 
-              // Age Rating
-              if let ageRating = series.metadata.ageRating, ageRating > 0 {
-                Text("\(ageRating)+")
-                  .font(.caption)
-                  .padding(.horizontal, 8)
-                  .padding(.vertical, 4)
-                  .background(ageRating > 16 ? Color.red : Color.green)
-                  .foregroundColor(.white)
-                  .cornerRadius(4)
-              }
+              HStack(spacing: 4) {
+                // Age Rating
+                if let ageRating = series.metadata.ageRating, ageRating > 0 {
+                  Text("\(ageRating)+")
+                    .font(.caption)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(ageRating > 16 ? Color.red : Color.green)
+                    .foregroundColor(.white)
+                    .cornerRadius(4)
+                }
 
-              // Language
-              if let language = series.metadata.language, !language.isEmpty {
-                Text(languageDisplayName(language))
-                  .font(.caption)
-                  .padding(.horizontal, 8)
-                  .padding(.vertical, 4)
-                  .background(Color.secondary.opacity(0.2))
-                  .foregroundColor(.primary)
-                  .cornerRadius(4)
-              }
+                // Language
+                if let language = series.metadata.language, !language.isEmpty {
+                  Text(languageDisplayName(language))
+                    .font(.caption)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.secondary.opacity(0.2))
+                    .foregroundColor(.primary)
+                    .cornerRadius(4)
+                }
 
-              // Reading Direction
-              if let direction = series.metadata.readingDirection, !direction.isEmpty {
-                Text(ReadingDirection.fromString(direction).displayName)
-                  .font(.caption)
-                  .padding(.horizontal, 8)
-                  .padding(.vertical, 4)
-                  .background(Color.secondary.opacity(0.2))
-                  .foregroundColor(.primary)
-                  .cornerRadius(4)
+                // Reading Direction
+                if let direction = series.metadata.readingDirection, !direction.isEmpty {
+                  Text(ReadingDirection.fromString(direction).displayName)
+                    .font(.caption)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.secondary.opacity(0.2))
+                    .foregroundColor(.primary)
+                    .cornerRadius(4)
+                }
               }
 
               // Publisher
@@ -182,6 +187,7 @@ struct SeriesDetailView: View {
             Spacer()
           }
 
+          // Summary section - show series summary or first book summary if available
           if let summary = series.metadata.summary, !summary.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
               Text("Summary")
@@ -189,10 +195,23 @@ struct SeriesDetailView: View {
               Text(summary)
                 .font(.body)
             }
+          } else if let bookSummary = bookSummary, let bookNumber = bookSummaryNumber {
+            VStack(alignment: .leading, spacing: 8) {
+              HStack {
+                Text("Summary")
+                  .font(.headline)
+                Text("(from Book #\(bookNumber))")
+                  .font(.caption)
+                  .foregroundColor(.secondary)
+              }
+              Text(bookSummary)
+                .font(.body)
+            }
           }
 
           // Books list
-          BooksListView(seriesId: seriesId, selectedBookId: $selectedBookId)
+          BooksListView(
+            seriesId: seriesId, bookViewModel: bookViewModel, selectedBookId: $selectedBookId)
         } else {
           ProgressView()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -213,11 +232,27 @@ struct SeriesDetailView: View {
       } catch {
       }
     }
+    .onChange(of: bookViewModel.books) {
+      findBookSummary()
+    }
   }
 }
 
 // Helper functions for SeriesDetailView
 extension SeriesDetailView {
+  private func findBookSummary() {
+    if bookSummary != nil { return }
+    guard let series = series else { return }
+    if let seriesSummary = series.metadata.summary, !seriesSummary.isEmpty { return }
+    for book in bookViewModel.books {
+      if let summary = book.metadata.summary, !summary.isEmpty {
+        bookSummary = summary
+        bookSummaryNumber = book.metadata.number
+        break
+      }
+    }
+  }
+
   private func statusDisplayName(_ status: String) -> String {
     switch status.uppercased() {
     case "ONGOING":

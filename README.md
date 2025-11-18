@@ -305,7 +305,7 @@ This helps quickly identify API compatibility issues between different Komga ver
 - [x] Option to preserve the cover image aspect ratio in the library view (a lot of cover images are not standardized in resolutions)
 
 ### Series & Book Features
-- [ ] Importing the summary of a series from the first book like the webui (See mangabox)
+- [x] Importing the summary of a series from the first book like the webui (See mangabox)
 - [x] Ability to view summaries of each book in a series (See mangabox)
 
 ### Reader Features

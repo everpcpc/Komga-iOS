@@ -11,7 +11,6 @@ struct SeriesCardView: View {
   let series: Series
   let cardWidth: CGFloat
   let showTitle: Bool
-  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
 
   private var thumbnailURL: URL? {
     SeriesService.shared.getSeriesThumbnailURL(id: series.id)
