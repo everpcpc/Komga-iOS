@@ -35,7 +35,7 @@ struct VerticalPageView: View {
                   VStack(spacing: 0) {
                     // Top tap zone
                     Color.clear
-                      .frame(height: geometry.size.height * 0.3)
+                      .frame(height: geometry.size.height * 0.4)
                       .contentShape(Rectangle())
                       .simultaneousGesture(
                         TapGesture()
@@ -46,7 +46,7 @@ struct VerticalPageView: View {
 
                     // Center tap zone (toggle controls)
                     Color.clear
-                      .frame(height: geometry.size.height * 0.4)
+                      .frame(height: geometry.size.height * 0.2)
                       .contentShape(Rectangle())
                       .simultaneousGesture(
                         TapGesture()
@@ -57,7 +57,7 @@ struct VerticalPageView: View {
 
                     // Bottom tap zone
                     Color.clear
-                      .frame(height: geometry.size.height * 0.3)
+                      .frame(height: geometry.size.height * 0.4)
                       .contentShape(Rectangle())
                       .simultaneousGesture(
                         TapGesture()

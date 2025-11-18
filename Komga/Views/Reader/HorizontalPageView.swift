@@ -45,7 +45,7 @@ struct HorizontalPageView: View {
             HStack(spacing: 0) {
               // Left tap zone
               Color.clear
-                .frame(width: geometry.size.width * 0.3)
+                .frame(width: geometry.size.width * 0.4)
                 .contentShape(Rectangle())
                 .simultaneousGesture(
                   TapGesture()
@@ -56,7 +56,7 @@ struct HorizontalPageView: View {
 
               // Center tap zone (toggle controls)
               Color.clear
-                .frame(width: geometry.size.width * 0.4)
+                .frame(width: geometry.size.width * 0.2)
                 .contentShape(Rectangle())
                 .simultaneousGesture(
                   TapGesture()
@@ -67,7 +67,7 @@ struct HorizontalPageView: View {
 
               // Right tap zone
               Color.clear
-                .frame(width: geometry.size.width * 0.3)
+                .frame(width: geometry.size.width * 0.4)
                 .contentShape(Rectangle())
                 .simultaneousGesture(
                   TapGesture()

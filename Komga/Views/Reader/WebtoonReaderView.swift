@@ -15,14 +15,14 @@ private enum Constants {
   static let centerTapHandlingDelay: TimeInterval = 0.2
   static let preloadThrottleInterval: TimeInterval = 0.3
   static let scrollPositionThreshold: CGFloat = 50
-  static let heightChangeThreshold: CGFloat = 100
+  static let heightChangeThreshold: CGFloat = 10
   static let bottomThreshold: CGFloat = 80
   static let footerHeight: CGFloat = 360
   static let scrollAmountMultiplier: CGFloat = 0.8
-  static let topAreaThreshold: CGFloat = 0.3
-  static let bottomAreaThreshold: CGFloat = 0.7
-  static let centerAreaMin: CGFloat = 0.3
-  static let centerAreaMax: CGFloat = 0.7
+  static let topAreaThreshold: CGFloat = 0.4
+  static let bottomAreaThreshold: CGFloat = 0.6
+  static let centerAreaMin: CGFloat = 0.4
+  static let centerAreaMax: CGFloat = 0.6
 }
 
 struct WebtoonReaderView: UIViewRepresentable {
