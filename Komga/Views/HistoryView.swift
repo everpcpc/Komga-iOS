@@ -53,7 +53,7 @@ struct HistoryView: View {
             ReadHistorySection(
               title: "Recently Read Books",
               bookViewModel: bookViewModel,
-              onLoadMore: loadMoreRecentlyReadBooks,
+              onLoadMore: loadMoreRecentlyReadBooks
             )
             .animation(.default, value: bookViewModel.books)
             .transition(.move(edge: .top).combined(with: .opacity))
@@ -101,6 +101,7 @@ struct HistoryView: View {
       .sheet(isPresented: $showLibraryPickerSheet) {
         LibraryPickerSheet()
       }
+      .handleNavigation()
       .animation(.default, value: selectedLibraryId)
       .onChange(of: selectedLibraryId) {
         refreshRecentlyReadBooks()
@@ -123,19 +124,11 @@ struct ReadHistorySection: View {
   var onLoadMore: (() -> Void)?
 
   @State private var selectedBookId: String?
-  @State private var selectedSeriesId: String?
 
   private var isBookReaderPresented: Binding<Bool> {
     Binding(
       get: { selectedBookId != nil },
       set: { if !$0 { selectedBookId = nil } }
-    )
-  }
-
-  private var isSeriesDetailPresented: Binding<Bool> {
-    Binding(
-      get: { selectedSeriesId != nil },
-      set: { if !$0 { selectedSeriesId = nil } }
     )
   }
 
@@ -154,11 +147,9 @@ struct ReadHistorySection: View {
             ReadHistoryBookRow(book: book)
               .padding(8)
               .contentShape(Rectangle())
-              .bookContextMenu(
-                book: book, viewModel: bookViewModel,
-                onNavigateToSeries: { seriesId in
-                  selectedSeriesId = seriesId
-                })
+              .contextMenu {
+                BookContextMenu(book: book, viewModel: bookViewModel)
+              }
           }
           .buttonStyle(PlainButtonStyle())
           .onAppear {
@@ -180,11 +171,6 @@ struct ReadHistorySection: View {
     .fullScreenCover(isPresented: isBookReaderPresented) {
       if let bookId = selectedBookId {
         BookReaderView(bookId: bookId)
-      }
-    }
-    .navigationDestination(isPresented: isSeriesDetailPresented) {
-      if let seriesId = selectedSeriesId {
-        SeriesDetailView(seriesId: seriesId)
       }
     }
   }

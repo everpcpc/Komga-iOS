@@ -54,6 +54,7 @@ struct BrowseView: View {
         .sheet(isPresented: $showLibraryPickerSheet) {
           LibraryPickerSheet()
         }
+        .handleNavigation()
         .onChange(of: selectedLibraryId) {
           browseOpts.libraryId = selectedLibraryId
         }

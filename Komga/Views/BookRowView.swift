@@ -70,7 +70,9 @@ struct BookRowView: View {
       Image(systemName: "chevron.right")
         .foregroundColor(.secondary)
     }
-    .bookContextMenu(book: book, viewModel: viewModel)
+    .contextMenu {
+      BookContextMenu(book: book, viewModel: viewModel)
+    }
   }
 
   private func formatNumber(_ number: Double) -> String {

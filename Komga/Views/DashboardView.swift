@@ -146,6 +146,7 @@ struct DashboardView: View {
       .sheet(isPresented: $showLibraryPickerSheet) {
         LibraryPickerSheet()
       }
+      .handleNavigation()
       .animation(.default, value: selectedLibraryId)
       .onChange(of: selectedLibraryId) {
         Task {
@@ -250,19 +251,11 @@ struct DashboardBooksSection: View {
   var bookViewModel: BookViewModel
 
   @State private var selectedBookId: String?
-  @State private var selectedSeriesId: String?
 
   private var isBookReaderPresented: Binding<Bool> {
     Binding(
       get: { selectedBookId != nil },
       set: { if !$0 { selectedBookId = nil } }
-    )
-  }
-
-  private var isSeriesDetailPresented: Binding<Bool> {
-    Binding(
-      get: { selectedSeriesId != nil },
-      set: { if !$0 { selectedSeriesId = nil } }
     )
   }
 
@@ -282,10 +275,7 @@ struct DashboardBooksSection: View {
               BookCardView(
                 book: book,
                 viewModel: bookViewModel,
-                cardWidth: 120,
-                onNavigateToSeries: { seriesId in
-                  selectedSeriesId = seriesId
-                }
+                cardWidth: 120
               )
             }
             .buttonStyle(PlainButtonStyle())
@@ -296,11 +286,6 @@ struct DashboardBooksSection: View {
     .fullScreenCover(isPresented: isBookReaderPresented) {
       if let bookId = selectedBookId {
         BookReaderView(bookId: bookId)
-      }
-    }
-    .navigationDestination(isPresented: isSeriesDetailPresented) {
-      if let seriesId = selectedSeriesId {
-        SeriesDetailView(seriesId: seriesId)
       }
     }
   }
@@ -321,7 +306,7 @@ struct DashboardSeriesSection: View {
       ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: 12) {
           ForEach(series) { s in
-            NavigationLink(destination: SeriesDetailView(seriesId: s.id)) {
+            NavigationLink(value: NavigationDestination.seriesDetail(seriesId: s.id)) {
               SeriesCardView(series: s, cardWidth: 120, showTitle: true)
             }
             .buttonStyle(PlainButtonStyle())
