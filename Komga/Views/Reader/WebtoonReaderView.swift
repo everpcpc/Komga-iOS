@@ -12,9 +12,7 @@ import SwiftUI
 private enum Constants {
   static let initialScrollDelay: TimeInterval = 0.3
   static let layoutReadyDelay: TimeInterval = 0.2
-  static let centerTapHandlingDelay: TimeInterval = 0.2
   static let preloadThrottleInterval: TimeInterval = 0.3
-  static let scrollPositionThreshold: CGFloat = 50
   static let heightChangeThreshold: CGFloat = 10
   static let bottomThreshold: CGFloat = 80
   static let footerHeight: CGFloat = 360
@@ -117,8 +115,6 @@ struct WebtoonReaderView: UIViewRepresentable {
     var pageWidth: CGFloat = 0
     var lastPageWidth: CGFloat = 0
     var isAtBottom: Bool = false
-    var isHandlingCenterTap: Bool = false
-    var savedScrollOffset: CGFloat = 0
     var lastVisibleCellsUpdateTime: Date?
 
     var pageHeights: [Int: CGFloat] = [:]
@@ -245,11 +241,6 @@ struct WebtoonReaderView: UIViewRepresentable {
         handleDataReload(collectionView: collectionView, currentPage: currentPage)
       }
 
-      if isHandlingCenterTap {
-        handleCenterTapState(currentPage: currentPage)
-        return
-      }
-
       if !hasScrolledToInitialPage && pages.count > 0 && isValidPageIndex(currentPage) {
         scrollToInitialPage(currentPage)
       }
@@ -290,20 +281,6 @@ struct WebtoonReaderView: UIViewRepresentable {
           self.scrollToInitialPage(currentPage)
         }
       }
-    }
-
-    /// Handles center tap state to preserve scroll position
-    private func handleCenterTapState(currentPage: Int) {
-      if savedScrollOffset > 0, let collectionView = collectionView {
-        let currentOffset = collectionView.contentOffset.y
-        if abs(currentOffset - savedScrollOffset) > Constants.scrollPositionThreshold {
-          collectionView.setContentOffset(
-            CGPoint(x: 0, y: savedScrollOffset),
-            animated: false
-          )
-        }
-      }
-      lastExternalCurrentPage = currentPage
     }
 
     func scrollToPage(_ pageIndex: Int, animated: Bool) {
@@ -786,13 +763,7 @@ struct WebtoonReaderView: UIViewRepresentable {
 
     /// Handles center tap to toggle controls
     private func handleCenterTap(collectionView: UICollectionView) {
-      isHandlingCenterTap = true
-      savedScrollOffset = collectionView.contentOffset.y
       onCenterTap?()
-
-      executeAfterDelay(Constants.centerTapHandlingDelay) { [weak self] in
-        self?.isHandlingCenterTap = false
-      }
     }
 
     /// Scrolls up
