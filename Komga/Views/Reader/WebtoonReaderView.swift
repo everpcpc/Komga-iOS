@@ -600,12 +600,12 @@ struct WebtoonReaderView: UIViewRepresentable {
 
     /// Get image size from URL without fully loading the image
     private func getImageSize(from url: URL) async -> CGSize? {
+      if let cacheKey = SDImageCacheProvider.pageImageManager.cacheKey(for: url),
+        let cachedImage = SDImageCacheProvider.pageImageCache.imageFromCache(forKey: cacheKey)
+      {
+        return cachedImage.size
+      }
       return await Task.detached {
-        let cacheKey = SDWebImageManager.shared.cacheKey(for: url)
-        if let cachedImage = SDImageCache.shared.imageFromCache(forKey: cacheKey) {
-          return cachedImage.size
-        }
-
         if url.isFileURL {
           guard let data = try? Data(contentsOf: url),
             let imageSource = CGImageSourceCreateWithData(data as CFData, nil)
@@ -887,7 +887,10 @@ class WebtoonPageCell: UICollectionViewCell {
       placeholderImage: nil,
       options: [.retryFailed, .scaleDownLargeImages],
       context: [
-        .imageScaleDownLimitBytes: 50 * 1024 * 1024
+        .imageScaleDownLimitBytes: 50 * 1024 * 1024,
+        .customManager: SDImageCacheProvider.pageImageManager,
+        .storeCacheType: SDImageCacheType.memory.rawValue,
+        .queryCacheType: SDImageCacheType.memory.rawValue,
       ],
       progress: nil,
       completed: { [weak self] image, error, _, _ in

@@ -340,7 +340,7 @@ class ReaderViewModel {
   /// - Returns: UIImage if successfully loaded, nil otherwise
   private func loadImageWithSDWebImage(from fileURL: URL) async -> UIImage? {
     return await withCheckedContinuation { continuation in
-      SDImageCache.shared.queryImage(
+      SDImageCacheProvider.pageImageCache.queryImage(
         forKey: fileURL.absoluteString,
         options: [],
         context: nil

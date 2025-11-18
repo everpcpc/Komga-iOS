@@ -5,6 +5,7 @@
 //  Created by Komga iOS Client
 //
 
+import SDWebImage
 import SDWebImageSwiftUI
 import SwiftUI
 
@@ -46,24 +47,28 @@ struct ThumbnailImage: View {
       // Image content
       Group {
         if let url = url {
-          WebImage(url: url)
-            .resizable()
-            .placeholder {
-              if showPlaceholder {
-                Rectangle()
-                  .fill(Color.gray.opacity(0.3))
-                  .overlay {
-                    ProgressView()
-                  }
-              } else {
-                Rectangle()
-                  .fill(Color.gray.opacity(0.3))
-              }
+          WebImage(
+            url: url,
+            options: [.retryFailed, .scaleDownLargeImages],
+            context: [.customManager: SDImageCacheProvider.thumbnailManager]
+          )
+          .resizable()
+          .placeholder {
+            if showPlaceholder {
+              Rectangle()
+                .fill(Color.gray.opacity(0.3))
+                .overlay {
+                  ProgressView()
+                }
+            } else {
+              Rectangle()
+                .fill(Color.gray.opacity(0.3))
             }
-            .indicator(.activity)
-            .transition(.fade(duration: 0.2))
-            .aspectRatio(contentMode: contentMode)
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+          }
+          .indicator(.activity)
+          .transition(.fade(duration: 0.2))
+          .aspectRatio(contentMode: contentMode)
+          .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
         } else {
           RoundedRectangle(cornerRadius: cornerRadius)
             .fill(Color.gray.opacity(0.3))

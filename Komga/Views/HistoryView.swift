@@ -54,7 +54,6 @@ struct HistoryView: View {
               title: "Recently Read Books",
               bookViewModel: bookViewModel,
               onLoadMore: loadMoreRecentlyReadBooks,
-              isLoading: bookViewModel.isLoading
             )
             .animation(.default, value: bookViewModel.books)
             .transition(.move(edge: .top).combined(with: .opacity))
@@ -122,7 +121,6 @@ struct ReadHistorySection: View {
   let title: String
   var bookViewModel: BookViewModel
   var onLoadMore: (() -> Void)?
-  var isLoading: Bool = false
 
   @State private var selectedBookId: String?
   @State private var selectedSeriesId: String?
@@ -171,7 +169,7 @@ struct ReadHistorySection: View {
           }
         }
 
-        if isLoading {
+        if bookViewModel.isLoading {
           ProgressView()
             .frame(maxWidth: .infinity)
             .padding()

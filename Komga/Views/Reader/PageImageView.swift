@@ -6,6 +6,7 @@
 //
 
 import Photos
+import SDWebImage
 import SDWebImageSwiftUI
 import SwiftUI
 
@@ -39,7 +40,10 @@ struct PageImageView: View {
             options: [.retryFailed, .scaleDownLargeImages],
             context: [
               // Limit single image memory to 50MB (will scale down if larger)
-              .imageScaleDownLimitBytes: 50 * 1024 * 1024
+              .imageScaleDownLimitBytes: 50 * 1024 * 1024,
+              .customManager: SDImageCacheProvider.pageImageManager,
+              .storeCacheType: SDImageCacheType.memory.rawValue,
+              .queryCacheType: SDImageCacheType.memory.rawValue,
             ]
           )
           .resizable()

@@ -23,10 +23,10 @@ struct SettingsCacheView: View {
 
   var body: some View {
     Form {
-      Section(header: Text("Cache")) {
+      Section(header: Text("Page Cache")) {
         VStack(alignment: .leading, spacing: 8) {
           HStack {
-            Text("Max Cache Size")
+            Text("Maximum Size")
             Spacer()
             Text("\(maxDiskCacheSizeMB) MB")
               .foregroundColor(.secondary)
@@ -37,14 +37,14 @@ struct SettingsCacheView: View {
             step: 256
           )
           Text(
-            "Adjust the maximum disk cache size. Cache will be cleaned automatically when exceeded."
+            "Adjust the maximum size of the page cache. Cache will be cleaned automatically when exceeded."
           )
           .font(.caption)
           .foregroundColor(.secondary)
         }
 
         HStack {
-          Text("Disk Cache Size")
+          Text("Cached Size")
           Spacer()
           if isLoadingCacheSize {
             ProgressView()

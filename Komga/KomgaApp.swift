@@ -38,13 +38,5 @@ struct KomgaApp: App {
 
     // Register WebP coder
     SDImageCodersManager.shared.addCoder(SDImageWebPCoder.shared)
-
-    // Configure memory cache limits to prevent excessive memory usage
-    // Limit memory cache to 200MB (for decoded images)
-    SDImageCache.shared.config.maxMemoryCost = 200 * 1024 * 1024
-    // Limit memory cache to 50 images
-    SDImageCache.shared.config.maxMemoryCount = 50
-    // Limit disk cache to 200MB for thumbnails
-    SDImageCache.shared.config.maxDiskSize = 200 * 1024 * 1024
   }
 }
