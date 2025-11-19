@@ -6,14 +6,10 @@ A native iOS client for [Komga](https://github.com/gotson/komga) - a media serve
 
 ### 🔐 Authentication
 - User login with Komga server
-- Remember-me support
-- Session management
-- User profile display
+- Remember-me support and session management
 
 ### 📚 Browsing
-- **Libraries**: Browse all libraries with filtering
-- **Series**: Browse series by library with grid layout
-- **Books**: View books within a series
+- Browse libraries, series, and books
 - **Series Filtering & Sorting**:
   - Filter by read status (All, Read, Unread, In Progress)
   - Filter by series status (All, Ongoing, Ended, Hiatus, Cancelled)
@@ -21,54 +17,32 @@ A native iOS client for [Komga](https://github.com/gotson/komga) - a media serve
   - Sort direction: Ascending/Descending (except Random)
   - Library filtering across all views
 - **Series Details**:
-  - Series metadata (title, status, age rating, language, publisher)
-  - Authors and roles (Writer, Artist, Colorist, Letterer, etc.)
-  - Genres and tags
-  - Summary
-  - Reading direction
-  - Book count and unread count
-  - Release date
+  - Full metadata (title, status, age rating, language, publisher, authors, genres, tags, summary)
+  - Reading direction and book count
   - Books list with reading progress indicators
   - Book list sorting (ascending/descending by book number)
 
 ### 📖 Reading Experience
 - **Multiple Reading Modes**:
-  - **LTR (Left-to-Right)**: Traditional comic reading with horizontal page navigation
-  - **RTL (Right-to-Left)**: Manga reading style with reverse horizontal navigation
-  - **Vertical**: Vertical page scrolling for vertical comics
+  - **LTR/RTL**: Horizontal page navigation (left-to-right or right-to-left)
+  - **Vertical**: Vertical page scrolling
   - **Webtoon**: Continuous vertical scroll with adjustable page width (50%-100%)
   - Automatic reading direction detection from series metadata
   - Manual reading mode selection during reading
 - **Reader Features**:
-  - Pinch to zoom (1x to 4x)
-  - Double-tap to zoom in/out
-  - Drag to pan when zoomed
+  - Pinch to zoom (1x to 4x), double-tap to zoom, drag to pan
   - Swipe/tap navigation between pages
-  - Tap zones for page navigation (left/right or top/bottom depending on mode)
-  - Center tap to toggle controls
-  - Auto-hide controls (3 seconds, disabled at end page)
-  - Reading direction picker (accessible from reader controls)
-  - Page counter display (current page / total pages)
-  - Progress slider for quick navigation
+  - Tap zones for page navigation
+  - Auto-hide controls (3 seconds)
+  - Reading direction picker, page counter, progress slider
   - End page view with next book navigation
-  - Next book auto-detection and navigation
-  - Save current page to Photos (JPEG, PNG, HEIF formats supported)
-  - Save current page to Files app (via document picker)
-  - Context menu on page images for quick save to Photos
+  - Save current page to Photos or Files app (JPEG, PNG, HEIF, WebP formats supported)
+  - Context menu on page images for quick save
 - **Progress Tracking**:
   - Automatic progress sync to server
-  - Resume from last read page on book open
+  - Resume from last read page
   - Mark as read/unread
   - Reading status indicators (UNREAD, IN_PROGRESS, READ)
-  - Progress updates on every page change
-- **Performance**:
-  - Intelligent page preloading (1-3 pages ahead based on reading mode)
-  - Two-tier image caching system (disk + memory)
-  - Automatic image downscaling for large images to prevent OOM
-  - LRU memory cache with automatic cleanup
-  - Thumbnail caching for series and books
-  - Smooth scrolling and transitions
-  - Efficient memory management with automatic cache eviction
 
 ### 📊 Dashboard
 - **Keep Reading**: Books currently in progress (sorted by last read date)
@@ -76,23 +50,21 @@ A native iOS client for [Komga](https://github.com/gotson/komga) - a media serve
 - **Recently Added Books**: Latest additions to libraries
 - **Recently Added Series**: New series added to libraries
 - **Recently Updated Series**: Recently updated series
-- **Library Filter**: Filter dashboard content by library
-- **Pull to Refresh**: Manual refresh button to reload all sections
-- **Empty State**: Helpful message when no content is available
+- Library filtering and pull to refresh
 
 ### 📜 History
-- Recently read books with relative timestamps (e.g., "2h ago", "Yesterday", "3 days ago")
-- Reading progress display for each book
-- Book metadata (series title, book title, page count, book number)
+- Recently read books with relative timestamps
+- Reading progress display
 - Library filtering
 - Infinite scroll with automatic pagination
 - Quick access to resume reading
-- Last read date display
-- Pull to refresh support
 
 ### ⚙️ Settings
 - **Appearance**:
-  - Theme color selection (6 color options)
+  - Theme color selection (12 color options)
+  - Browse columns adjustment (portrait/landscape, 1-8 columns)
+  - Show/hide card titles
+  - Preserve thumbnail aspect ratio
 - **Reader**:
   - Webtoon page width adjustment (50% - 100%)
 - **Cache**:
@@ -104,101 +76,26 @@ A native iOS client for [Komga](https://github.com/gotson/komga) - a media serve
   - User email and roles display
   - Logout
 
-### 🔍 Search & Filtering
-- **Book Search**:
-  - Filter by read status (UNREAD, IN_PROGRESS, READ)
-  - Filter by library
-  - Filter by series
-  - Combined filters (library + read status)
-- **Series Filtering** (in Browse view):
-  - Filter by read status (All, Read, Unread, In Progress)
-  - Filter by series status (All, Ongoing, Ended, Hiatus, Cancelled)
-  - Sort by multiple fields with ascending/descending order
-  - Random sorting option
-  - Persistent filter preferences
-
 ### 💾 Performance & Caching
 - **Two-Tier Image Caching System**:
-  - **Disk Cache**: Stores raw image data (configurable, default 2GB, range 512MB-8GB) to avoid re-downloading
-    - Persistent across app restarts
-    - Organized by book ID for efficient management
-    - Automatic cleanup of oldest files when limit is reached
-    - Manual cache clearing from settings
-    - Cache size monitoring and statistics
-  - **Memory Cache**: Stores decoded images (up to 50 images, 200MB)
-    - LRU (Least Recently Used) eviction policy
-    - Automatic cleanup on memory warnings
-    - Fast instant display for recently viewed pages
+  - **Disk Cache**: Persistent storage (configurable, default 2GB, range 512MB-8GB)
+  - **Memory Cache**: Fast access (up to 50 images, 200MB, LRU eviction)
 - **Smart Image Loading**:
   - Load order: Memory cache → Disk cache → Network download
-  - Automatic downscaling of large images to screen size (prevents OOM)
-  - Background image decoding to avoid UI blocking
-  - Progressive loading with placeholder states
-- **Page Preloading**:
-  - Intelligent preloading based on reading mode
-  - Automatic cleanup of pages far from current position
-  - Concurrent loading for better performance
+  - Automatic downscaling of large images to prevent OOM
+  - Background image decoding
+  - WebP format support
+- **Page Preloading**: Intelligent preloading based on reading mode (1-3 pages ahead)
 - **Thumbnail Caching**: Fast thumbnail loading for series and books
-- **Memory Management**:
-  - Automatic cache size limits
-  - Memory warning handling
-  - Efficient cleanup of unused resources
-  - User-configurable cache size limits
-
-### 📝 API Logging
-- Comprehensive API request/response logging
-- Request URL and method
-- Response status codes
-- Request duration
-- Data transfer size
-- Detailed error information for debugging
 
 ## Architecture
 
-The app is built using modern SwiftUI and follows the MVVM pattern:
+Built with SwiftUI following MVVM pattern:
 
-### Models
-- `Library` - Represents a library on the Komga server
-- `Series` - A series of books/comics
-- `Book` - Individual books with metadata
-- `Page` - Paginated API responses
-- `Collection` & `ReadList` - Book collections and reading lists
-
-### Services
-- `APIClient` - Core HTTP client with authentication
-- `AuthService` - User authentication and session management
-- `LibraryService` - Library operations
-- `SeriesService` - Series browsing and operations
-- `BookService` - Book operations and reading
-- `CollectionService` & `ReadListService` - Collection/ReadList operations
-- `ImageCache` - Two-tier image caching system (disk + memory) with LRU eviction
-
-### ViewModels
-- `AuthViewModel` - Authentication state management
-- `LibraryViewModel` - Libraries data
-- `SeriesViewModel` - Series browsing with thumbnail caching
-- `BookViewModel` - Books data with thumbnail caching
-- `ReaderViewModel` - Reading experience with page caching
-
-### Views
-- `LoginView` - Server and credential input
-- `DashboardView` - Home screen with recommendations and library filtering
-- `BrowseView` - Browse series with advanced filtering and sorting options
-- `SeriesListView` - Grid layout for browsing series with infinite scroll
-- `SeriesDetailView` - Comprehensive series details with metadata and books list
-- `BookReaderView` - Full-screen comic reader with multiple reading modes
-- `HorizontalPageView` - LTR/RTL horizontal page navigation
-- `VerticalPageView` - Vertical page scrolling
-- `WebtoonReaderView` - Webtoon-style continuous vertical scroll reader
-- `PageImageView` - Individual page display with zoom and pan, context menu for saving images
-- `ReaderControlsView` - Reader controls overlay (navigation, progress, settings, save to Photos/Files)
-- `EndPageView` - End of book view with next book navigation
-- `SaveImageButton` - Reusable component for saving images to Photos
-- `HistoryView` - Reading history with infinite scroll
-- `SettingsView` - User settings and preferences
-- `BookCardView` - Book card component with thumbnail
-- `BookRowView` - Book row component for list views
-- `SeriesCardView` - Series card component with thumbnail and unread badge
+- **Models**: Library, Series, Book, Page, Collection, ReadList
+- **Services**: APIClient, AuthService, LibraryService, SeriesService, BookService, ImageCache
+- **ViewModels**: AuthViewModel, LibraryViewModel, SeriesViewModel, BookViewModel, ReaderViewModel
+- **Views**: Login, Dashboard, Browse, History, Settings, Reader (multiple modes), Series/Book details
 
 ## Setup
 
@@ -211,45 +108,12 @@ The app is built using modern SwiftUI and follows the MVVM pattern:
 
 ## API Compatibility
 
-This client is compatible with Komga API v1 and v2. It supports:
+Compatible with Komga API v1 and v2:
 
-- ✅ **User Authentication (API v2)**
-  - Login with remember-me support
-  - Logout
-  - Current user info
-- ✅ **Libraries (API v1)**
-  - List all libraries
-  - Library filtering
-- ✅ **Series (API v1)**
-  - Browse all series
-  - Browse new series
-  - Browse updated series
-  - Series details with full metadata
-  - Series thumbnails
-  - Mark series as read/unread
-- ✅ **Books (API v1)**
-  - List books in a series
-  - Book details
-  - Book search with filters (read status, library, series)
-  - Recently added books
-  - Recently read books
-  - On Deck books
-  - Book thumbnails
-  - Mark books as read/unread
-- ✅ **Reading Progress (API v1)**
-  - Track reading progress
-  - Update progress automatically
-  - Resume from last page
-  - Reading status (UNREAD, IN_PROGRESS, READ)
-- ✅ **Book Pages (API v1)**
-  - Get page list
-  - Download page images
-  - Two-tier page caching (disk + memory)
-  - Automatic image optimization and downscaling
-- ✅ **Collections (API v1)**
-  - Collection support (models and services)
-- ✅ **Read Lists (API v1)**
-  - Read list support (models and services)
+- ✅ User Authentication (API v2)
+- ✅ Libraries, Series, Books (API v1)
+- ✅ Reading Progress & Book Pages (API v1)
+- ✅ Collections & Read Lists (API v1)
 
 ## Requirements
 
@@ -260,24 +124,16 @@ This client is compatible with Komga API v1 and v2. It supports:
 
 ## Debugging
 
-The app includes comprehensive API logging using Apple's unified logging system (OSLog). To view logs:
+The app includes comprehensive API logging using Apple's unified logging system (OSLog).
 
-1. **In Xcode Console:**
-   - Run the app from Xcode
-   - View logs in the console at the bottom
-
-2. **In Console.app:**
-   - Open Console.app on your Mac
-   - Connect your device
-   - Filter by process name: "Komga" or subsystem: "Komga"
-   - Category: "API"
+**View logs in Xcode Console** or **Console.app**:
+- Filter by process name: "Komga" or subsystem: "Komga"
+- Category: "API"
 
 **Log Format:**
 ```
 📡 GET https://your-server.com/api/v2/users/me
 ✅ 200 GET https://your-server.com/api/v2/users/me (45.67ms)
-📡 GET https://your-server.com/api/v1/series/123/thumbnail [Data]
-✅ 200 GET https://your-server.com/api/v1/series/123/thumbnail (123.45ms, 245 KB)
 ```
 
 **Log Symbols:**
@@ -287,30 +143,11 @@ The app includes comprehensive API logging using Apple's unified logging system 
 - 🔒 Unauthorized (401)
 - ⚠️ Warning (e.g., empty response)
 
-**Detailed Error Information:**
-
-When a decoding error occurs, the log will show:
-- Missing keys and their paths
-- Type mismatches
-- Value not found errors
-- First 1000 characters of the response data for debugging
-
-This helps quickly identify API compatibility issues between different Komga versions.
-
 ## TODO
-
-### Library View Enhancements
-- [x] Ability to resize the tiles in library view (reducing or increasing number of rows/columns)
-- [x] Option to disable titles in library view (most are too long to show more than a few characters)
-- [x] Option to preserve the cover image aspect ratio in the library view (a lot of cover images are not standardized in resolutions)
-
-### Series & Book Features
-- [x] Importing the summary of a series from the first book like the webui (See mangabox)
-- [x] Ability to view summaries of each book in a series (See mangabox)
 
 ### Reader Features
 - [ ] Two page spread function when the screen is turned landscape
-- [ ] Skip cover option for two page spread (see webui for example)
+- [ ] Skip cover option for two page spread
 
 ### Collections & Read Lists
 - [ ] Ability to view "Collections/Read Lists"
