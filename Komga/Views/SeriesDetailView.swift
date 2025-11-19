@@ -10,17 +10,17 @@ import SwiftUI
 struct SeriesDetailView: View {
   let seriesId: String
 
+  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
+  @AppStorage("bookListSortDirection") private var sortDirection: SortDirection = .ascending
+
   @Environment(\.dismiss) private var dismiss
+
   @State private var seriesViewModel = SeriesViewModel()
   @State private var bookViewModel = BookViewModel()
   @State private var series: Series?
   @State private var readerState: BookReaderState?
-  @State private var bookSummary: String?
-  @State private var bookSummaryNumber: String?
   @State private var actionErrorMessage: String?
   @State private var showDeleteConfirmation = false
-  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
-  @AppStorage("bookListSortDirection") private var sortDirection: SortDirection = .ascending
 
   private var thumbnailURL: URL? {
     guard let series = series else { return nil }
@@ -216,16 +216,18 @@ struct SeriesDetailView: View {
               Text(summary)
                 .font(.body)
             }
-          } else if let bookSummary = bookSummary, let bookNumber = bookSummaryNumber {
+          } else if let summary = series.booksMetadata.summary, !summary.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
               HStack {
                 Text("Summary")
                   .font(.headline)
-                Text("(from Book #\(bookNumber))")
-                  .font(.caption)
-                  .foregroundColor(.secondary)
+                if let number = series.booksMetadata.summaryNumber, !number.isEmpty {
+                  Text("(from Book #\(number))")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                }
               }
-              Text(bookSummary)
+              Text(summary)
                 .font(.body)
             }
           }
@@ -322,9 +324,6 @@ struct SeriesDetailView: View {
     .task {
       await loadSeriesDetails()
     }
-    .onChange(of: bookViewModel.books) {
-      findBookSummary()
-    }
   }
 }
 
@@ -414,19 +413,6 @@ extension SeriesDetailView {
         await MainActor.run {
           actionErrorMessage = error.localizedDescription
         }
-      }
-    }
-  }
-
-  private func findBookSummary() {
-    if bookSummary != nil { return }
-    guard let series = series else { return }
-    if let seriesSummary = series.metadata.summary, !seriesSummary.isEmpty { return }
-    for book in bookViewModel.books {
-      if let summary = book.metadata.summary, !summary.isEmpty {
-        bookSummary = summary
-        bookSummaryNumber = book.metadata.number
-        break
       }
     }
   }
