@@ -33,7 +33,9 @@ class BookViewModel {
 
     do {
       let page = try await bookService.getBooks(seriesId: seriesId, page: 0, size: 50, sort: sort)
-      books = page.content
+      withAnimation {
+        books = page.content
+      }
       hasMorePages = !page.last
       currentPage = 1
     } catch {
@@ -52,7 +54,9 @@ class BookViewModel {
     do {
       let page = try await bookService.getBooks(
         seriesId: seriesId, page: currentPage, size: 50, sort: currentSort)
-      books.append(contentsOf: page.content)
+      withAnimation {
+        books.append(contentsOf: page.content)
+      }
       hasMorePages = !page.last
       currentPage += 1
     } catch {

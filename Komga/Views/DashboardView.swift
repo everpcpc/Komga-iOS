@@ -153,7 +153,6 @@ struct DashboardView: View {
       .sheet(isPresented: $showLibraryPickerSheet) {
         LibraryPickerSheet()
       }
-      .animation(.default, value: selectedLibraryId)
       .onChange(of: selectedLibraryId) {
         Task {
           await loadAll()

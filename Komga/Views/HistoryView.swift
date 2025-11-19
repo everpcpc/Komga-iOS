@@ -58,7 +58,6 @@ struct HistoryView: View {
                 refreshRecentlyReadBooks()
               }
             )
-            .animation(.default, value: bookViewModel.books)
             .transition(.move(edge: .top).combined(with: .opacity))
           } else {
             VStack(spacing: 16) {
@@ -105,7 +104,6 @@ struct HistoryView: View {
       .sheet(isPresented: $showLibraryPickerSheet) {
         LibraryPickerSheet()
       }
-      .animation(.default, value: selectedLibraryId)
       .onChange(of: selectedLibraryId) {
         refreshRecentlyReadBooks()
       }

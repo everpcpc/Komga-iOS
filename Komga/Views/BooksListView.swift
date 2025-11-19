@@ -80,7 +80,6 @@ struct BooksListView: View {
     .task(id: seriesId) {
       await bookViewModel.loadBooks(seriesId: seriesId, sort: sortDirection.bookSortString)
     }
-    .animation(.default, value: bookViewModel.books)
     .onChange(of: sortDirection) {
       Task {
         await bookViewModel.loadBooks(seriesId: seriesId, sort: sortDirection.bookSortString)
@@ -89,8 +88,8 @@ struct BooksListView: View {
   }
 }
 
-private extension BooksListView {
-  func refreshBooks() {
+extension BooksListView {
+  fileprivate func refreshBooks() {
     Task {
       await bookViewModel.loadBooks(seriesId: seriesId, sort: sortDirection.bookSortString)
     }

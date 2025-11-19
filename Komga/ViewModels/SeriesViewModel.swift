@@ -51,10 +51,12 @@ class SeriesViewModel {
         seriesStatus: browseOpts.seriesStatusFilter
       )
 
-      if shouldReset {
-        series = page.content
-      } else {
-        series.append(contentsOf: page.content)
+      withAnimation {
+        if shouldReset {
+          series = page.content
+        } else {
+          series.append(contentsOf: page.content)
+        }
       }
 
       hasMorePages = !page.last

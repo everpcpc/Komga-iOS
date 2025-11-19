@@ -96,7 +96,6 @@ struct SeriesListView: View {
         }
       }
     }
-    .animation(.default, value: viewModel.series)
     .task {
       if viewModel.series.isEmpty {
         await viewModel.loadSeries(browseOpts: browseOpts, refresh: true)
