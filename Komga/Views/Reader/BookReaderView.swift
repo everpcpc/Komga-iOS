@@ -109,7 +109,7 @@ struct BookReaderView: View {
       .opacity(shouldShowControls ? 1.0 : 0.0)
       .allowsHitTesting(shouldShowControls)
     }
-    .statusBar(hidden: !showingControls && !viewModel.pages.isEmpty)
+    // .statusBar(hidden: !showingControls && !viewModel.pages.isEmpty)
     .sheet(isPresented: $showingReadingDirectionPicker) {
       NavigationStack {
         Form {

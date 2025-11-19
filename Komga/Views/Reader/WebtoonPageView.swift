@@ -20,8 +20,7 @@ struct WebtoonPageView: View {
 
   var body: some View {
     GeometryReader { geometry in
-      let screenWidth = geometry.size.width
-      let pageWidth = screenWidth * (webtoonPageWidthPercentage / 100.0)
+      let pageWidth = geometry.size.width * (webtoonPageWidthPercentage / 100.0)
 
       ZStack {
         WebtoonReaderView(
