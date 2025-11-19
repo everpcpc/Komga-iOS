@@ -288,13 +288,15 @@ private struct ReadingDirectionPickerSheetView: View {
       Form {
         Picker("Reading Direction", selection: $viewModel.readingDirection) {
           ForEach(ReadingDirection.allCases, id: \.self) { direction in
-            Label(direction.displayName, systemImage: direction.icon)
-              .tag(direction)
+            HStack(spacing: 12) {
+              Image(systemName: direction.icon)
+                .foregroundStyle(themeColorOption.color)
+              Text(direction.displayName)
+            }
+            .tag(direction)
           }
-        }
-        .pickerStyle(.inline)
+        }.pickerStyle(.inline)
       }
-      .tint(themeColorOption.color)
       .navigationTitle("Reading Mode")
       .navigationBarTitleDisplayMode(.inline)
     }
