@@ -34,12 +34,19 @@ struct SettingsView: View {
         }
 
         Section {
+          NavigationLink(value: NavDestination.settingsLibraries) {
+            Text("Library Management")
+          }
+        }
+
+        Section {
           NavigationLink(value: NavDestination.settingsAppearance) {
             Text("Appearance")
           }
           NavigationLink(value: NavDestination.settingsCache) {
             Text("Cache")
           }
+
         }
 
         Section(header: Text("Reader")) {

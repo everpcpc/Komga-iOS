@@ -226,11 +226,7 @@ struct BookDetailView: View {
         Text(actionErrorMessage)
       }
     }
-    .confirmationDialog(
-      "Delete Book?",
-      isPresented: $showDeleteConfirmation,
-      titleVisibility: .visible
-    ) {
+    .alert("Delete Book?", isPresented: $showDeleteConfirmation) {
       Button("Delete", role: .destructive) {
         if let book {
           deleteBook(book)

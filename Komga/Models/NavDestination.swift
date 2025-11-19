@@ -13,4 +13,5 @@ enum NavDestination: Hashable {
 
   case settingsAppearance
   case settingsCache
+  case settingsLibraries
 }

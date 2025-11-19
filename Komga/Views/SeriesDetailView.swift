@@ -264,11 +264,7 @@ struct SeriesDetailView: View {
         Text(actionErrorMessage)
       }
     }
-    .confirmationDialog(
-      "Delete Series?",
-      isPresented: $showDeleteConfirmation,
-      titleVisibility: .visible
-    ) {
+    .alert("Delete Series?", isPresented: $showDeleteConfirmation) {
       Button("Delete", role: .destructive) {
         deleteSeries()
       }

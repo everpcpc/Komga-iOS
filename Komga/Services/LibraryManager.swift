@@ -44,4 +44,9 @@ class LibraryManager {
   func getLibrary(id: String) -> LibraryInfo? {
     return libraries.first { $0.id == id }
   }
+
+  func refreshLibraries() async {
+    hasLoaded = false
+    await loadLibraries()
+  }
 }

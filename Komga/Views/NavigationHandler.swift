@@ -21,6 +21,8 @@ extension View {
           SettingsAppearanceView()
         case .settingsCache:
           SettingsCacheView()
+        case .settingsLibraries:
+          SettingsLibrariesView()
         }
       }
   }
