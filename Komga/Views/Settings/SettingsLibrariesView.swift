@@ -367,10 +367,10 @@ private struct LibraryActionsSheet: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button {
+          Button(role: .cancel) {
             dismiss()
           } label: {
-            Label("Close", systemImage: "xmark.circle")
+            Label("Close", systemImage: "xmark")
           }
         }
       }

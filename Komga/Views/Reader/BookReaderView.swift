@@ -110,25 +110,6 @@ struct BookReaderView: View {
       .allowsHitTesting(shouldShowControls)
     }
     // .statusBar(hidden: !showingControls && !viewModel.pages.isEmpty)
-    .sheet(isPresented: $showingReadingDirectionPicker) {
-      NavigationStack {
-        Form {
-          Picker("Reading Direction", selection: $viewModel.readingDirection) {
-            ForEach(ReadingDirection.allCases, id: \.self) { direction in
-              Label(direction.displayName, systemImage: direction.icon)
-                .tag(direction)
-            }
-          }
-          .pickerStyle(.inline)
-        }
-        .navigationTitle("Reading Mode")
-        .navigationBarTitleDisplayMode(.inline)
-      }
-      .presentationDetents([.medium])
-      .onChange(of: viewModel.readingDirection) {
-        showingReadingDirectionPicker = false
-      }
-    }
     .task(id: currentBookId) {
       // Mark that loading has started
       viewModel.isLoading = true

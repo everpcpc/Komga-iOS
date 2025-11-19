@@ -21,6 +21,7 @@ struct ReaderControlsView: View {
   @State private var showSaveAlert = false
   @State private var showDocumentPicker = false
   @State private var fileToSave: URL?
+  @State private var showingPageJumpSheet = false
 
   enum SaveImageResult: Equatable {
     case success
@@ -48,13 +49,20 @@ struct ReaderControlsView: View {
           Spacer()
 
           // Page count
-          Text("\(viewModel.currentPageIndex + 1) / \(viewModel.pages.count)")
-            .foregroundColor(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(themeColorOption.color.opacity(0.8))
-            .cornerRadius(20)
-            .monospacedDigit()
+          Button {
+            guard !viewModel.pages.isEmpty else { return }
+            showingPageJumpSheet = true
+          } label: {
+            Text("\(viewModel.currentPageIndex + 1) / \(viewModel.pages.count)")
+              .foregroundColor(.white)
+              .padding(.horizontal, 16)
+              .padding(.vertical, 8)
+              .background(themeColorOption.color.opacity(0.8))
+              .cornerRadius(20)
+              .monospacedDigit()
+          }
+          .buttonStyle(.plain)
+          .disabled(viewModel.pages.isEmpty)
 
           Spacer()
 
@@ -139,7 +147,8 @@ struct ReaderControlsView: View {
         )
         .scaleEffect(x: viewModel.readingDirection == .rtl ? -1 : 1, y: 1)
       }
-      .padding()
+      .padding(.bottom)
+      .allowsHitTesting(true)
     }
     .allowsHitTesting(true)
     .transition(.opacity)
@@ -162,6 +171,11 @@ struct ReaderControlsView: View {
         showSaveAlert = true
       }
     }
+    .onChange(of: viewModel.readingDirection) { _, _ in
+      if showingReadingDirectionPicker {
+        showingReadingDirectionPicker = false
+      }
+    }
     .fileExporter(
       isPresented: $showDocumentPicker,
       document: fileToSave.map { ImageFileDocument(url: $0) },
@@ -173,6 +187,29 @@ struct ReaderControlsView: View {
         try? FileManager.default.removeItem(at: tempURL)
       }
       fileToSave = nil
+    }
+    .sheet(isPresented: $showingPageJumpSheet) {
+      PageJumpSheetView(
+        totalPages: viewModel.pages.count,
+        currentPage: viewModel.currentPageIndex + 1,
+        onJump: jumpToPage
+      )
+      .presentationDetents([.medium])
+      .presentationDragIndicator(.visible)
+    }
+    .sheet(isPresented: $showingReadingDirectionPicker) {
+      ReadingDirectionPickerSheetView(viewModel: viewModel)
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
+    }
+  }
+
+  private func jumpToPage(page: Int) {
+    guard !viewModel.pages.isEmpty else { return }
+    let clampedPage = min(max(page, 1), viewModel.pages.count)
+    let targetIndex = clampedPage - 1
+    if targetIndex != viewModel.currentPageIndex {
+      viewModel.currentPageIndex = targetIndex
     }
   }
 
@@ -238,6 +275,141 @@ struct ReaderControlsView: View {
         saveImageResult = .failure(error.localizedDescription)
       }
     }
+  }
+}
+
+private struct ReadingDirectionPickerSheetView: View {
+  @Bindable var viewModel: ReaderViewModel
+
+  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
+
+  var body: some View {
+    NavigationStack {
+      Form {
+        Picker("Reading Direction", selection: $viewModel.readingDirection) {
+          ForEach(ReadingDirection.allCases, id: \.self) { direction in
+            Label(direction.displayName, systemImage: direction.icon)
+              .tag(direction)
+          }
+        }
+        .pickerStyle(.inline)
+      }
+      .tint(themeColorOption.color)
+      .navigationTitle("Reading Mode")
+      .navigationBarTitleDisplayMode(.inline)
+    }
+  }
+}
+
+private struct PageJumpSheetView: View {
+  let totalPages: Int
+  let currentPage: Int
+  let onJump: (Int) -> Void
+
+  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
+
+  @Environment(\.dismiss) private var dismiss
+  @State private var pageValue: Int
+
+  private var maxPage: Int {
+    max(totalPages, 1)
+  }
+
+  private var canJump: Bool {
+    totalPages > 0
+  }
+
+  private var rangeDescription: String {
+    canJump ? "Range: 1 – \(totalPages)" : "No pages available"
+  }
+
+  private var sliderBinding: Binding<Double> {
+    Binding(
+      get: { Double(pageValue) },
+      set: { newValue in
+        pageValue = Int(newValue.rounded())
+      }
+    )
+  }
+
+  init(totalPages: Int, currentPage: Int, onJump: @escaping (Int) -> Void) {
+    self.totalPages = totalPages
+    self.currentPage = currentPage
+    self.onJump = onJump
+
+    let safeInitialPage = max(1, min(currentPage, max(totalPages, 1)))
+    _pageValue = State(initialValue: safeInitialPage)
+  }
+
+  var body: some View {
+    NavigationStack {
+      VStack(spacing: 24) {
+        VStack(spacing: 8) {
+          Text(rangeDescription)
+            .font(.headline)
+            .foregroundStyle(.secondary)
+          if canJump {
+            Text("Current page: \(currentPage)")
+              .font(.subheadline)
+              .foregroundStyle(.secondary)
+          }
+        }
+
+        if canJump {
+          VStack(spacing: 20) {
+            Text("Selected page: \(pageValue)")
+              .font(.headline)
+
+            VStack(spacing: 8) {
+              Slider(
+                value: sliderBinding,
+                in: 1...Double(maxPage),
+                step: 1
+              )
+              .tint(themeColorOption.color)
+
+              HStack {
+                Text("1")
+                Spacer()
+                Text("\(totalPages)")
+              }
+              .font(.footnote)
+              .foregroundStyle(.secondary)
+            }
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+        }
+
+        Spacer()
+      }
+      .padding()
+      .navigationTitle("Go to Page")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button(role: .cancel) {
+            dismiss()
+          } label: {
+            Label("Close", systemImage: "xmark")
+          }
+        }
+        ToolbarItem(placement: .confirmationAction) {
+          Button {
+            jumpToPage()
+          } label: {
+            Label("Jump", systemImage: "arrow.right.to.line")
+          }
+          .disabled(!canJump || pageValue == currentPage)
+        }
+      }
+    }
+  }
+
+  private func jumpToPage() {
+    guard canJump else { return }
+    let clampedValue = min(max(pageValue, 1), totalPages)
+    onJump(clampedValue)
+    dismiss()
   }
 }
 
