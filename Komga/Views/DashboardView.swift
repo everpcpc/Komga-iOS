@@ -89,7 +89,8 @@ struct DashboardView: View {
               DashboardSeriesSection(
                 title: "Recently Updated Series",
                 series: recentlyUpdatedSeries,
-                seriesViewModel: seriesViewModel
+              seriesViewModel: seriesViewModel,
+              onSeriesUpdated: refreshDashboardData
               )
               .transition(.move(edge: .top).combined(with: .opacity))
             }
@@ -99,7 +100,8 @@ struct DashboardView: View {
               DashboardSeriesSection(
                 title: "Recently Added Series",
                 series: recentlyAddedSeries,
-                seriesViewModel: seriesViewModel
+              seriesViewModel: seriesViewModel,
+              onSeriesUpdated: refreshDashboardData
               )
               .transition(.move(edge: .top).combined(with: .opacity))
             }
@@ -288,6 +290,7 @@ struct DashboardSeriesSection: View {
   let title: String
   let series: [Series]
   var seriesViewModel: SeriesViewModel
+  var onSeriesUpdated: (() -> Void)? = nil
 
   var body: some View {
     VStack(alignment: .leading, spacing: 4) {
@@ -300,7 +303,12 @@ struct DashboardSeriesSection: View {
         HStack(spacing: 12) {
           ForEach(series) { s in
             NavigationLink(value: NavDestination.seriesDetail(seriesId: s.id)) {
-              SeriesCardView(series: s, cardWidth: 120, showTitle: true)
+              SeriesCardView(
+                series: s,
+                cardWidth: 120,
+                showTitle: true,
+                onActionCompleted: onSeriesUpdated
+              )
             }
             .buttonStyle(.plain)
           }

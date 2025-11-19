@@ -66,7 +66,16 @@ struct SeriesListView: View {
         LazyVGrid(columns: columns, spacing: spacing) {
           ForEach(Array(viewModel.series.enumerated()), id: \.element.id) { index, series in
             NavigationLink(value: NavDestination.seriesDetail(seriesId: series.id)) {
-              SeriesCardView(series: series, cardWidth: cardWidth, showTitle: browseShowCardTitles)
+              SeriesCardView(
+                series: series,
+                cardWidth: cardWidth,
+                showTitle: browseShowCardTitles,
+                onActionCompleted: {
+                  Task {
+                    await viewModel.loadSeries(browseOpts: browseOpts, refresh: true)
+                  }
+                }
+              )
             }
             .buttonStyle(.plain)
             .onAppear {

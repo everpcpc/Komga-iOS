@@ -10,12 +10,15 @@ import SwiftUI
 struct SeriesDetailView: View {
   let seriesId: String
 
+  @Environment(\.dismiss) private var dismiss
   @State private var seriesViewModel = SeriesViewModel()
   @State private var bookViewModel = BookViewModel()
   @State private var series: Series?
   @State private var readerState: BookReaderState?
   @State private var bookSummary: String?
   @State private var bookSummaryNumber: String?
+  @State private var actionErrorMessage: String?
+  @State private var showDeleteConfirmation = false
   @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
   @AppStorage("bookListSortDirection") private var sortDirection: SortDirection = .ascending
 
@@ -29,6 +32,23 @@ struct SeriesDetailView: View {
       get: { readerState != nil },
       set: { if !$0 { readerState = nil } }
     )
+  }
+
+  private var isActionErrorPresented: Binding<Bool> {
+    Binding(
+      get: { actionErrorMessage != nil },
+      set: { if !$0 { actionErrorMessage = nil } }
+    )
+  }
+
+  private var canMarkSeriesAsRead: Bool {
+    guard let series else { return false }
+    return series.booksUnreadCount > 0
+  }
+
+  private var canMarkSeriesAsUnread: Bool {
+    guard let series else { return false }
+    return (series.booksReadCount + series.booksInProgressCount) > 0
   }
 
   var body: some View {
@@ -237,6 +257,72 @@ struct SeriesDetailView: View {
         BookReaderView(bookId: bookId, incognito: state.incognito)
       }
     }
+    .alert("Action Failed", isPresented: isActionErrorPresented) {
+      Button("OK", role: .cancel) {}
+    } message: {
+      if let actionErrorMessage {
+        Text(actionErrorMessage)
+      }
+    }
+    .confirmationDialog(
+      "Delete Series?",
+      isPresented: $showDeleteConfirmation,
+      titleVisibility: .visible
+    ) {
+      Button("Delete", role: .destructive) {
+        deleteSeries()
+      }
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text("This will permanently delete \(series?.metadata.title ?? "this series") from Komga.")
+    }
+    .toolbar {
+      if series != nil {
+        ToolbarItem(placement: .topBarTrailing) {
+          Menu {
+            Button {
+              analyzeSeries()
+            } label: {
+              Label("Analyze", systemImage: "waveform.path.ecg")
+            }
+
+            Button {
+              refreshSeriesMetadata()
+            } label: {
+              Label("Refresh Metadata", systemImage: "arrow.clockwise")
+            }
+
+            Divider()
+
+            if canMarkSeriesAsRead {
+              Button {
+                markSeriesAsRead()
+              } label: {
+                Label("Mark as Read", systemImage: "checkmark.circle")
+              }
+            }
+
+            if canMarkSeriesAsUnread {
+              Button {
+                markSeriesAsUnread()
+              } label: {
+                Label("Mark as Unread", systemImage: "circle")
+              }
+            }
+
+            Divider()
+
+            Button(role: .destructive) {
+              showDeleteConfirmation = true
+            } label: {
+              Label("Delete Series", systemImage: "trash")
+            }
+          } label: {
+            Image(systemName: "ellipsis.circle")
+          }
+        }
+      }
+    }
     .task {
       await loadSeriesDetails()
     }
@@ -250,15 +336,89 @@ struct SeriesDetailView: View {
 extension SeriesDetailView {
   private func refreshAfterReading() {
     Task {
-      await loadSeriesDetails()
-      await bookViewModel.loadBooks(seriesId: seriesId, sort: sortDirection.bookSortString)
+      await refreshSeriesData()
     }
   }
 
+  @MainActor
+  private func refreshSeriesData() async {
+    await loadSeriesDetails()
+    await bookViewModel.loadBooks(seriesId: seriesId, sort: sortDirection.bookSortString)
+  }
+
+  @MainActor
   private func loadSeriesDetails() async {
     do {
-      series = try await SeriesService.shared.getOneSeries(id: seriesId)
+      let fetchedSeries = try await SeriesService.shared.getOneSeries(id: seriesId)
+      series = fetchedSeries
     } catch {
+    }
+  }
+
+  private func analyzeSeries() {
+    Task {
+      do {
+        try await SeriesService.shared.analyzeSeries(seriesId: seriesId)
+        await refreshSeriesData()
+      } catch {
+        await MainActor.run {
+          actionErrorMessage = error.localizedDescription
+        }
+      }
+    }
+  }
+
+  private func refreshSeriesMetadata() {
+    Task {
+      do {
+        try await SeriesService.shared.refreshMetadata(seriesId: seriesId)
+        await refreshSeriesData()
+      } catch {
+        await MainActor.run {
+          actionErrorMessage = error.localizedDescription
+        }
+      }
+    }
+  }
+
+  private func markSeriesAsRead() {
+    Task {
+      do {
+        try await SeriesService.shared.markAsRead(seriesId: seriesId)
+        await refreshSeriesData()
+      } catch {
+        await MainActor.run {
+          actionErrorMessage = error.localizedDescription
+        }
+      }
+    }
+  }
+
+  private func markSeriesAsUnread() {
+    Task {
+      do {
+        try await SeriesService.shared.markAsUnread(seriesId: seriesId)
+        await refreshSeriesData()
+      } catch {
+        await MainActor.run {
+          actionErrorMessage = error.localizedDescription
+        }
+      }
+    }
+  }
+
+  private func deleteSeries() {
+    Task {
+      do {
+        try await SeriesService.shared.deleteSeries(seriesId: seriesId)
+        await MainActor.run {
+          dismiss()
+        }
+      } catch {
+        await MainActor.run {
+          actionErrorMessage = error.localizedDescription
+        }
+      }
     }
   }
 

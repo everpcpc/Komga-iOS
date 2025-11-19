@@ -135,4 +135,25 @@ class SeriesService {
       method: "DELETE"
     )
   }
+
+  func analyzeSeries(seriesId: String) async throws {
+    let _: EmptyResponse = try await apiClient.request(
+      path: "/api/v1/series/\(seriesId)/analyze",
+      method: "POST"
+    )
+  }
+
+  func refreshMetadata(seriesId: String) async throws {
+    let _: EmptyResponse = try await apiClient.request(
+      path: "/api/v1/series/\(seriesId)/metadata/refresh",
+      method: "POST"
+    )
+  }
+
+  func deleteSeries(seriesId: String) async throws {
+    let _: EmptyResponse = try await apiClient.request(
+      path: "/api/v1/series/\(seriesId)/file",
+      method: "DELETE"
+    )
+  }
 }
