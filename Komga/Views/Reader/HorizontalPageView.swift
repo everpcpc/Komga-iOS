@@ -18,81 +18,105 @@ struct HorizontalPageView: View {
   let goToPreviousPage: () -> Void
   let toggleControls: () -> Void
 
-  private var tabViewSelection: Binding<Int> {
-    Binding(
-      get: getSelectedDisplayIndex,
-      set: setSelectedDisplayIndex
-    )
-  }
+  @State private var hasSyncedInitialScroll = false
 
   var body: some View {
-    TabView(selection: tabViewSelection) {
-      // For RTL, show end page first
-      if viewModel.readingDirection == .rtl {
-        endPageView
-          .tag(-1)
-      }
+    GeometryReader { screenGeometry in
+      let screenKey = "\(Int(screenGeometry.size.width))x\(Int(screenGeometry.size.height))"
 
-      ForEach(0..<viewModel.pages.count, id: \.self) { displayIndex in
-        GeometryReader { geometry in
-          ZStack {
-            PageImageView(
-              viewModel: viewModel,
-              pageIndex: viewModel.displayIndexToPageIndex(displayIndex)
-            )
+      ScrollViewReader { proxy in
+        ScrollView(.horizontal) {
+          LazyHStack(spacing: 0) {
+            // For RTL, show end page first
+            if viewModel.readingDirection == .rtl {
+              endPageView(width: screenGeometry.size.width, height: screenGeometry.size.height)
+                .id("endPage")
+                .onAppear {
+                  isAtEndPage = true
+                  showingControls = true  // Show controls when end page appears
+                }
+            }
+
+            ForEach(0..<viewModel.pages.count, id: \.self) { displayIndex in
+              pageView(
+                displayIndex: displayIndex,
+                width: screenGeometry.size.width,
+                height: screenGeometry.size.height
+              )
+              .id(displayIndex)
+              .onAppear {
+                // Update current page when page appears
+                let pageIndex = viewModel.displayIndexToPageIndex(displayIndex)
+                if hasSyncedInitialScroll && pageIndex != viewModel.currentPageIndex
+                  && !isAtEndPage
+                {
+                  viewModel.currentPageIndex = pageIndex
+                  // Preload adjacent pages immediately
+                  Task(priority: .userInitiated) {
+                    await viewModel.preloadPages()
+                  }
+                }
+              }
+            }
+
+            // For LTR, show end page last
+            if viewModel.readingDirection == .ltr {
+              endPageView(width: screenGeometry.size.width, height: screenGeometry.size.height)
+                .id("endPage")
+                .onAppear {
+                  isAtEndPage = true
+                  showingControls = true  // Show controls when end page appears
+                }
+            }
           }
-          .contentShape(Rectangle())
-          .simultaneousGesture(horizontalTapGesture(width: geometry.size.width))
+          .scrollTargetLayout()
         }
-        .tag(displayIndex)
+        .scrollTargetBehavior(.paging)
+        .scrollIndicators(.hidden)
         .onAppear {
-          // When a page appears in TabView, preload adjacent pages immediately
-          // This ensures images are ready before user swipes to them
-          Task(priority: .userInitiated) {
-            await viewModel.preloadPages()
+          synchronizeInitialScrollIfNeeded(proxy: proxy)
+        }
+        .onChange(of: viewModel.pages.count) { _, _ in
+          hasSyncedInitialScroll = false
+          synchronizeInitialScrollIfNeeded(proxy: proxy)
+        }
+        .onChange(of: viewModel.currentPageIndex) { _, newPage in
+          // Scroll to current page when changed externally (e.g., from slider)
+          if !isAtEndPage {
+            let displayIndex = viewModel.pageIndexToDisplayIndex(newPage)
+            withAnimation {
+              proxy.scrollTo(displayIndex, anchor: .leading)
+            }
+          }
+        }
+        .onChange(of: isAtEndPage) { _, isEnd in
+          if isEnd {
+            withAnimation {
+              proxy.scrollTo("endPage", anchor: .leading)
+            }
           }
         }
       }
-
-      // For LTR, show end page last
-      if viewModel.readingDirection == .ltr {
-        endPageView
-          .tag(viewModel.pages.count)
+      .id(screenKey)
+      .onChange(of: screenKey) { _, _ in
+        // Reset scroll sync flag when screen size changes
+        hasSyncedInitialScroll = false
       }
     }
-    .tabViewStyle(.page(indexDisplayMode: .never))
-    .indexViewStyle(.page(backgroundDisplayMode: .never))
   }
 
-  // Get the current selected display index
-  private func getSelectedDisplayIndex() -> Int {
-    if isAtEndPage {
-      // For LTR, end page is at pages.count; for RTL, end page is at -1
-      return viewModel.readingDirection == .rtl ? -1 : viewModel.pages.count
-    }
-    return viewModel.pageIndexToDisplayIndex(viewModel.currentPageIndex)
-  }
-
-  // Handle display index change
-  private func setSelectedDisplayIndex(_ displayIndex: Int) {
-    // Remove withAnimation to avoid conflict with TabView's built-in animation
-    // Check if it's the end page
-    let endPageIndex = viewModel.readingDirection == .rtl ? -1 : viewModel.pages.count
-    if displayIndex == endPageIndex {
-      isAtEndPage = true
-      showingControls = true  // Show controls when reaching end page
-    } else {
-      isAtEndPage = false
-      let newPageIndex = viewModel.displayIndexToPageIndex(displayIndex)
-      if newPageIndex != viewModel.currentPageIndex {
-        viewModel.currentPageIndex = newPageIndex
-        // Immediately trigger aggressive preload for next pages
-        // This ensures images are ready before user swipes to them
-        Task(priority: .userInitiated) {
-          await viewModel.preloadPages()
-        }
+  private func pageView(displayIndex: Int, width: CGFloat, height: CGFloat) -> some View {
+    GeometryReader { geometry in
+      ZStack {
+        PageImageView(
+          viewModel: viewModel,
+          pageIndex: viewModel.displayIndexToPageIndex(displayIndex)
+        )
       }
+      .contentShape(Rectangle())
+      .simultaneousGesture(horizontalTapGesture(width: geometry.size.width))
     }
+    .frame(width: width, height: height)
   }
 
   private func horizontalTapGesture(width: CGFloat) -> some Gesture {
@@ -110,8 +134,23 @@ struct HorizontalPageView: View {
       }
   }
 
+  private func synchronizeInitialScrollIfNeeded(proxy: ScrollViewProxy) {
+    guard !hasSyncedInitialScroll,
+      viewModel.currentPageIndex >= 0,
+      viewModel.currentPageIndex < viewModel.pages.count
+    else {
+      return
+    }
+
+    DispatchQueue.main.async {
+      let displayIndex = viewModel.pageIndexToDisplayIndex(viewModel.currentPageIndex)
+      proxy.scrollTo(displayIndex, anchor: .leading)
+      hasSyncedInitialScroll = true
+    }
+  }
+
   // End page view with buttons and info
-  private var endPageView: some View {
+  private func endPageView(width: CGFloat, height: CGFloat) -> some View {
     ZStack {
       Color.black.ignoresSafeArea()
       EndPageView(
@@ -120,5 +159,6 @@ struct HorizontalPageView: View {
         onNextBook: onNextBook
       )
     }
+    .frame(width: width, height: height)
   }
 }

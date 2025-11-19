@@ -19,10 +19,11 @@ struct VerticalPageView: View {
   let toggleControls: () -> Void
 
   @State private var hasSyncedInitialScroll = false
-  @State private var lastScreenSize: CGSize = .zero
 
   var body: some View {
     GeometryReader { screenGeometry in
+      let screenKey = "\(Int(screenGeometry.size.width))x\(Int(screenGeometry.size.height))"
+
       ScrollViewReader { proxy in
         ScrollView(.vertical) {
           LazyVStack(spacing: 0) {
@@ -58,10 +59,11 @@ struct VerticalPageView: View {
                 showingControls = true  // Show controls when end page appears
               }
           }
+          .scrollTargetLayout()
         }
         .scrollTargetBehavior(.paging)
+        .scrollIndicators(.hidden)
         .onAppear {
-          lastScreenSize = screenGeometry.size
           synchronizeInitialScrollIfNeeded(proxy: proxy)
         }
         .onChange(of: viewModel.pages.count) { _, _ in
@@ -83,12 +85,11 @@ struct VerticalPageView: View {
             }
           }
         }
-        .onChange(of: screenGeometry.size) { _, newSize in
-          guard newSize != lastScreenSize else { return }
-          lastScreenSize = newSize
-          hasSyncedInitialScroll = false
-          synchronizeInitialScrollIfNeeded(proxy: proxy)
-        }
+      }
+      .id(screenKey)
+      .onChange(of: screenKey) { _, _ in
+        // Reset scroll sync flag when screen size changes
+        hasSyncedInitialScroll = false
       }
     }
   }
