@@ -47,6 +47,17 @@ struct ReaderControlsView: View {
 
           Spacer()
 
+          // Page count
+          Text("\(viewModel.currentPageIndex + 1) / \(viewModel.pages.count)")
+            .foregroundColor(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(themeColorOption.color.opacity(0.8))
+            .cornerRadius(20)
+            .monospacedDigit()
+
+          Spacer()
+
           // Display mode toggle button
           Button {
             showingReadingDirectionPicker = true
@@ -102,17 +113,6 @@ struct ReaderControlsView: View {
           }
           .frame(minWidth: 40, minHeight: 40)
           .contentShape(Rectangle())
-
-          Spacer()
-
-          // Page count
-          Text("\(viewModel.currentPageIndex + 1) / \(viewModel.pages.count)")
-            .foregroundColor(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(themeColorOption.color.opacity(0.8))
-            .cornerRadius(20)
-            .monospacedDigit()
 
           Spacer()
 

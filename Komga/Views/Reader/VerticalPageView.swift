@@ -18,6 +18,9 @@ struct VerticalPageView: View {
   let goToPreviousPage: () -> Void
   let toggleControls: () -> Void
 
+  @State private var hasSyncedInitialScroll = false
+  @State private var lastScreenSize: CGSize = .zero
+
   var body: some View {
     GeometryReader { screenGeometry in
       ScrollViewReader { proxy in
@@ -38,7 +41,9 @@ struct VerticalPageView: View {
               .id(pageIndex)
               .onAppear {
                 // Update current page when page appears
-                if pageIndex != viewModel.currentPageIndex && !isAtEndPage {
+                if hasSyncedInitialScroll && pageIndex != viewModel.currentPageIndex
+                  && !isAtEndPage
+                {
                   viewModel.currentPageIndex = pageIndex
                 }
               }
@@ -55,6 +60,14 @@ struct VerticalPageView: View {
           }
         }
         .scrollTargetBehavior(.paging)
+        .onAppear {
+          lastScreenSize = screenGeometry.size
+          synchronizeInitialScrollIfNeeded(proxy: proxy)
+        }
+        .onChange(of: viewModel.pages.count) { _, _ in
+          hasSyncedInitialScroll = false
+          synchronizeInitialScrollIfNeeded(proxy: proxy)
+        }
         .onChange(of: viewModel.currentPageIndex) { _, newPage in
           // Scroll to current page when changed externally (e.g., from slider)
           if !isAtEndPage {
@@ -69,6 +82,12 @@ struct VerticalPageView: View {
               proxy.scrollTo("endPage", anchor: .top)
             }
           }
+        }
+        .onChange(of: screenGeometry.size) { _, newSize in
+          guard newSize != lastScreenSize else { return }
+          lastScreenSize = newSize
+          hasSyncedInitialScroll = false
+          synchronizeInitialScrollIfNeeded(proxy: proxy)
         }
       }
     }
@@ -87,6 +106,20 @@ struct VerticalPageView: View {
           toggleControls()
         }
       }
+  }
+
+  private func synchronizeInitialScrollIfNeeded(proxy: ScrollViewProxy) {
+    guard !hasSyncedInitialScroll,
+      viewModel.currentPageIndex >= 0,
+      viewModel.currentPageIndex < viewModel.pages.count
+    else {
+      return
+    }
+
+    DispatchQueue.main.async {
+      proxy.scrollTo(viewModel.currentPageIndex, anchor: .top)
+      hasSyncedInitialScroll = true
+    }
   }
 
   // End page view with buttons and info

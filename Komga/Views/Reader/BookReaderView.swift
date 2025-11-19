@@ -165,7 +165,12 @@ struct BookReaderView: View {
         // Silently fail, will start from first page
       }
 
-      await viewModel.loadPages(bookId: currentBookId, initialPageNumber: initialPageNumber)
+      let resumePageNumber = viewModel.currentPage?.number ?? initialPageNumber
+
+      await viewModel.loadPages(
+        bookId: currentBookId,
+        initialPageNumber: resumePageNumber
+      )
 
       // Only preload pages if pages are available
       if !viewModel.pages.isEmpty {
