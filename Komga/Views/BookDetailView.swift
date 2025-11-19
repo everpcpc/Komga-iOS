@@ -205,7 +205,7 @@ struct BookDetailView: View {
       }
       .padding()
     }
-    .navigationTitle("Book Details")
+    .navigationTitle("Book")
     .navigationBarTitleDisplayMode(.inline)
     .fullScreenCover(
       isPresented: isBookReaderPresented,
@@ -285,7 +285,7 @@ struct BookDetailView: View {
             Button(role: .destructive) {
               clearCache(for: book)
             } label: {
-              Label("Clear Cache", systemImage: "trash")
+              Label("Clear Cache", systemImage: "xmark.circle")
             }
           } label: {
             Image(systemName: "ellipsis.circle")

@@ -225,6 +225,7 @@ struct SeriesDetailView: View {
       }
       .padding(.horizontal)
     }
+    .navigationTitle("Series")
     .navigationBarTitleDisplayMode(.inline)
     .fullScreenCover(
       isPresented: isBookReaderPresented,

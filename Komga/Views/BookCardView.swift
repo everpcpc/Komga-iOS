@@ -24,11 +24,6 @@ struct BookContextMenu: View {
     Group {
       if let onReadBook = onReadBook {
         Button {
-          onReadBook(false)
-        } label: {
-          Label("Read Book", systemImage: "book.pages")
-        }
-        Button {
           onReadBook(true)
         } label: {
           Label("Read Incognito", systemImage: "eye.slash")
@@ -88,17 +83,11 @@ struct BookContextMenu: View {
       Divider()
 
       Button(role: .destructive) {
-        deleteBook()
-      } label: {
-        Label("Delete Book", systemImage: "trash")
-      }
-
-      Button(role: .destructive) {
         Task {
           await ImageCache.clearDiskCache(forBookId: book.id)
         }
       } label: {
-        Label("Clear Cache", systemImage: "trash")
+        Label("Clear Cache", systemImage: "xmark.circle")
       }
     }
   }
