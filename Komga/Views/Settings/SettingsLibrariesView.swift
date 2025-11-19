@@ -119,7 +119,7 @@ struct SettingsLibrariesView: View {
         Menu {
           Button {
             performGlobalAction {
-              try await viewModel.scanAllLibraries()
+              try await scanAllLibraries(deep: false)
             }
           } label: {
             Label("Scan All Libraries", systemImage: "arrow.clockwise")
@@ -128,7 +128,7 @@ struct SettingsLibrariesView: View {
 
           Button {
             performGlobalAction {
-              try await viewModel.scanAllLibraries(deep: true)
+              try await scanAllLibraries(deep: true)
             }
           } label: {
             Label("Scan All Libraries (Deep)", systemImage: "arrow.triangle.2.circlepath")
@@ -137,7 +137,7 @@ struct SettingsLibrariesView: View {
 
           Button {
             performGlobalAction {
-              try await viewModel.emptyTrashAllLibraries()
+              try await emptyTrashAllLibraries()
             }
           } label: {
             Label("Empty Trash for All Libraries", systemImage: "trash.slash")
@@ -298,6 +298,18 @@ struct SettingsLibrariesView: View {
         performingLibraryIds.remove(library.id)
         libraryPendingDelete = nil
       }
+    }
+  }
+
+  private func scanAllLibraries(deep: Bool) async throws {
+    for library in viewModel.libraries {
+      try await viewModel.scanLibrary(library, deep: deep)
+    }
+  }
+
+  private func emptyTrashAllLibraries() async throws {
+    for library in viewModel.libraries {
+      try await viewModel.emptyTrash(library)
     }
   }
 
