@@ -20,6 +20,7 @@ struct ComicPageView: View {
 
   @State private var hasSyncedInitialScroll = false
   @State private var showTapZoneOverlay = false
+  @State private var scrollPosition: ComicScrollTarget?
   @AppStorage("showTapZone") private var showTapZone: Bool = true
   @AppStorage("readerBackground") private var readerBackground: ReaderBackground = .system
 
@@ -39,17 +40,7 @@ struct ComicPageView: View {
                   .simultaneousGesture(
                     horizontalTapGesture(width: screenGeometry.size.width, proxy: proxy)
                   )
-                  .id(pageIndex)
-                  .onAppear {
-                    // Update current page when page appears
-                    if hasSyncedInitialScroll && pageIndex != viewModel.currentPageIndex {
-                      viewModel.currentPageIndex = pageIndex
-                      // Preload adjacent pages immediately
-                      Task(priority: .userInitiated) {
-                        await viewModel.preloadPages()
-                      }
-                    }
-                  }
+                  .id(ComicScrollTarget.page(pageIndex))
               }
 
               // End page at the end for LTR
@@ -67,16 +58,13 @@ struct ComicPageView: View {
               .simultaneousGesture(
                 horizontalTapGesture(width: screenGeometry.size.width, proxy: proxy)
               )
-              .id("endPage")
-              .onAppear {
-                isAtEndPage = true
-                showingControls = true  // Show controls when end page appears
-              }
+              .id(ComicScrollTarget.endPage)
             }
             .scrollTargetLayout()
           }
           .scrollTargetBehavior(.paging)
           .scrollIndicators(.hidden)
+          .scrollPosition(id: $scrollPosition)
           .onAppear {
             synchronizeInitialScrollIfNeeded(proxy: proxy)
           }
@@ -84,17 +72,13 @@ struct ComicPageView: View {
             hasSyncedInitialScroll = false
             synchronizeInitialScrollIfNeeded(proxy: proxy)
           }
-          .onChange(of: isAtEndPage) { _, isEnd in
-            if isEnd {
-              withAnimation {
-                proxy.scrollTo("endPage", anchor: .leading)
-              }
-            }
-          }
           .id(screenKey)
           .onChange(of: screenKey) { _, _ in
             // Reset scroll sync flag when screen size changes
             hasSyncedInitialScroll = false
+          }
+          .onChange(of: scrollPosition) { _, newTarget in
+            handleScrollPositionChange(newTarget)
           }
         }
 
@@ -141,15 +125,17 @@ struct ComicPageView: View {
         if normalizedX < 0.35 {
           // Previous page (left tap)
           if isAtEndPage {
-            isAtEndPage = false
             viewModel.currentPageIndex = viewModel.pages.count - 1
+            isAtEndPage = false
             withAnimation {
-              proxy.scrollTo(viewModel.currentPageIndex, anchor: .leading)
+              scrollPosition = .page(viewModel.currentPageIndex)
+              proxy.scrollTo(ComicScrollTarget.page(viewModel.currentPageIndex), anchor: .leading)
             }
           } else if viewModel.currentPageIndex > 0 {
             viewModel.currentPageIndex -= 1
             withAnimation {
-              proxy.scrollTo(viewModel.currentPageIndex, anchor: .leading)
+              scrollPosition = .page(viewModel.currentPageIndex)
+              proxy.scrollTo(ComicScrollTarget.page(viewModel.currentPageIndex), anchor: .leading)
             }
           }
         } else if normalizedX > 0.65 {
@@ -158,12 +144,14 @@ struct ComicPageView: View {
             viewModel.currentPageIndex += 1
             isAtEndPage = false
             withAnimation {
-              proxy.scrollTo(viewModel.currentPageIndex, anchor: .leading)
+              scrollPosition = .page(viewModel.currentPageIndex)
+              proxy.scrollTo(ComicScrollTarget.page(viewModel.currentPageIndex), anchor: .leading)
             }
           } else {
+            isAtEndPage = true
             withAnimation {
-              isAtEndPage = true
-              proxy.scrollTo("endPage", anchor: .leading)
+              scrollPosition = .endPage
+              proxy.scrollTo(ComicScrollTarget.endPage, anchor: .leading)
             }
           }
         } else {
@@ -181,8 +169,36 @@ struct ComicPageView: View {
     }
 
     DispatchQueue.main.async {
-      proxy.scrollTo(viewModel.currentPageIndex, anchor: .leading)
+      scrollPosition = .page(viewModel.currentPageIndex)
+      proxy.scrollTo(ComicScrollTarget.page(viewModel.currentPageIndex), anchor: .leading)
       hasSyncedInitialScroll = true
     }
   }
+
+  private func handleScrollPositionChange(_ target: ComicScrollTarget?) {
+    guard hasSyncedInitialScroll, let target else { return }
+
+    switch target {
+    case .page(let index):
+      if isAtEndPage {
+        isAtEndPage = false
+      }
+      if viewModel.currentPageIndex != index {
+        viewModel.currentPageIndex = index
+        Task(priority: .userInitiated) {
+          await viewModel.preloadPages()
+        }
+      }
+    case .endPage:
+      if !isAtEndPage {
+        isAtEndPage = true
+      }
+      showingControls = true
+    }
+  }
+}
+
+private enum ComicScrollTarget: Hashable {
+  case page(Int)
+  case endPage
 }
