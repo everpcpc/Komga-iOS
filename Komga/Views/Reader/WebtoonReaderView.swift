@@ -32,6 +32,8 @@ struct WebtoonReaderView: UIViewRepresentable {
   let onScrollToBottom: ((Bool) -> Void)?
   let pageWidth: CGFloat
 
+  @AppStorage("readerBackground") private var readerBackground: ReaderBackground = .system
+
   init(
     pages: [BookPage], currentPage: Binding<Int>, viewModel: ReaderViewModel,
     pageWidth: CGFloat,
@@ -53,7 +55,7 @@ struct WebtoonReaderView: UIViewRepresentable {
     let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
     collectionView.delegate = context.coordinator
     collectionView.dataSource = context.coordinator
-    collectionView.backgroundColor = .black
+    collectionView.backgroundColor = UIColor(readerBackground.color)
     collectionView.showsVerticalScrollIndicator = false
     collectionView.showsHorizontalScrollIndicator = false
     collectionView.contentInsetAdjustmentBehavior = .never
@@ -807,6 +809,8 @@ class WebtoonPageCell: UICollectionViewCell {
   private var pageIndex: Int = -1
   private var loadImage: ((Int) async -> Void)?
 
+  @AppStorage("readerBackground") private var readerBackground: ReaderBackground = .system
+
   override init(frame: CGRect) {
     super.init(frame: frame)
     setupUI()
@@ -817,10 +821,10 @@ class WebtoonPageCell: UICollectionViewCell {
   }
 
   private func setupUI() {
-    contentView.backgroundColor = .black
+    contentView.backgroundColor = UIColor(readerBackground.color)
 
     imageView.contentMode = .scaleAspectFit
-    imageView.backgroundColor = .black
+    imageView.backgroundColor = UIColor(readerBackground.color)
     imageView.clipsToBounds = false
     imageView.translatesAutoresizingMaskIntoConstraints = false
     contentView.addSubview(imageView)
@@ -902,6 +906,8 @@ class WebtoonPageCell: UICollectionViewCell {
 // MARK: - Footer Cell
 
 class WebtoonFooterCell: UICollectionViewCell {
+  @AppStorage("readerBackground") private var readerBackground: ReaderBackground = .system
+
   override init(frame: CGRect) {
     super.init(frame: frame)
     setupUI()
@@ -912,6 +918,6 @@ class WebtoonFooterCell: UICollectionViewCell {
   }
 
   private func setupUI() {
-    contentView.backgroundColor = .black
+    contentView.backgroundColor = UIColor(readerBackground.color)
   }
 }

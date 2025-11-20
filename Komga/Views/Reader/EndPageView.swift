@@ -60,15 +60,15 @@ struct EndPageView: View {
                 .font(.system(size: 16, weight: .semibold))
             }
           }
-          .foregroundColor(.white)
+          .foregroundColor(themeColorOption.color)
           .padding(.horizontal, 20)
           .padding(.vertical, 12)
           .background(
             RoundedRectangle(cornerRadius: 25)
-              .fill(Color.black.opacity(0.85))
+              .fill(Color.clear)
               .overlay(
                 RoundedRectangle(cornerRadius: 25)
-                  .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                  .stroke(themeColorOption.color.opacity(0.5), lineWidth: 1)
               )
           )
         }
@@ -106,21 +106,33 @@ struct EndPageView: View {
 struct NextBookInfoView: View {
   let nextBook: Book?
 
+  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
+
   var body: some View {
     if let nextBook = nextBook {
       VStack {
         Label("UP NEXT: #\(Int(nextBook.number))", systemImage: "arrow.right.circle")
         Text(nextBook.metadata.title)
       }
+      .foregroundColor(.white)
       .padding(.horizontal, 16)
       .padding(.vertical, 8)
+      .background(
+        RoundedRectangle(cornerRadius: 12)
+          .fill(themeColorOption.color.opacity(0.6))
+      )
     } else {
       HStack(spacing: 8) {
         Image(systemName: "checkmark.circle")
         Text("You're all caught up!")
       }
+      .foregroundColor(.white)
       .padding(.horizontal, 16)
       .padding(.vertical, 8)
+      .background(
+        RoundedRectangle(cornerRadius: 12)
+          .fill(themeColorOption.color.opacity(0.6))
+      )
     }
   }
 }
