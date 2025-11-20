@@ -9,8 +9,7 @@ import SwiftUI
 
 struct SettingsReaderView: View {
   @AppStorage("showTapZone") private var showTapZone: Bool = true
-  @AppStorage("readerBackground") private var readerBackground: ReaderBackground =
-    .black
+  @AppStorage("readerBackground") private var readerBackground: ReaderBackground = .system
   @AppStorage("webtoonPageWidthPercentage") private var webtoonPageWidthPercentage: Double = 100.0
 
   var body: some View {
