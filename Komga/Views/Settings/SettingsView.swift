@@ -16,13 +16,13 @@ struct SettingsView: View {
         Section(header: Text("Account")) {
           if let user = authViewModel.user {
             HStack {
-              Text("Email")
+              Label("Email", systemImage: "envelope")
               Spacer()
               Text(user.email)
                 .foregroundColor(.secondary)
             }
             HStack {
-              Text("Roles")
+              Label("Roles", systemImage: "person.2")
               Spacer()
               Text(user.roles.joined(separator: ", "))
                 .font(.caption)
@@ -34,19 +34,19 @@ struct SettingsView: View {
 
         Section {
           NavigationLink(value: NavDestination.settingsLibraries) {
-            Text("Library Management")
+            Label("Library Management", systemImage: "books.vertical")
           }
         }
 
         Section {
           NavigationLink(value: NavDestination.settingsAppearance) {
-            Text("Appearance")
+            Label("Appearance", systemImage: "paintbrush")
           }
           NavigationLink(value: NavDestination.settingsCache) {
-            Text("Cache")
+            Label("Cache", systemImage: "externaldrive")
           }
           NavigationLink(value: NavDestination.settingsReader) {
-            Text("Reader")
+            Label("Reader", systemImage: "book.pages")
           }
         }
 
@@ -56,7 +56,7 @@ struct SettingsView: View {
           } label: {
             HStack {
               Spacer()
-              Text("Logout")
+              Label("Logout", systemImage: "rectangle.portrait.and.arrow.right")
               Spacer()
             }
           }

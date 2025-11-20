@@ -169,10 +169,9 @@ struct SettingsLibrariesView: View {
   private func librarySummary(_ library: Library, isPerforming: Bool) -> some View {
     VStack(alignment: .leading, spacing: 4) {
       HStack(spacing: 8) {
+        Image(systemName: "books.vertical")
         VStack(alignment: .leading, spacing: 2) {
           Text(library.name)
-            .font(.headline)
-
           if library.unavailable == true {
             Label("Unavailable", systemImage: "exclamationmark.triangle")
               .font(.caption)
