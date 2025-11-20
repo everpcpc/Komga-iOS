@@ -112,27 +112,15 @@ struct NextBookInfoView: View {
         Label("UP NEXT: #\(Int(nextBook.number))", systemImage: "arrow.right.circle")
         Text(nextBook.metadata.title)
       }
-      .foregroundColor(.white.opacity(0.9))
       .padding(.horizontal, 16)
       .padding(.vertical, 8)
-      .background(
-        RoundedRectangle(cornerRadius: 12)
-          .fill(Color.black.opacity(0.6))
-      )
     } else {
       HStack(spacing: 8) {
         Image(systemName: "checkmark.circle")
-          .font(.system(size: 14))
         Text("You're all caught up!")
-          .font(.system(size: 14, weight: .medium))
       }
-      .foregroundColor(.white.opacity(0.7))
       .padding(.horizontal, 16)
       .padding(.vertical, 8)
-      .background(
-        RoundedRectangle(cornerRadius: 12)
-          .fill(Color.black.opacity(0.6))
-      )
     }
   }
 }
