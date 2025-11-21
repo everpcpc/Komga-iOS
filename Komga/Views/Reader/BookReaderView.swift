@@ -121,7 +121,7 @@ struct BookReaderView: View {
         currentBook: currentBook,
         onDismiss: { dismiss() }
       )
-      .padding(.vertical, 16)
+      .padding(.vertical, 24)
       .padding(.horizontal, 8)
       .ignoresSafeArea()
       .opacity(shouldShowControls ? 1.0 : 0.0)
