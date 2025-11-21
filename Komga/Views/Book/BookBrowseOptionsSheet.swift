@@ -29,27 +29,10 @@ struct BookBrowseOptionsSheet: View {
           .pickerStyle(.menu)
         }
 
-        Section("Sort") {
-          Picker("Sort By", selection: $tempOpts.sortField) {
-            ForEach(BookSortField.allCases, id: \.self) { field in
-              Text(field.displayName).tag(field)
-            }
-          }
-          .pickerStyle(.menu)
-
-          if tempOpts.sortField.supportsDirection {
-            Picker("Direction", selection: $tempOpts.sortDirection) {
-              ForEach(SortDirection.allCases, id: \.self) { direction in
-                HStack {
-                  Image(systemName: direction.icon)
-                  Text(direction.displayName)
-                }
-                .tag(direction)
-              }
-            }
-            .pickerStyle(.menu)
-          }
-        }
+        SortOptionView(
+          sortField: $tempOpts.sortField,
+          sortDirection: $tempOpts.sortDirection
+        )
       }
       .navigationTitle("Filter & Sort")
       .navigationBarTitleDisplayMode(.inline)

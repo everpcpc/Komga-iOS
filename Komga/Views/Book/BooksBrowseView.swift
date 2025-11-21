@@ -8,19 +8,19 @@
 import SwiftUI
 
 struct BooksBrowseView: View {
-  @Binding var browseOpts: BookBrowseOptions
   let width: CGFloat
   let height: CGFloat
   let searchText: String
-  private let spacing: CGFloat = 16
+  private let spacing: CGFloat = 8
 
+  @AppStorage("bookBrowseOptions") private var browseOpts: BookBrowseOptions = BookBrowseOptions()
+  @AppStorage("selectedLibraryId") private var selectedLibraryId: String = ""
   @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
   @AppStorage("browseColumns") private var browseColumns: BrowseColumns = BrowseColumns()
   @AppStorage("browseLayout") private var browseLayout: BrowseLayoutMode = .grid
 
   @State private var viewModel = BookViewModel()
   @State private var readerState: BookReaderState?
-  @State private var showOptions = false
 
   private var availableWidth: CGFloat {
     width - spacing * 2
@@ -52,50 +52,55 @@ struct BooksBrowseView: View {
   }
 
   var body: some View {
-    Group {
-      if viewModel.isLoading && viewModel.books.isEmpty {
-        ProgressView()
-          .frame(maxWidth: .infinity)
-          .padding()
-      } else if let errorMessage = viewModel.errorMessage {
-        VStack(spacing: 16) {
-          Image(systemName: "exclamationmark.triangle")
-            .font(.largeTitle)
-            .foregroundColor(themeColorOption.color)
-          Text(errorMessage)
-            .multilineTextAlignment(.center)
-          Button("Retry") {
-            Task {
-              await viewModel.loadBrowseBooks(
-                browseOpts: browseOpts, searchText: searchText, refresh: true)
+    VStack(spacing: 0) {
+      BookFilterView()
+        .padding(spacing)
+
+      Group {
+        if viewModel.isLoading && viewModel.books.isEmpty {
+          ProgressView()
+            .frame(maxWidth: .infinity)
+            .padding()
+        } else if let errorMessage = viewModel.errorMessage {
+          VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle")
+              .font(.largeTitle)
+              .foregroundColor(themeColorOption.color)
+            Text(errorMessage)
+              .multilineTextAlignment(.center)
+            Button("Retry") {
+              Task {
+                await viewModel.loadBrowseBooks(
+                  browseOpts: browseOpts, searchText: searchText, refresh: true)
+              }
             }
           }
-        }
-        .padding()
-      } else if viewModel.books.isEmpty {
-        VStack(spacing: 12) {
-          Image(systemName: "book")
-            .font(.system(size: 40))
-            .foregroundColor(.secondary)
-          Text("No books found")
-            .font(.headline)
-          Text("Try selecting a different library.")
-            .font(.subheadline)
-            .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
-      } else {
-        switch browseLayout {
-        case .grid:
-          gridView
-        case .list:
-          listView
-        }
+          .padding()
+        } else if viewModel.books.isEmpty {
+          VStack(spacing: 12) {
+            Image(systemName: "book")
+              .font(.system(size: 40))
+              .foregroundColor(.secondary)
+            Text("No books found")
+              .font(.headline)
+            Text("Try selecting a different library.")
+              .font(.subheadline)
+              .foregroundColor(.secondary)
+          }
+          .frame(maxWidth: .infinity)
+          .padding()
+        } else {
+          switch browseLayout {
+          case .grid:
+            gridView
+          case .list:
+            listView
+          }
 
-        if viewModel.isLoading {
-          ProgressView()
-            .padding()
+          if viewModel.isLoading {
+            ProgressView()
+              .padding()
+          }
         }
       }
     }
@@ -115,13 +120,16 @@ struct BooksBrowseView: View {
         await viewModel.loadBrowseBooks(browseOpts: browseOpts, searchText: newValue, refresh: true)
       }
     }
+    .onChange(of: selectedLibraryId) { _, newValue in
+      browseOpts.libraryId = newValue
+    }
+    .onAppear {
+      browseOpts.libraryId = selectedLibraryId
+    }
     .fullScreenCover(isPresented: isBookReaderPresented) {
       if let state = readerState, let bookId = state.bookId {
         BookReaderView(bookId: bookId, incognito: state.incognito)
       }
-    }
-    .sheet(isPresented: $showOptions) {
-      BookBrowseOptionsSheet(browseOpts: $browseOpts)
     }
   }
 
@@ -149,11 +157,11 @@ struct BooksBrowseView: View {
         }
       }
     }
-    .padding(.horizontal, spacing)
+    .padding(spacing)
   }
 
   private var listView: some View {
-    LazyVStack(spacing: 0) {
+    LazyVStack(spacing: spacing) {
       ForEach(Array(viewModel.books.enumerated()), id: \.element.id) { index, book in
         BookRowView(
           book: book,
@@ -169,7 +177,6 @@ struct BooksBrowseView: View {
           },
           showSeriesTitle: true
         )
-        .padding()
         .onAppear {
           if index >= viewModel.books.count - 3 {
             Task {
@@ -178,12 +185,8 @@ struct BooksBrowseView: View {
             }
           }
         }
-
-        if index < viewModel.books.count - 1 {
-          Divider()
-            .padding(.leading)
-        }
       }
     }
+    .padding(spacing)
   }
 }

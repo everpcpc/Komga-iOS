@@ -8,18 +8,19 @@
 import SwiftUI
 
 struct CollectionsBrowseView: View {
-  @Binding var browseOpts: SeriesBrowseOptions
   let width: CGFloat
   let height: CGFloat
   let searchText: String
 
-  private let spacing: CGFloat = 16
+  private let spacing: CGFloat = 8
 
+  @AppStorage("collectionSortOptions") private var sortOpts: SimpleSortOptions =
+    SimpleSortOptions()
+  @AppStorage("selectedLibraryId") private var selectedLibraryId: String = ""
   @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
   @AppStorage("browseColumns") private var browseColumns: BrowseColumns = BrowseColumns()
   @AppStorage("browseLayout") private var browseLayout: BrowseLayoutMode = .grid
   @State private var viewModel = CollectionViewModel()
-  @State private var showOptions = false
 
   private var availableWidth: CGFloat {
     width - spacing * 2
@@ -45,11 +46,9 @@ struct CollectionsBrowseView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      if BrowseContentType.collections.supportsSorting
-        || BrowseContentType.collections.supportsReadStatusFilter
-      {
-        header
-      }
+      CollectionSortView()
+        .padding(spacing)
+
       if viewModel.isLoading && viewModel.collections.isEmpty {
         ProgressView()
           .frame(maxWidth: .infinity)
@@ -97,14 +96,12 @@ struct CollectionsBrowseView: View {
                 }
             }
           }
-          .padding(.horizontal, spacing)
+          .padding(spacing)
         case .list:
-          LazyVStack(spacing: 0) {
+          LazyVStack(spacing: spacing) {
             ForEach(Array(viewModel.collections.enumerated()), id: \.element.id) {
               index, collection in
               CollectionRowView(collection: collection)
-                .padding(.horizontal)
-                .padding(.vertical, 12)
                 .onAppear {
                   if index >= viewModel.collections.count - 3 {
                     Task {
@@ -112,13 +109,9 @@ struct CollectionsBrowseView: View {
                     }
                   }
                 }
-
-              if index < viewModel.collections.count - 1 {
-                Divider()
-                  .padding(.leading)
-              }
             }
           }
+          .padding(spacing)
         }
 
         if viewModel.isLoading {
@@ -132,7 +125,7 @@ struct CollectionsBrowseView: View {
         await loadCollections(refresh: true)
       }
     }
-    .onChange(of: browseOpts) { _, _ in
+    .onChange(of: sortOpts) { _, _ in
       Task {
         await loadCollections(refresh: true)
       }
@@ -142,43 +135,14 @@ struct CollectionsBrowseView: View {
         await loadCollections(refresh: true)
       }
     }
-    .sheet(isPresented: $showOptions) {
-      SeriesBrowseOptionsSheet(browseOpts: $browseOpts)
-    }
   }
 
   private func loadCollections(refresh: Bool) async {
-    // Collections use a simple sort string based on series sort field
-    let sort: String?
-    switch browseOpts.sortField {
-    case .name:
-      sort = "name,\(browseOpts.sortDirection.rawValue)"
-    case .dateAdded:
-      sort = "createdDate,\(browseOpts.sortDirection.rawValue)"
-    case .dateUpdated:
-      sort = "lastModifiedDate,\(browseOpts.sortDirection.rawValue)"
-    default:
-      sort = nil
-    }
     await viewModel.loadCollections(
-      libraryId: browseOpts.libraryId,
-      sort: sort,
+      libraryId: selectedLibraryId,
+      sort: sortOpts.sortString,
       searchText: searchText,
       refresh: refresh
     )
-  }
-}
-
-extension CollectionsBrowseView {
-  private var header: some View {
-    HStack {
-      Button {
-        showOptions = true
-      } label: {
-        Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
-      }
-    }
-    .frame(maxWidth: .infinity, alignment: .trailing)
-    .padding([.horizontal, .top])
   }
 }

@@ -1,5 +1,5 @@
 //
-//  NavigationHandler.swift
+//  View+Navigation.swift
 //  Komga
 //
 //  Created by Komga iOS Client

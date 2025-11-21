@@ -9,10 +9,6 @@ import SwiftUI
 
 struct BrowseView: View {
   @AppStorage("selectedLibraryId") private var selectedLibraryId: String = ""
-  @AppStorage("seriesBrowseOptions") private var seriesBrowseOpts: SeriesBrowseOptions =
-    SeriesBrowseOptions()
-  @AppStorage("bookBrowseOptions") private var bookBrowseOpts: BookBrowseOptions =
-    BookBrowseOptions()
   @AppStorage("browseContent") private var browseContent: BrowseContentType = .series
   @AppStorage("browseLayout") private var browseLayout: BrowseLayoutMode = .grid
   @State private var showLibraryPickerSheet = false
@@ -62,14 +58,6 @@ struct BrowseView: View {
           LibraryPickerSheet()
         }
         .searchable(text: $searchQuery, placement: .navigationBarDrawer(displayMode: .automatic))
-        .onChange(of: selectedLibraryId) { _, newValue in
-          seriesBrowseOpts.libraryId = newValue
-          bookBrowseOpts.libraryId = newValue
-        }
-        .onAppear {
-          seriesBrowseOpts.libraryId = selectedLibraryId
-          bookBrowseOpts.libraryId = selectedLibraryId
-        }
       }
     }
   }
@@ -80,28 +68,24 @@ struct BrowseView: View {
     switch browseContent {
     case .series:
       SeriesBrowseView(
-        browseOpts: $seriesBrowseOpts,
         width: size.width,
         height: size.height,
         searchText: searchText
       )
     case .books:
       BooksBrowseView(
-        browseOpts: $bookBrowseOpts,
         width: size.width,
         height: size.height,
         searchText: searchText
       )
     case .collections:
       CollectionsBrowseView(
-        browseOpts: $seriesBrowseOpts,
         width: size.width,
         height: size.height,
         searchText: searchText
       )
     case .readlists:
       ReadListsBrowseView(
-        browseOpts: $seriesBrowseOpts,
         width: size.width,
         height: size.height,
         searchText: searchText
