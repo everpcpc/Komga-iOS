@@ -17,23 +17,24 @@ class BookService {
     seriesId: String,
     page: Int = 0,
     size: Int = 500,
-    sort: String = "metadata.numberSort,asc"
+    browseOpts: BookBrowseOptions
   ) async throws -> Page<Book> {
-    let queryItems = [
-      URLQueryItem(name: "page", value: "\(page)"),
-      URLQueryItem(name: "size", value: "\(size)"),
-      URLQueryItem(name: "sort", value: sort),
-    ]
+    let sort = browseOpts.sortString
+    let readStatus = browseOpts.readStatusFilter.toReadStatus()
 
-    let search = BookSearch(condition: BookSearch.buildCondition(seriesId: seriesId))
-    let encoder = JSONEncoder()
-    let jsonData = try encoder.encode(search)
+    let condition = BookSearch.buildCondition(
+      libraryId: nil,
+      readStatus: readStatus,
+      seriesId: seriesId,
+      readListId: nil
+    )
+    let search = BookSearch(condition: condition)
 
-    return try await apiClient.request(
-      path: "/api/v1/books/list",
-      method: "POST",
-      body: jsonData,
-      queryItems: queryItems
+    return try await getBooksList(
+      search: search,
+      page: page,
+      size: size,
+      sort: sort
     )
   }
 

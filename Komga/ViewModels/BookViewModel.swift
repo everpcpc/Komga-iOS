@@ -20,14 +20,14 @@ class BookViewModel {
   private var currentPage = 0
   private var hasMorePages = true
   private var currentSeriesId: String?
-  private var currentSort: String = "metadata.numberSort,asc"
+  private var currentSeriesBrowseOpts: BookBrowseOptions?
   private var currentBrowseState: BookBrowseOptions?
   private var currentBrowseSort: String?
   private var currentBrowseSearch: String = ""
 
-  func loadBooks(seriesId: String, sort: String = "metadata.numberSort,asc") async {
+  func loadBooks(seriesId: String, browseOpts: BookBrowseOptions) async {
     currentSeriesId = seriesId
-    currentSort = sort
+    currentSeriesBrowseOpts = browseOpts
     currentPage = 0
     books = []
     hasMorePages = true
@@ -35,7 +35,8 @@ class BookViewModel {
     errorMessage = nil
 
     do {
-      let page = try await bookService.getBooks(seriesId: seriesId, page: 0, size: 50, sort: sort)
+      let page = try await bookService.getBooks(
+        seriesId: seriesId, page: 0, size: 50, browseOpts: browseOpts)
       withAnimation {
         books = page.content
       }
@@ -49,14 +50,16 @@ class BookViewModel {
   }
 
   func loadMoreBooks(seriesId: String) async {
-    guard hasMorePages && !isLoading && seriesId == currentSeriesId else { return }
+    guard hasMorePages && !isLoading && seriesId == currentSeriesId,
+      let browseOpts = currentSeriesBrowseOpts
+    else { return }
 
     isLoading = true
     errorMessage = nil
 
     do {
       let page = try await bookService.getBooks(
-        seriesId: seriesId, page: currentPage, size: 50, sort: currentSort)
+        seriesId: seriesId, page: currentPage, size: 50, browseOpts: browseOpts)
       withAnimation {
         books.append(contentsOf: page.content)
       }

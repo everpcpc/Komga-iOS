@@ -7,17 +7,13 @@
 
 import SwiftUI
 
-extension SortDirection {
-  var bookSortString: String {
-    "metadata.numberSort,\(rawValue)"
-  }
-}
-
-struct BooksListView: View {
+// Books list view for series detail
+struct BooksListViewForSeries: View {
   let seriesId: String
   @Bindable var bookViewModel: BookViewModel
   var onReadBook: (String, Bool) -> Void
-  @AppStorage("bookListSortDirection") private var sortDirection: SortDirection = .ascending
+  @AppStorage("seriesBookBrowseOptions") private var browseOpts: BookBrowseOptions =
+    BookBrowseOptions()
 
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
@@ -27,20 +23,7 @@ struct BooksListView: View {
 
         Spacer()
 
-        Button {
-          sortDirection = sortDirection.toggle()
-        } label: {
-          HStack(spacing: 4) {
-            Image(systemName: sortDirection.icon)
-            Text(sortDirection.displayName)
-          }
-          .font(.caption)
-          .padding(.horizontal, 8)
-          .padding(.vertical, 4)
-          .background(Color.secondary.opacity(0.1))
-          .foregroundColor(.primary)
-          .cornerRadius(4)
-        }
+        BookFilterView(browseOpts: $browseOpts)
       }
 
       if bookViewModel.isLoading && bookViewModel.books.isEmpty {
@@ -78,20 +61,112 @@ struct BooksListView: View {
       }
     }
     .task(id: seriesId) {
-      await bookViewModel.loadBooks(seriesId: seriesId, sort: sortDirection.bookSortString)
+      await bookViewModel.loadBooks(seriesId: seriesId, browseOpts: browseOpts)
     }
-    .onChange(of: sortDirection) {
+    .onChange(of: browseOpts) {
       Task {
-        await bookViewModel.loadBooks(seriesId: seriesId, sort: sortDirection.bookSortString)
+        await bookViewModel.loadBooks(seriesId: seriesId, browseOpts: browseOpts)
       }
     }
   }
 }
 
-extension BooksListView {
+extension BooksListViewForSeries {
   fileprivate func refreshBooks() {
     Task {
-      await bookViewModel.loadBooks(seriesId: seriesId, sort: sortDirection.bookSortString)
+      await bookViewModel.loadBooks(seriesId: seriesId, browseOpts: browseOpts)
+    }
+  }
+}
+
+// Books list view for read list
+struct BooksListViewForReadList: View {
+  let readListId: String
+  @Bindable var bookViewModel: BookViewModel
+  var onReadBook: (String, Bool) -> Void
+  @AppStorage("readListBookBrowseOptions") private var browseOpts: BookBrowseOptions =
+    BookBrowseOptions()
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      HStack {
+        Text("Books")
+          .font(.headline)
+
+        Spacer()
+
+        BookFilterView(browseOpts: $browseOpts)
+      }
+
+      if bookViewModel.isLoading && bookViewModel.books.isEmpty {
+        ProgressView()
+          .frame(maxWidth: .infinity)
+          .padding()
+      } else {
+        LazyVStack(spacing: 8) {
+          ForEach(bookViewModel.books) { book in
+            BookRowView(
+              book: book,
+              viewModel: bookViewModel,
+              onReadBook: { incognito in
+                onReadBook(book.id, incognito)
+              },
+              onBookUpdated: {
+                refreshBooks()
+              },
+              showSeriesTitle: true
+            )
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+              Button(role: .destructive) {
+                Task {
+                  do {
+                    try await ReadListService.shared.removeBookFromReadList(
+                      readListId: readListId, bookId: book.id)
+                    await bookViewModel.loadReadListBooks(
+                      readListId: readListId, browseOpts: browseOpts, refresh: true)
+                  } catch {
+                  }
+                }
+              } label: {
+                Label("Remove", systemImage: "trash")
+              }
+            }
+            .onAppear {
+              if book.id == bookViewModel.books.last?.id {
+                Task {
+                  await bookViewModel.loadReadListBooks(
+                    readListId: readListId, browseOpts: browseOpts, refresh: false)
+                }
+              }
+            }
+          }
+
+          if bookViewModel.isLoading && !bookViewModel.books.isEmpty {
+            ProgressView()
+              .frame(maxWidth: .infinity)
+              .padding()
+          }
+        }
+      }
+    }
+    .task(id: readListId) {
+      await bookViewModel.loadReadListBooks(
+        readListId: readListId, browseOpts: browseOpts, refresh: true)
+    }
+    .onChange(of: browseOpts) {
+      Task {
+        await bookViewModel.loadReadListBooks(
+          readListId: readListId, browseOpts: browseOpts, refresh: true)
+      }
+    }
+  }
+}
+
+extension BooksListViewForReadList {
+  fileprivate func refreshBooks() {
+    Task {
+      await bookViewModel.loadReadListBooks(
+        readListId: readListId, browseOpts: browseOpts, refresh: true)
     }
   }
 }

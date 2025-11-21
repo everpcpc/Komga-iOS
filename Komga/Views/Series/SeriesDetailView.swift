@@ -11,7 +11,6 @@ struct SeriesDetailView: View {
   let seriesId: String
 
   @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
-  @AppStorage("bookListSortDirection") private var sortDirection: SortDirection = .ascending
 
   @Environment(\.dismiss) private var dismiss
 
@@ -233,7 +232,7 @@ struct SeriesDetailView: View {
           }
 
           // Books list
-          BooksListView(
+          BooksListViewForSeries(
             seriesId: seriesId,
             bookViewModel: bookViewModel,
             onReadBook: { bookId, incognito in
@@ -338,7 +337,6 @@ extension SeriesDetailView {
   @MainActor
   private func refreshSeriesData() async {
     await loadSeriesDetails()
-    await bookViewModel.loadBooks(seriesId: seriesId, sort: sortDirection.bookSortString)
   }
 
   @MainActor
