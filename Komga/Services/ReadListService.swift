@@ -54,23 +54,24 @@ class ReadListService {
     readListId: String,
     page: Int = 0,
     size: Int = 20,
-    sort: String = "metadata.numberSort,asc"
+    browseOpts: BookBrowseOptions
   ) async throws -> Page<Book> {
-    let queryItems = [
-      URLQueryItem(name: "page", value: "\(page)"),
-      URLQueryItem(name: "size", value: "\(size)"),
-      URLQueryItem(name: "sort", value: sort),
-    ]
+    let sort = browseOpts.sortString
+    let readStatus = browseOpts.readStatusFilter.toReadStatus()
 
-    let search = BookSearch(condition: BookSearch.buildCondition(readListId: readListId))
-    let encoder = JSONEncoder()
-    let jsonData = try encoder.encode(search)
+    let condition = BookSearch.buildCondition(
+      libraryId: nil,
+      readStatus: readStatus,
+      seriesId: nil,
+      readListId: readListId
+    )
+    let search = BookSearch(condition: condition)
 
-    return try await apiClient.request(
-      path: "/api/v1/books/list",
-      method: "POST",
-      body: jsonData,
-      queryItems: queryItems
+    return try await BookService.shared.getBooksList(
+      search: search,
+      page: page,
+      size: size,
+      sort: sort
     )
   }
 
@@ -78,6 +79,21 @@ class ReadListService {
     let _: EmptyResponse = try await apiClient.request(
       path: "/api/v1/readlists/\(readListId)",
       method: "DELETE"
+    )
+  }
+
+  func removeBookFromReadList(readListId: String, bookId: String) async throws {
+    // Get current readlist
+    let readList = try await getReadList(id: readListId)
+    // Remove the book from the list
+    let updatedBookIds = readList.bookIds.filter { $0 != bookId }
+    // Update readlist with new book list
+    let body = ["bookIds": updatedBookIds] as [String: Any]
+    let jsonData = try JSONSerialization.data(withJSONObject: body)
+    let _: EmptyResponse = try await apiClient.request(
+      path: "/api/v1/readlists/\(readListId)",
+      method: "PATCH",
+      body: jsonData
     )
   }
 }

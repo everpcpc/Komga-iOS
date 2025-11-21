@@ -22,13 +22,7 @@ class SeriesService {
     seriesStatus: SeriesStatusFilter? = nil,
     searchTerm: String? = nil
   ) async throws -> Page<Series> {
-    var queryItems = [
-      URLQueryItem(name: "page", value: "\(page)"),
-      URLQueryItem(name: "size", value: "\(size)"),
-      URLQueryItem(name: "sort", value: sort),
-    ]
-
-    // Check if we have any filters - if so, use /api/v1/series/list with POST
+    // Check if we have any filters - if so, use getSeriesList
     let hasLibraryFilter = !libraryId.isEmpty
     let hasReadStatusFilter = readStatus != nil && readStatus != .all
     let hasSeriesStatusFilter = seriesStatus != nil && seriesStatus != .all
@@ -44,22 +38,52 @@ class SeriesService {
         condition: condition,
         fullTextSearch: searchTerm?.isEmpty == false ? searchTerm : nil
       )
-      let encoder = JSONEncoder()
-      let jsonData = try encoder.encode(search)
 
-      return try await apiClient.request(
-        path: "/api/v1/series/list",
-        method: "POST",
-        body: jsonData,
-        queryItems: queryItems
+      return try await getSeriesList(
+        search: search,
+        page: page,
+        size: size,
+        sort: sort
       )
     } else {
       // No filters - use the simple GET endpoint
+      var queryItems = [
+        URLQueryItem(name: "page", value: "\(page)"),
+        URLQueryItem(name: "size", value: "\(size)"),
+        URLQueryItem(name: "sort", value: sort),
+      ]
+
       if let searchTerm, !searchTerm.isEmpty {
         queryItems.append(URLQueryItem(name: "search", value: searchTerm))
       }
       return try await apiClient.request(path: "/api/v1/series", queryItems: queryItems)
     }
+  }
+
+  func getSeriesList(
+    search: SeriesSearch,
+    page: Int = 0,
+    size: Int = 20,
+    sort: String? = nil
+  ) async throws -> Page<Series> {
+    var queryItems = [
+      URLQueryItem(name: "page", value: "\(page)"),
+      URLQueryItem(name: "size", value: "\(size)"),
+    ]
+
+    if let sort = sort {
+      queryItems.append(URLQueryItem(name: "sort", value: sort))
+    }
+
+    let encoder = JSONEncoder()
+    let jsonData = try encoder.encode(search)
+
+    return try await apiClient.request(
+      path: "/api/v1/series/list",
+      method: "POST",
+      body: jsonData,
+      queryItems: queryItems
+    )
   }
 
   func getOneSeries(id: String) async throws -> Series {

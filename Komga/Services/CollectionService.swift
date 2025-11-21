@@ -54,23 +54,22 @@ class CollectionService {
     collectionId: String,
     page: Int = 0,
     size: Int = 20,
-    sort: String = "metadata.titleSort,asc"
+    browseOpts: SeriesBrowseOptions
   ) async throws -> Page<Series> {
-    let queryItems = [
-      URLQueryItem(name: "page", value: "\(page)"),
-      URLQueryItem(name: "size", value: "\(size)"),
-      URLQueryItem(name: "sort", value: sort),
-    ]
+    let sort = browseOpts.sortString
+    let readStatus = browseOpts.readStatusFilter.toReadStatus()
 
-    let search = SeriesSearch(condition: SeriesSearch.buildCondition(collectionId: collectionId))
-    let encoder = JSONEncoder()
-    let jsonData = try encoder.encode(search)
+    let condition = SeriesSearch.buildCondition(
+      readStatus: readStatus,
+      collectionId: collectionId
+    )
+    let search = SeriesSearch(condition: condition)
 
-    return try await apiClient.request(
-      path: "/api/v1/series/list",
-      method: "POST",
-      body: jsonData,
-      queryItems: queryItems
+    return try await SeriesService.shared.getSeriesList(
+      search: search,
+      page: page,
+      size: size,
+      sort: sort
     )
   }
 
@@ -78,6 +77,21 @@ class CollectionService {
     let _: EmptyResponse = try await apiClient.request(
       path: "/api/v1/collections/\(collectionId)",
       method: "DELETE"
+    )
+  }
+
+  func removeSeriesFromCollection(collectionId: String, seriesId: String) async throws {
+    // Get current collection
+    let collection = try await getCollection(id: collectionId)
+    // Remove the series from the list
+    let updatedSeriesIds = collection.seriesIds.filter { $0 != seriesId }
+    // Update collection with new series list
+    let body = ["seriesIds": updatedSeriesIds] as [String: Any]
+    let jsonData = try JSONSerialization.data(withJSONObject: body)
+    let _: EmptyResponse = try await apiClient.request(
+      path: "/api/v1/collections/\(collectionId)",
+      method: "PATCH",
+      body: jsonData
     )
   }
 }

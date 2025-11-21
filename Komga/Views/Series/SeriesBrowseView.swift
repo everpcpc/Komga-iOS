@@ -47,7 +47,7 @@ struct SeriesBrowseView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      SeriesFilterView()
+      SeriesFilterView(browseOpts: $browseOpts)
         .padding(spacing)
 
       Group {

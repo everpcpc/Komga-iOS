@@ -8,8 +8,7 @@
 import SwiftUI
 
 struct SeriesFilterView: View {
-  @AppStorage("seriesBrowseOptions") private var browseOpts: SeriesBrowseOptions =
-    SeriesBrowseOptions()
+  @Binding var browseOpts: SeriesBrowseOptions
   @State private var showOptionsSheet = false
 
   var body: some View {

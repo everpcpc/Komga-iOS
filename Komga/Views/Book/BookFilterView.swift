@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct BookFilterView: View {
-  @AppStorage("bookBrowseOptions") private var browseOpts: BookBrowseOptions = BookBrowseOptions()
+  @Binding var browseOpts: BookBrowseOptions
   @State private var showOptionsSheet = false
 
   var body: some View {

@@ -125,7 +125,9 @@ class SeriesViewModel {
   }
 
   func loadCollectionSeries(
-    collectionId: String, sort: String = "metadata.titleSort,asc", refresh: Bool = false
+    collectionId: String,
+    browseOpts: SeriesBrowseOptions,
+    refresh: Bool = false
   ) async {
     if refresh {
       currentPage = 0
@@ -142,7 +144,7 @@ class SeriesViewModel {
         collectionId: collectionId,
         page: currentPage,
         size: 20,
-        sort: sort
+        browseOpts: browseOpts
       )
 
       withAnimation {

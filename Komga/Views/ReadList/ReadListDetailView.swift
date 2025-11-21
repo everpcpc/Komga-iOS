@@ -11,7 +11,6 @@ struct ReadListDetailView: View {
   let readListId: String
 
   @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
-  @AppStorage("bookListSortDirection") private var sortDirection: SortDirection = .ascending
 
   @Environment(\.dismiss) private var dismiss
 
@@ -22,8 +21,7 @@ struct ReadListDetailView: View {
   @State private var showDeleteConfirmation = false
 
   private var thumbnailURL: URL? {
-    guard let readList = readList else { return nil }
-    return ReadListService.shared.getReadListThumbnailURL(id: readList.id)
+    readList.flatMap { ReadListService.shared.getReadListThumbnailURL(id: $0.id) }
   }
 
   private var isBookReaderPresented: Binding<Bool> {
@@ -118,7 +116,9 @@ struct ReadListDetailView: View {
     .fullScreenCover(
       isPresented: isBookReaderPresented,
       onDismiss: {
-        refreshAfterReading()
+        Task {
+          await loadReadListDetails()
+        }
       }
     ) {
       if let state = readerState, let bookId = state.bookId {
@@ -134,7 +134,9 @@ struct ReadListDetailView: View {
     }
     .alert("Delete Read List?", isPresented: $showDeleteConfirmation) {
       Button("Delete", role: .destructive) {
-        deleteReadList()
+        Task {
+          await deleteReadList()
+        }
       }
       Button("Cancel", role: .cancel) {}
     } message: {
@@ -161,43 +163,21 @@ struct ReadListDetailView: View {
 
 // Helper functions for ReadListDetailView
 extension ReadListDetailView {
-  private func refreshAfterReading() {
-    Task {
-      await refreshReadListData()
-    }
-  }
-
-  @MainActor
-  private func refreshReadListData() async {
-    await loadReadListDetails()
-    await bookViewModel.loadReadListBooks(
-      readListId: readListId, sort: sortDirection.bookSortString, refresh: true)
-  }
-
-  @MainActor
   private func loadReadListDetails() async {
     do {
-      let fetchedReadList = try await ReadListService.shared.getReadList(id: readListId)
-      readList = fetchedReadList
-      await bookViewModel.loadReadListBooks(
-        readListId: readListId, sort: sortDirection.bookSortString, refresh: true)
+      readList = try await ReadListService.shared.getReadList(id: readListId)
     } catch {
       actionErrorMessage = error.localizedDescription
     }
   }
 
-  private func deleteReadList() {
-    Task {
-      do {
-        try await ReadListService.shared.deleteReadList(readListId: readListId)
-        await MainActor.run {
-          dismiss()
-        }
-      } catch {
-        await MainActor.run {
-          actionErrorMessage = error.localizedDescription
-        }
-      }
+  @MainActor
+  private func deleteReadList() async {
+    do {
+      try await ReadListService.shared.deleteReadList(readListId: readListId)
+      dismiss()
+    } catch {
+      actionErrorMessage = error.localizedDescription
     }
   }
 }
@@ -207,11 +187,8 @@ struct BooksListViewForReadList: View {
   let readListId: String
   @Bindable var bookViewModel: BookViewModel
   var onReadBook: (String, Bool) -> Void
-  @AppStorage("bookListSortDirection") private var sortDirection: SortDirection = .ascending
-
-  private var sortString: String {
-    "metadata.numberSort,\(sortDirection.rawValue)"
-  }
+  @AppStorage("readListBookBrowseOptions") private var browseOpts: BookBrowseOptions =
+    BookBrowseOptions()
 
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
@@ -221,20 +198,7 @@ struct BooksListViewForReadList: View {
 
         Spacer()
 
-        Button {
-          sortDirection = sortDirection.toggle()
-        } label: {
-          HStack(spacing: 4) {
-            Image(systemName: sortDirection.icon)
-            Text(sortDirection.displayName)
-          }
-          .font(.caption)
-          .padding(.horizontal, 8)
-          .padding(.vertical, 4)
-          .background(Color.secondary.opacity(0.1))
-          .foregroundColor(.primary)
-          .cornerRadius(4)
-        }
+        BookFilterView(browseOpts: $browseOpts)
       }
 
       if bookViewModel.isLoading && bookViewModel.books.isEmpty {
@@ -252,13 +216,29 @@ struct BooksListViewForReadList: View {
               },
               onBookUpdated: {
                 refreshBooks()
-              }
+              },
+              showSeriesTitle: true
             )
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+              Button(role: .destructive) {
+                Task {
+                  do {
+                    try await ReadListService.shared.removeBookFromReadList(
+                      readListId: readListId, bookId: book.id)
+                    await bookViewModel.loadReadListBooks(
+                      readListId: readListId, browseOpts: browseOpts, refresh: true)
+                  } catch {
+                  }
+                }
+              } label: {
+                Label("Remove", systemImage: "trash")
+              }
+            }
             .onAppear {
               if book.id == bookViewModel.books.last?.id {
                 Task {
                   await bookViewModel.loadReadListBooks(
-                    readListId: readListId, sort: sortString, refresh: false)
+                    readListId: readListId, browseOpts: browseOpts, refresh: false)
                 }
               }
             }
@@ -273,12 +253,13 @@ struct BooksListViewForReadList: View {
       }
     }
     .task(id: readListId) {
-      await bookViewModel.loadReadListBooks(readListId: readListId, sort: sortString, refresh: true)
+      await bookViewModel.loadReadListBooks(
+        readListId: readListId, browseOpts: browseOpts, refresh: true)
     }
-    .onChange(of: sortDirection) {
+    .onChange(of: browseOpts) {
       Task {
         await bookViewModel.loadReadListBooks(
-          readListId: readListId, sort: sortString, refresh: true)
+          readListId: readListId, browseOpts: browseOpts, refresh: true)
       }
     }
   }
@@ -287,7 +268,8 @@ struct BooksListViewForReadList: View {
 extension BooksListViewForReadList {
   fileprivate func refreshBooks() {
     Task {
-      await bookViewModel.loadReadListBooks(readListId: readListId, sort: sortString, refresh: true)
+      await bookViewModel.loadReadListBooks(
+        readListId: readListId, browseOpts: browseOpts, refresh: true)
     }
   }
 }

@@ -20,8 +20,7 @@ struct CollectionDetailView: View {
   @State private var showDeleteConfirmation = false
 
   private var thumbnailURL: URL? {
-    guard let collection = collection else { return nil }
-    return CollectionService.shared.getCollectionThumbnailURL(id: collection.id)
+    collection.flatMap { CollectionService.shared.getCollectionThumbnailURL(id: $0.id) }
   }
 
   private var isActionErrorPresented: Binding<Bool> {
@@ -104,7 +103,9 @@ struct CollectionDetailView: View {
     }
     .alert("Delete Collection?", isPresented: $showDeleteConfirmation) {
       Button("Delete", role: .destructive) {
-        deleteCollection()
+        Task {
+          await deleteCollection()
+        }
       }
       Button("Cancel", role: .cancel) {}
     } message: {
@@ -131,29 +132,21 @@ struct CollectionDetailView: View {
 
 // Helper functions for CollectionDetailView
 extension CollectionDetailView {
-  @MainActor
   private func loadCollectionDetails() async {
     do {
-      let fetchedCollection = try await CollectionService.shared.getCollection(id: collectionId)
-      collection = fetchedCollection
-      await seriesViewModel.loadCollectionSeries(collectionId: collectionId, refresh: true)
+      collection = try await CollectionService.shared.getCollection(id: collectionId)
     } catch {
       actionErrorMessage = error.localizedDescription
     }
   }
 
-  private func deleteCollection() {
-    Task {
-      do {
-        try await CollectionService.shared.deleteCollection(collectionId: collectionId)
-        await MainActor.run {
-          dismiss()
-        }
-      } catch {
-        await MainActor.run {
-          actionErrorMessage = error.localizedDescription
-        }
-      }
+  @MainActor
+  private func deleteCollection() async {
+    do {
+      try await CollectionService.shared.deleteCollection(collectionId: collectionId)
+      dismiss()
+    } catch {
+      actionErrorMessage = error.localizedDescription
     }
   }
 }
@@ -163,11 +156,8 @@ struct SeriesListView: View {
   let collectionId: String
   @Bindable var seriesViewModel: SeriesViewModel
 
-  @AppStorage("bookListSortDirection") private var sortDirection: SortDirection = .ascending
-
-  private var sortString: String {
-    "metadata.titleSort,\(sortDirection.rawValue)"
-  }
+  @AppStorage("collectionSeriesBrowseOptions") private var browseOpts: SeriesBrowseOptions =
+    SeriesBrowseOptions()
 
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
@@ -177,20 +167,7 @@ struct SeriesListView: View {
 
         Spacer()
 
-        Button {
-          sortDirection = sortDirection.toggle()
-        } label: {
-          HStack(spacing: 4) {
-            Image(systemName: sortDirection.icon)
-            Text(sortDirection.displayName)
-          }
-          .font(.caption)
-          .padding(.horizontal, 8)
-          .padding(.vertical, 4)
-          .background(Color.secondary.opacity(0.1))
-          .foregroundColor(.primary)
-          .cornerRadius(4)
-        }
+        SeriesFilterView(browseOpts: $browseOpts)
       }
 
       if seriesViewModel.isLoading && seriesViewModel.series.isEmpty {
@@ -206,17 +183,32 @@ struct SeriesListView: View {
                 onActionCompleted: {
                   Task {
                     await seriesViewModel.loadCollectionSeries(
-                      collectionId: collectionId, sort: sortString, refresh: true)
+                      collectionId: collectionId, browseOpts: browseOpts, refresh: true)
                   }
                 }
               )
             }
             .buttonStyle(.plain)
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+              Button(role: .destructive) {
+                Task {
+                  do {
+                    try await CollectionService.shared.removeSeriesFromCollection(
+                      collectionId: collectionId, seriesId: series.id)
+                    await seriesViewModel.loadCollectionSeries(
+                      collectionId: collectionId, browseOpts: browseOpts, refresh: true)
+                  } catch {
+                  }
+                }
+              } label: {
+                Label("Remove", systemImage: "trash")
+              }
+            }
             .onAppear {
               if series.id == seriesViewModel.series.last?.id {
                 Task {
                   await seriesViewModel.loadCollectionSeries(
-                    collectionId: collectionId, sort: sortString, refresh: false)
+                    collectionId: collectionId, browseOpts: browseOpts, refresh: false)
                 }
               }
             }
@@ -232,12 +224,12 @@ struct SeriesListView: View {
     }
     .task(id: collectionId) {
       await seriesViewModel.loadCollectionSeries(
-        collectionId: collectionId, sort: sortString, refresh: true)
+        collectionId: collectionId, browseOpts: browseOpts, refresh: true)
     }
-    .onChange(of: sortDirection) {
+    .onChange(of: browseOpts) {
       Task {
         await seriesViewModel.loadCollectionSeries(
-          collectionId: collectionId, sort: sortString, refresh: true)
+          collectionId: collectionId, browseOpts: browseOpts, refresh: true)
       }
     }
   }

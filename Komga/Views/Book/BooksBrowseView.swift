@@ -53,7 +53,7 @@ struct BooksBrowseView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      BookFilterView()
+      BookFilterView(browseOpts: $browseOpts)
         .padding(spacing)
 
       Group {

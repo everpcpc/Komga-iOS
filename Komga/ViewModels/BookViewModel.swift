@@ -238,7 +238,9 @@ class BookViewModel {
   }
 
   func loadReadListBooks(
-    readListId: String, sort: String = "metadata.numberSort,asc", refresh: Bool = false
+    readListId: String,
+    browseOpts: BookBrowseOptions,
+    refresh: Bool = false
   ) async {
     if refresh {
       currentPage = 0
@@ -255,7 +257,7 @@ class BookViewModel {
         readListId: readListId,
         page: currentPage,
         size: 50,
-        sort: sort
+        browseOpts: browseOpts
       )
 
       withAnimation {
