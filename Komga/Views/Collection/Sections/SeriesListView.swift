@@ -15,6 +15,10 @@ struct SeriesListView: View {
   @AppStorage("collectionSeriesBrowseOptions") private var browseOpts: SeriesBrowseOptions =
     SeriesBrowseOptions()
 
+  @State private var selectedSeriesIds: Set<String> = []
+  @State private var isSelectionMode = false
+  @State private var isDeleting = false
+
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       HStack {
@@ -23,7 +27,44 @@ struct SeriesListView: View {
 
         Spacer()
 
-        SeriesFilterView(browseOpts: $browseOpts)
+        HStack(spacing: 8) {
+          SeriesFilterView(browseOpts: $browseOpts)
+
+          if !isSelectionMode {
+            Button {
+              withAnimation {
+                isSelectionMode = true
+              }
+            } label: {
+              Image(systemName: "checkmark.circle")
+            }
+            .transition(.opacity.combined(with: .scale))
+          }
+        }
+      }
+
+      if isSelectionMode {
+        SelectionToolbar(
+          selectedCount: selectedSeriesIds.count,
+          totalCount: seriesViewModel.series.count,
+          isDeleting: isDeleting,
+          onSelectAll: {
+            if selectedSeriesIds.count == seriesViewModel.series.count {
+              selectedSeriesIds.removeAll()
+            } else {
+              selectedSeriesIds = Set(seriesViewModel.series.map { $0.id })
+            }
+          },
+          onDelete: {
+            Task {
+              await deleteSelectedSeries()
+            }
+          },
+          onCancel: {
+            isSelectionMode = false
+            selectedSeriesIds.removeAll()
+          }
+        )
       }
 
       if seriesViewModel.isLoading && seriesViewModel.series.isEmpty {
@@ -33,31 +74,61 @@ struct SeriesListView: View {
       } else {
         LazyVStack(spacing: 8) {
           ForEach(seriesViewModel.series) { series in
-            NavigationLink(value: NavDestination.seriesDetail(seriesId: series.id)) {
-              SeriesRowView(
-                series: series,
-                onActionCompleted: {
-                  Task {
-                    await seriesViewModel.loadCollectionSeries(
-                      collectionId: collectionId, browseOpts: browseOpts, refresh: true)
+            HStack(spacing: 12) {
+              if isSelectionMode {
+                Image(
+                  systemName: selectedSeriesIds.contains(series.id)
+                    ? "checkmark.circle.fill" : "circle"
+                )
+                .foregroundColor(selectedSeriesIds.contains(series.id) ? .accentColor : .secondary)
+                .onTapGesture {
+                  withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    if selectedSeriesIds.contains(series.id) {
+                      selectedSeriesIds.remove(series.id)
+                    } else {
+                      selectedSeriesIds.insert(series.id)
+                    }
                   }
                 }
-              )
-            }
-            .buttonStyle(.plain)
-            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-              Button(role: .destructive) {
-                Task {
-                  do {
-                    try await CollectionService.shared.removeSeriesFromCollection(
-                      collectionId: collectionId, seriesId: series.id)
-                    await seriesViewModel.loadCollectionSeries(
-                      collectionId: collectionId, browseOpts: browseOpts, refresh: true)
-                  } catch {
+                .transition(.scale.combined(with: .opacity))
+                .animation(
+                  .spring(response: 0.3, dampingFraction: 0.7),
+                  value: selectedSeriesIds.contains(series.id))
+              }
+
+              if isSelectionMode {
+                SeriesRowView(
+                  series: series,
+                  onActionCompleted: {
+                    Task {
+                      await seriesViewModel.loadCollectionSeries(
+                        collectionId: collectionId, browseOpts: browseOpts, refresh: true)
+                    }
+                  }
+                )
+                .contentShape(Rectangle())
+                .onTapGesture {
+                  withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    if selectedSeriesIds.contains(series.id) {
+                      selectedSeriesIds.remove(series.id)
+                    } else {
+                      selectedSeriesIds.insert(series.id)
+                    }
                   }
                 }
-              } label: {
-                Label("Remove", systemImage: "trash")
+              } else {
+                NavigationLink(value: NavDestination.seriesDetail(seriesId: series.id)) {
+                  SeriesRowView(
+                    series: series,
+                    onActionCompleted: {
+                      Task {
+                        await seriesViewModel.loadCollectionSeries(
+                          collectionId: collectionId, browseOpts: browseOpts, refresh: true)
+                      }
+                    }
+                  )
+                }
+                .buttonStyle(.plain)
               }
             }
             .onAppear {
@@ -87,6 +158,36 @@ struct SeriesListView: View {
         await seriesViewModel.loadCollectionSeries(
           collectionId: collectionId, browseOpts: browseOpts, refresh: true)
       }
+    }
+  }
+}
+
+extension SeriesListView {
+  @MainActor
+  private func deleteSelectedSeries() async {
+    guard !selectedSeriesIds.isEmpty else { return }
+    guard !isDeleting else { return }
+
+    isDeleting = true
+    defer { isDeleting = false }
+
+    do {
+      try await CollectionService.shared.removeSeriesFromCollection(
+        collectionId: collectionId,
+        seriesIds: Array(selectedSeriesIds)
+      )
+
+      // Clear selection and exit selection mode with animation
+      withAnimation {
+        selectedSeriesIds.removeAll()
+        isSelectionMode = false
+      }
+
+      // Refresh the series list
+      await seriesViewModel.loadCollectionSeries(
+        collectionId: collectionId, browseOpts: browseOpts, refresh: true)
+    } catch {
+      // Handle error if needed
     }
   }
 }

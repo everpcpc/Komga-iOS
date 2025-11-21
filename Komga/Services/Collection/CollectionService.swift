@@ -80,11 +80,24 @@ class CollectionService {
     )
   }
 
-  func removeSeriesFromCollection(collectionId: String, seriesId: String) async throws {
+  func removeSeriesFromCollection(collectionId: String, seriesIds: [String]) async throws {
+    // Return early if no series to remove
+    guard !seriesIds.isEmpty else { return }
+
     // Get current collection
     let collection = try await getCollection(id: collectionId)
     // Remove the series from the list
-    let updatedSeriesIds = collection.seriesIds.filter { $0 != seriesId }
+    let updatedSeriesIds = collection.seriesIds.filter { !seriesIds.contains($0) }
+
+    // Throw error if result would be empty
+    guard !updatedSeriesIds.isEmpty else {
+      throw NSError(
+        domain: "CollectionService",
+        code: -1,
+        userInfo: [NSLocalizedDescriptionKey: "Cannot remove all series from collection"]
+      )
+    }
+
     // Update collection with new series list
     let body = ["seriesIds": updatedSeriesIds] as [String: Any]
     let jsonData = try JSONSerialization.data(withJSONObject: body)

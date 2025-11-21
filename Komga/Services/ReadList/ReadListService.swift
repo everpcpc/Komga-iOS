@@ -82,11 +82,24 @@ class ReadListService {
     )
   }
 
-  func removeBookFromReadList(readListId: String, bookId: String) async throws {
+  func removeBooksFromReadList(readListId: String, bookIds: [String]) async throws {
+    // Return early if no books to remove
+    guard !bookIds.isEmpty else { return }
+
     // Get current readlist
     let readList = try await getReadList(id: readListId)
-    // Remove the book from the list
-    let updatedBookIds = readList.bookIds.filter { $0 != bookId }
+    // Remove the books from the list
+    let updatedBookIds = readList.bookIds.filter { !bookIds.contains($0) }
+
+    // Throw error if result would be empty
+    guard !updatedBookIds.isEmpty else {
+      throw NSError(
+        domain: "ReadListService",
+        code: -1,
+        userInfo: [NSLocalizedDescriptionKey: "Cannot remove all books from read list"]
+      )
+    }
+
     // Update readlist with new book list
     let body = ["bookIds": updatedBookIds] as [String: Any]
     let jsonData = try JSONSerialization.data(withJSONObject: body)

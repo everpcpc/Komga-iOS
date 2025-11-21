@@ -15,6 +15,10 @@ struct BooksListViewForReadList: View {
   @AppStorage("readListBookBrowseOptions") private var browseOpts: BookBrowseOptions =
     BookBrowseOptions()
 
+  @State private var selectedBookIds: Set<String> = []
+  @State private var isSelectionMode = false
+  @State private var isDeleting = false
+
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       HStack {
@@ -23,7 +27,44 @@ struct BooksListViewForReadList: View {
 
         Spacer()
 
-        BookFilterView(browseOpts: $browseOpts)
+        HStack(spacing: 8) {
+          BookFilterView(browseOpts: $browseOpts)
+
+          if !isSelectionMode {
+            Button {
+              withAnimation {
+                isSelectionMode = true
+              }
+            } label: {
+              Image(systemName: "checkmark.circle")
+            }
+            .transition(.opacity.combined(with: .scale))
+          }
+        }
+      }
+
+      if isSelectionMode {
+        SelectionToolbar(
+          selectedCount: selectedBookIds.count,
+          totalCount: bookViewModel.books.count,
+          isDeleting: isDeleting,
+          onSelectAll: {
+            if selectedBookIds.count == bookViewModel.books.count {
+              selectedBookIds.removeAll()
+            } else {
+              selectedBookIds = Set(bookViewModel.books.map { $0.id })
+            }
+          },
+          onDelete: {
+            Task {
+              await deleteSelectedBooks()
+            }
+          },
+          onCancel: {
+            isSelectionMode = false
+            selectedBookIds.removeAll()
+          }
+        )
       }
 
       if bookViewModel.isLoading && bookViewModel.books.isEmpty {
@@ -33,31 +74,48 @@ struct BooksListViewForReadList: View {
       } else {
         LazyVStack(spacing: 8) {
           ForEach(bookViewModel.books) { book in
-            BookRowView(
-              book: book,
-              viewModel: bookViewModel,
-              onReadBook: { incognito in
-                onReadBook(book.id, incognito)
-              },
-              onBookUpdated: {
-                refreshBooks()
-              },
-              showSeriesTitle: true
-            )
-            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-              Button(role: .destructive) {
-                Task {
-                  do {
-                    try await ReadListService.shared.removeBookFromReadList(
-                      readListId: readListId, bookId: book.id)
-                    await bookViewModel.loadReadListBooks(
-                      readListId: readListId, browseOpts: browseOpts, refresh: true)
-                  } catch {
+            HStack(spacing: 12) {
+              if isSelectionMode {
+                Image(
+                  systemName: selectedBookIds.contains(book.id) ? "checkmark.circle.fill" : "circle"
+                )
+                .foregroundColor(selectedBookIds.contains(book.id) ? .accentColor : .secondary)
+                .onTapGesture {
+                  withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    if selectedBookIds.contains(book.id) {
+                      selectedBookIds.remove(book.id)
+                    } else {
+                      selectedBookIds.insert(book.id)
+                    }
                   }
                 }
-              } label: {
-                Label("Remove", systemImage: "trash")
+                .transition(.scale.combined(with: .opacity))
+                .animation(
+                  .spring(response: 0.3, dampingFraction: 0.7),
+                  value: selectedBookIds.contains(book.id))
               }
+
+              BookRowView(
+                book: book,
+                viewModel: bookViewModel,
+                onReadBook: { incognito in
+                  if isSelectionMode {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                      if selectedBookIds.contains(book.id) {
+                        selectedBookIds.remove(book.id)
+                      } else {
+                        selectedBookIds.insert(book.id)
+                      }
+                    }
+                  } else {
+                    onReadBook(book.id, incognito)
+                  }
+                },
+                onBookUpdated: {
+                  refreshBooks()
+                },
+                showSeriesTitle: true
+              )
             }
             .onAppear {
               if book.id == bookViewModel.books.last?.id {
@@ -95,6 +153,34 @@ extension BooksListViewForReadList {
     Task {
       await bookViewModel.loadReadListBooks(
         readListId: readListId, browseOpts: browseOpts, refresh: true)
+    }
+  }
+
+  @MainActor
+  private func deleteSelectedBooks() async {
+    guard !selectedBookIds.isEmpty else { return }
+    guard !isDeleting else { return }
+
+    isDeleting = true
+    defer { isDeleting = false }
+
+    do {
+      try await ReadListService.shared.removeBooksFromReadList(
+        readListId: readListId,
+        bookIds: Array(selectedBookIds)
+      )
+
+      // Clear selection and exit selection mode with animation
+      withAnimation {
+        selectedBookIds.removeAll()
+        isSelectionMode = false
+      }
+
+      // Refresh the books list
+      await bookViewModel.loadReadListBooks(
+        readListId: readListId, browseOpts: browseOpts, refresh: true)
+    } catch {
+      // Handle error if needed
     }
   }
 }
