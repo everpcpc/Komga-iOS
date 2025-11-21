@@ -17,6 +17,7 @@ struct BookCardView: View {
   @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
 
   @State private var readerState: BookReaderState?
+  @State private var showReadListPicker = false
 
   private var thumbnailURL: URL? {
     BookService.shared.getBookThumbnailURL(id: book.id)
@@ -127,7 +128,22 @@ struct BookCardView: View {
         onReadBook: { incognito in
           readerState = BookReaderState(bookId: book.id, incognito: incognito)
         },
-        onActionCompleted: onBookUpdated
+        onActionCompleted: onBookUpdated,
+        onShowReadListPicker: {
+          showReadListPicker = true
+        }
+      )
+    }
+    .sheet(isPresented: $showReadListPicker) {
+      ReadListPickerSheet(
+        bookIds: [book.id],
+        onSelect: { readListId in
+          addToReadList(readListId: readListId)
+        },
+        onComplete: {
+          // Create already adds book, just refresh
+          onBookUpdated?()
+        }
       )
     }
     .fullScreenCover(
@@ -138,6 +154,22 @@ struct BookCardView: View {
     ) {
       if let state = readerState, let bookId = state.bookId {
         BookReaderView(bookId: bookId, incognito: state.incognito)
+      }
+    }
+  }
+
+  private func addToReadList(readListId: String) {
+    Task {
+      do {
+        try await ReadListService.shared.addBooksToReadList(
+          readListId: readListId,
+          bookIds: [book.id]
+        )
+        await MainActor.run {
+          onBookUpdated?()
+        }
+      } catch {
+        // Handle error if needed
       }
     }
   }

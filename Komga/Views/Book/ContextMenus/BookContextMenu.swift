@@ -13,6 +13,7 @@ struct BookContextMenu: View {
   let viewModel: BookViewModel
   var onReadBook: ((Bool) -> Void)?
   var onActionCompleted: (() -> Void)? = nil
+  var onShowReadListPicker: (() -> Void)? = nil
 
   private var isCompleted: Bool {
     book.readProgress?.completed ?? false
@@ -35,6 +36,28 @@ struct BookContextMenu: View {
       }
       NavigationLink(value: NavDestination.seriesDetail(seriesId: book.seriesId)) {
         Label("Go to Series", systemImage: "book.fill")
+      }
+
+      Divider()
+
+      Button {
+        analyzeBook()
+      } label: {
+        Label("Analyze", systemImage: "waveform.path.ecg")
+      }
+
+      Button {
+        refreshMetadata()
+      } label: {
+        Label("Refresh Metadata", systemImage: "arrow.clockwise")
+      }
+
+      Divider()
+
+      Button {
+        onShowReadListPicker?()
+      } label: {
+        Label("Add to Read List", systemImage: "list.bullet")
       }
 
       Divider()
@@ -62,20 +85,6 @@ struct BookContextMenu: View {
         } label: {
           Label("Mark as Unread", systemImage: "circle")
         }
-      }
-
-      Divider()
-
-      Button {
-        analyzeBook()
-      } label: {
-        Label("Analyze", systemImage: "waveform.path.ecg")
-      }
-
-      Button {
-        refreshMetadata()
-      } label: {
-        Label("Refresh Metadata", systemImage: "arrow.clockwise")
       }
 
       Divider()
@@ -125,6 +134,24 @@ struct BookContextMenu: View {
       do {
         try await BookService.shared.deleteBook(bookId: book.id)
         await ImageCache.clearDiskCache(forBookId: book.id)
+        await MainActor.run {
+          onActionCompleted?()
+        }
+      } catch {
+        await MainActor.run {
+          viewModel.errorMessage = error.localizedDescription
+        }
+      }
+    }
+  }
+
+  private func addToReadList(readListId: String) {
+    Task {
+      do {
+        try await ReadListService.shared.addBooksToReadList(
+          readListId: readListId,
+          bookIds: [book.id]
+        )
         await MainActor.run {
           onActionCompleted?()
         }

@@ -20,6 +20,7 @@ struct SeriesDetailView: View {
   @State private var readerState: BookReaderState?
   @State private var actionErrorMessage: String?
   @State private var showDeleteConfirmation = false
+  @State private var showCollectionPicker = false
 
   private var thumbnailURL: URL? {
     guard let series = series else { return nil }
@@ -276,6 +277,28 @@ struct SeriesDetailView: View {
     .toolbar {
       ToolbarItem(placement: .topBarTrailing) {
         Menu {
+          Button {
+            analyzeSeries()
+          } label: {
+            Label("Analyze", systemImage: "waveform.path.ecg")
+          }
+
+          Button {
+            refreshSeriesMetadata()
+          } label: {
+            Label("Refresh Metadata", systemImage: "arrow.clockwise")
+          }
+
+          Divider()
+
+          Button {
+            showCollectionPicker = true
+          } label: {
+            Label("Add to Collection", systemImage: "square.grid.2x2")
+          }
+
+          Divider()
+
           if series != nil {
             if canMarkSeriesAsRead {
               Button {
@@ -296,20 +319,6 @@ struct SeriesDetailView: View {
 
           Divider()
 
-          Button {
-            analyzeSeries()
-          } label: {
-            Label("Analyze", systemImage: "waveform.path.ecg")
-          }
-
-          Button {
-            refreshSeriesMetadata()
-          } label: {
-            Label("Refresh Metadata", systemImage: "arrow.clockwise")
-          }
-
-          Divider()
-
           Button(role: .destructive) {
             showDeleteConfirmation = true
           } label: {
@@ -319,6 +328,20 @@ struct SeriesDetailView: View {
           Image(systemName: "ellipsis.circle")
         }
       }
+    }
+    .sheet(isPresented: $showCollectionPicker) {
+      CollectionPickerSheet(
+        seriesIds: [seriesId],
+        onSelect: { collectionId in
+          addToCollection(collectionId: collectionId)
+        },
+        onComplete: {
+          // Create already adds series, just refresh
+          Task {
+            await refreshSeriesData()
+          }
+        }
+      )
     }
     .task {
       await loadSeriesDetails()
@@ -407,6 +430,22 @@ extension SeriesDetailView {
         await MainActor.run {
           dismiss()
         }
+      } catch {
+        await MainActor.run {
+          actionErrorMessage = error.localizedDescription
+        }
+      }
+    }
+  }
+
+  private func addToCollection(collectionId: String) {
+    Task {
+      do {
+        try await CollectionService.shared.addSeriesToCollection(
+          collectionId: collectionId,
+          seriesIds: [seriesId]
+        )
+        await refreshSeriesData()
       } catch {
         await MainActor.run {
           actionErrorMessage = error.localizedDescription

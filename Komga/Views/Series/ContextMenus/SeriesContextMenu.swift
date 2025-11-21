@@ -12,6 +12,7 @@ struct SeriesContextMenu: View {
   let series: Series
   var onActionCompleted: (() -> Void)?
   var onActionFailed: ((String) -> Void)?
+  var onShowCollectionPicker: (() -> Void)? = nil
 
   private var canMarkAsRead: Bool {
     series.booksUnreadCount > 0
@@ -33,6 +34,14 @@ struct SeriesContextMenu: View {
         refreshMetadata()
       } label: {
         Label("Refresh Metadata", systemImage: "arrow.clockwise")
+      }
+
+      Divider()
+
+      Button {
+        onShowCollectionPicker?()
+      } label: {
+        Label("Add to Collection", systemImage: "square.grid.2x2")
       }
 
       Divider()
@@ -104,6 +113,24 @@ struct SeriesContextMenu: View {
     Task {
       do {
         try await SeriesService.shared.markAsUnread(seriesId: series.id)
+        await MainActor.run {
+          onActionCompleted?()
+        }
+      } catch {
+        await MainActor.run {
+          onActionFailed?(error.localizedDescription)
+        }
+      }
+    }
+  }
+
+  private func addToCollection(collectionId: String) {
+    Task {
+      do {
+        try await CollectionService.shared.addSeriesToCollection(
+          collectionId: collectionId,
+          seriesIds: [series.id]
+        )
         await MainActor.run {
           onActionCompleted?()
         }

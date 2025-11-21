@@ -14,6 +14,8 @@ struct BookRowView: View {
   var onBookUpdated: (() -> Void)? = nil
   var showSeriesTitle: Bool = false
 
+  @State private var showReadListPicker = false
+
   private var thumbnailURL: URL? {
     BookService.shared.getBookThumbnailURL(id: book.id)
   }
@@ -98,8 +100,39 @@ struct BookRowView: View {
         book: book,
         viewModel: viewModel,
         onReadBook: onReadBook,
-        onActionCompleted: onBookUpdated
+        onActionCompleted: onBookUpdated,
+        onShowReadListPicker: {
+          showReadListPicker = true
+        }
       )
+    }
+    .sheet(isPresented: $showReadListPicker) {
+      ReadListPickerSheet(
+        bookIds: [book.id],
+        onSelect: { readListId in
+          addToReadList(readListId: readListId)
+        },
+        onComplete: {
+          // Create already adds book, just refresh
+          onBookUpdated?()
+        }
+      )
+    }
+  }
+
+  private func addToReadList(readListId: String) {
+    Task {
+      do {
+        try await ReadListService.shared.addBooksToReadList(
+          readListId: readListId,
+          bookIds: [book.id]
+        )
+        await MainActor.run {
+          onBookUpdated?()
+        }
+      } catch {
+        // Handle error if needed
+      }
     }
   }
 

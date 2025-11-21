@@ -14,6 +14,8 @@ struct ReadHistorySection: View {
   var onBookUpdated: (() -> Void)? = nil
 
   @State private var readerState: BookReaderState?
+  @State private var showReadListPicker = false
+  @State private var selectedBookId: String?
 
   private var isBookReaderPresented: Binding<Bool> {
     Binding(
@@ -44,7 +46,11 @@ struct ReadHistorySection: View {
                   onReadBook: { incognito in
                     readerState = BookReaderState(bookId: book.id, incognito: incognito)
                   },
-                  onActionCompleted: onBookUpdated
+                  onActionCompleted: onBookUpdated,
+                  onShowReadListPicker: {
+                    selectedBookId = book.id
+                    showReadListPicker = true
+                  }
                 )
               }
           }
@@ -65,6 +71,20 @@ struct ReadHistorySection: View {
       }
       .padding(.horizontal, 8)
     }
+    .sheet(isPresented: $showReadListPicker) {
+      if let bookId = selectedBookId {
+        ReadListPickerSheet(
+          bookIds: [bookId],
+          onSelect: { readListId in
+            addToReadList(bookId: bookId, readListId: readListId)
+          },
+          onComplete: {
+            // Create already adds book, just refresh
+            onBookUpdated?()
+          }
+        )
+      }
+    }
     .fullScreenCover(
       isPresented: isBookReaderPresented,
       onDismiss: {
@@ -73,6 +93,22 @@ struct ReadHistorySection: View {
     ) {
       if let state = readerState, let bookId = state.bookId {
         BookReaderView(bookId: bookId, incognito: state.incognito)
+      }
+    }
+  }
+
+  private func addToReadList(bookId: String, readListId: String) {
+    Task {
+      do {
+        try await ReadListService.shared.addBooksToReadList(
+          readListId: readListId,
+          bookIds: [bookId]
+        )
+        await MainActor.run {
+          onBookUpdated?()
+        }
+      } catch {
+        // Handle error if needed
       }
     }
   }

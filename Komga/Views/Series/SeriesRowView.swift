@@ -13,6 +13,7 @@ struct SeriesRowView: View {
 
   @State private var actionErrorMessage: String?
   @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
+  @State private var showCollectionPicker = false
 
   private var thumbnailURL: URL? {
     SeriesService.shared.getSeriesThumbnailURL(id: series.id)
@@ -79,7 +80,22 @@ struct SeriesRowView: View {
       SeriesContextMenu(
         series: series,
         onActionCompleted: onActionCompleted,
-        onActionFailed: { actionErrorMessage = $0 }
+        onActionFailed: { actionErrorMessage = $0 },
+        onShowCollectionPicker: {
+          showCollectionPicker = true
+        }
+      )
+    }
+    .sheet(isPresented: $showCollectionPicker) {
+      CollectionPickerSheet(
+        seriesIds: [series.id],
+        onSelect: { collectionId in
+          addToCollection(collectionId: collectionId)
+        },
+        onComplete: {
+          // Create already adds series, just refresh
+          onActionCompleted?()
+        }
       )
     }
     .alert("Action Failed", isPresented: isActionErrorPresented) {
@@ -87,6 +103,24 @@ struct SeriesRowView: View {
     } message: {
       if let message = actionErrorMessage {
         Text(message)
+      }
+    }
+  }
+
+  private func addToCollection(collectionId: String) {
+    Task {
+      do {
+        try await CollectionService.shared.addSeriesToCollection(
+          collectionId: collectionId,
+          seriesIds: [series.id]
+        )
+        await MainActor.run {
+          onActionCompleted?()
+        }
+      } catch {
+        await MainActor.run {
+          actionErrorMessage = error.localizedDescription
+        }
       }
     }
   }

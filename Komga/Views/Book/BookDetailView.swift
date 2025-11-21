@@ -16,6 +16,7 @@ struct BookDetailView: View {
   @State private var readerState: BookReaderState?
   @State private var actionErrorMessage: String?
   @State private var showDeleteConfirmation = false
+  @State private var showReadListPicker = false
 
   private var thumbnailURL: URL? {
     return BookService.shared.getBookThumbnailURL(id: bookId)
@@ -237,6 +238,28 @@ struct BookDetailView: View {
     .toolbar {
       ToolbarItem(placement: .topBarTrailing) {
         Menu {
+          Button {
+            analyzeBook()
+          } label: {
+            Label("Analyze", systemImage: "waveform.path.ecg")
+          }
+
+          Button {
+            refreshMetadata()
+          } label: {
+            Label("Refresh Metadata", systemImage: "arrow.clockwise")
+          }
+
+          Divider()
+
+          Button {
+            showReadListPicker = true
+          } label: {
+            Label("Add to Read List", systemImage: "list.bullet")
+          }
+
+          Divider()
+
           if let book = book {
             if !(book.readProgress?.completed ?? false) {
               Button {
@@ -257,20 +280,6 @@ struct BookDetailView: View {
 
           Divider()
 
-          Button {
-            analyzeBook()
-          } label: {
-            Label("Analyze", systemImage: "waveform.path.ecg")
-          }
-
-          Button {
-            refreshMetadata()
-          } label: {
-            Label("Refresh Metadata", systemImage: "arrow.clockwise")
-          }
-
-          Divider()
-
           Button(role: .destructive) {
             showDeleteConfirmation = true
           } label: {
@@ -286,6 +295,20 @@ struct BookDetailView: View {
           Image(systemName: "ellipsis.circle")
         }
       }
+    }
+    .sheet(isPresented: $showReadListPicker) {
+      ReadListPickerSheet(
+        bookIds: [bookId],
+        onSelect: { readListId in
+          addToReadList(readListId: readListId)
+        },
+        onComplete: {
+          // Create already adds book, just refresh
+          Task {
+            await loadBook()
+          }
+        }
+      )
     }
     .task {
       await loadBook()
@@ -382,5 +405,21 @@ struct BookDetailView: View {
     formatter.dateStyle = .medium
     formatter.timeStyle = .short
     return formatter.string(from: date)
+  }
+
+  private func addToReadList(readListId: String) {
+    Task {
+      do {
+        try await ReadListService.shared.addBooksToReadList(
+          readListId: readListId,
+          bookIds: [bookId]
+        )
+        await loadBook()
+      } catch {
+        await MainActor.run {
+          actionErrorMessage = error.localizedDescription
+        }
+      }
+    }
   }
 }

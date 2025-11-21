@@ -73,6 +73,29 @@ class CollectionService {
     )
   }
 
+  func createCollection(
+    name: String,
+    ordered: Bool = false,
+    seriesIds: [String] = []
+  ) async throws -> Collection {
+    // SeriesIds cannot be empty when creating a collection
+    guard !seriesIds.isEmpty else {
+      throw NSError(
+        domain: "CollectionService",
+        code: -1,
+        userInfo: [NSLocalizedDescriptionKey: "Cannot create collection without series"]
+      )
+    }
+
+    let body = ["name": name, "ordered": ordered, "seriesIds": seriesIds] as [String: Any]
+    let jsonData = try JSONSerialization.data(withJSONObject: body)
+    return try await apiClient.request(
+      path: "/api/v1/collections",
+      method: "POST",
+      body: jsonData
+    )
+  }
+
   func deleteCollection(collectionId: String) async throws {
     let _: EmptyResponse = try await apiClient.request(
       path: "/api/v1/collections/\(collectionId)",
@@ -99,7 +122,29 @@ class CollectionService {
     }
 
     // Update collection with new series list
-    let body = ["seriesIds": updatedSeriesIds] as [String: Any]
+    try await updateCollectionSeriesIds(collectionId: collectionId, seriesIds: updatedSeriesIds)
+  }
+
+  func addSeriesToCollection(collectionId: String, seriesIds: [String]) async throws {
+    // Return early if no series to add
+    guard !seriesIds.isEmpty else { return }
+
+    // Get current collection
+    let collection = try await getCollection(id: collectionId)
+    // Add the series to the list (avoid duplicates)
+    var updatedSeriesIds = collection.seriesIds
+    for seriesId in seriesIds {
+      if !updatedSeriesIds.contains(seriesId) {
+        updatedSeriesIds.append(seriesId)
+      }
+    }
+
+    // Update collection with new series list
+    try await updateCollectionSeriesIds(collectionId: collectionId, seriesIds: updatedSeriesIds)
+  }
+
+  private func updateCollectionSeriesIds(collectionId: String, seriesIds: [String]) async throws {
+    let body = ["seriesIds": seriesIds] as [String: Any]
     let jsonData = try JSONSerialization.data(withJSONObject: body)
     let _: EmptyResponse = try await apiClient.request(
       path: "/api/v1/collections/\(collectionId)",

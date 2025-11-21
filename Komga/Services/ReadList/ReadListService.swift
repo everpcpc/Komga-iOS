@@ -75,6 +75,31 @@ class ReadListService {
     )
   }
 
+  func createReadList(
+    name: String,
+    summary: String = "",
+    ordered: Bool = false,
+    bookIds: [String] = []
+  ) async throws -> ReadList {
+    // BookIds cannot be empty when creating a readlist
+    guard !bookIds.isEmpty else {
+      throw NSError(
+        domain: "ReadListService",
+        code: -1,
+        userInfo: [NSLocalizedDescriptionKey: "Cannot create read list without books"]
+      )
+    }
+
+    let body =
+      ["name": name, "summary": summary, "ordered": ordered, "bookIds": bookIds] as [String: Any]
+    let jsonData = try JSONSerialization.data(withJSONObject: body)
+    return try await apiClient.request(
+      path: "/api/v1/readlists",
+      method: "POST",
+      body: jsonData
+    )
+  }
+
   func deleteReadList(readListId: String) async throws {
     let _: EmptyResponse = try await apiClient.request(
       path: "/api/v1/readlists/\(readListId)",
@@ -101,7 +126,29 @@ class ReadListService {
     }
 
     // Update readlist with new book list
-    let body = ["bookIds": updatedBookIds] as [String: Any]
+    try await updateReadListBookIds(readListId: readListId, bookIds: updatedBookIds)
+  }
+
+  func addBooksToReadList(readListId: String, bookIds: [String]) async throws {
+    // Return early if no books to add
+    guard !bookIds.isEmpty else { return }
+
+    // Get current readlist
+    let readList = try await getReadList(id: readListId)
+    // Add the books to the list (avoid duplicates)
+    var updatedBookIds = readList.bookIds
+    for bookId in bookIds {
+      if !updatedBookIds.contains(bookId) {
+        updatedBookIds.append(bookId)
+      }
+    }
+
+    // Update readlist with new book list
+    try await updateReadListBookIds(readListId: readListId, bookIds: updatedBookIds)
+  }
+
+  private func updateReadListBookIds(readListId: String, bookIds: [String]) async throws {
+    let body = ["bookIds": bookIds] as [String: Any]
     let jsonData = try JSONSerialization.data(withJSONObject: body)
     let _: EmptyResponse = try await apiClient.request(
       path: "/api/v1/readlists/\(readListId)",

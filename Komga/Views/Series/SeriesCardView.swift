@@ -15,6 +15,7 @@ struct SeriesCardView: View {
   @AppStorage("showSeriesCardTitle") private var showTitle: Bool = true
 
   @State private var actionErrorMessage: String?
+  @State private var showCollectionPicker = false
 
   private var isActionErrorPresented: Binding<Bool> {
     Binding(
@@ -70,6 +71,21 @@ struct SeriesCardView: View {
         onActionCompleted: onActionCompleted,
         onActionFailed: { message in
           actionErrorMessage = message
+        },
+        onShowCollectionPicker: {
+          showCollectionPicker = true
+        }
+      )
+    }
+    .sheet(isPresented: $showCollectionPicker) {
+      CollectionPickerSheet(
+        seriesIds: [series.id],
+        onSelect: { collectionId in
+          addToCollection(collectionId: collectionId)
+        },
+        onComplete: {
+          // Create already adds series, just refresh
+          onActionCompleted?()
         }
       )
     }
@@ -78,6 +94,24 @@ struct SeriesCardView: View {
     } message: {
       if let message = actionErrorMessage {
         Text(message)
+      }
+    }
+  }
+
+  private func addToCollection(collectionId: String) {
+    Task {
+      do {
+        try await CollectionService.shared.addSeriesToCollection(
+          collectionId: collectionId,
+          seriesIds: [series.id]
+        )
+        await MainActor.run {
+          onActionCompleted?()
+        }
+      } catch {
+        await MainActor.run {
+          actionErrorMessage = error.localizedDescription
+        }
       }
     }
   }
