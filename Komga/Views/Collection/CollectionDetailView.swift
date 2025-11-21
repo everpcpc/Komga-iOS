@@ -17,6 +17,7 @@ struct CollectionDetailView: View {
   @State private var seriesViewModel = SeriesViewModel()
   @State private var collection: Collection?
   @State private var actionErrorMessage: String?
+  @State private var showDeleteConfirmation = false
 
   private var thumbnailURL: URL? {
     guard let collection = collection else { return nil }
@@ -101,6 +102,27 @@ struct CollectionDetailView: View {
         Text(actionErrorMessage)
       }
     }
+    .alert("Delete Collection?", isPresented: $showDeleteConfirmation) {
+      Button("Delete", role: .destructive) {
+        deleteCollection()
+      }
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text("This will permanently delete \(collection?.name ?? "this collection") from Komga.")
+    }
+    .toolbar {
+      ToolbarItem(placement: .topBarTrailing) {
+        Menu {
+          Button(role: .destructive) {
+            showDeleteConfirmation = true
+          } label: {
+            Label("Delete Collection", systemImage: "trash")
+          }
+        } label: {
+          Image(systemName: "ellipsis.circle")
+        }
+      }
+    }
     .task {
       await loadCollectionDetails()
     }
@@ -117,6 +139,21 @@ extension CollectionDetailView {
       await seriesViewModel.loadCollectionSeries(collectionId: collectionId, refresh: true)
     } catch {
       actionErrorMessage = error.localizedDescription
+    }
+  }
+
+  private func deleteCollection() {
+    Task {
+      do {
+        try await CollectionService.shared.deleteCollection(collectionId: collectionId)
+        await MainActor.run {
+          dismiss()
+        }
+      } catch {
+        await MainActor.run {
+          actionErrorMessage = error.localizedDescription
+        }
+      }
     }
   }
 }

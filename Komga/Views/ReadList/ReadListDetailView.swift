@@ -19,6 +19,7 @@ struct ReadListDetailView: View {
   @State private var readList: ReadList?
   @State private var readerState: BookReaderState?
   @State private var actionErrorMessage: String?
+  @State private var showDeleteConfirmation = false
 
   private var thumbnailURL: URL? {
     guard let readList = readList else { return nil }
@@ -131,6 +132,27 @@ struct ReadListDetailView: View {
         Text(actionErrorMessage)
       }
     }
+    .alert("Delete Read List?", isPresented: $showDeleteConfirmation) {
+      Button("Delete", role: .destructive) {
+        deleteReadList()
+      }
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text("This will permanently delete \(readList?.name ?? "this read list") from Komga.")
+    }
+    .toolbar {
+      ToolbarItem(placement: .topBarTrailing) {
+        Menu {
+          Button(role: .destructive) {
+            showDeleteConfirmation = true
+          } label: {
+            Label("Delete Read List", systemImage: "trash")
+          }
+        } label: {
+          Image(systemName: "ellipsis.circle")
+        }
+      }
+    }
     .task {
       await loadReadListDetails()
     }
@@ -161,6 +183,21 @@ extension ReadListDetailView {
         readListId: readListId, sort: sortDirection.bookSortString, refresh: true)
     } catch {
       actionErrorMessage = error.localizedDescription
+    }
+  }
+
+  private func deleteReadList() {
+    Task {
+      do {
+        try await ReadListService.shared.deleteReadList(readListId: readListId)
+        await MainActor.run {
+          dismiss()
+        }
+      } catch {
+        await MainActor.run {
+          actionErrorMessage = error.localizedDescription
+        }
+      }
     }
   }
 }

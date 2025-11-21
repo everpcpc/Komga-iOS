@@ -73,4 +73,11 @@ class CollectionService {
       queryItems: queryItems
     )
   }
+
+  func deleteCollection(collectionId: String) async throws {
+    let _: EmptyResponse = try await apiClient.request(
+      path: "/api/v1/collections/\(collectionId)",
+      method: "DELETE"
+    )
+  }
 }

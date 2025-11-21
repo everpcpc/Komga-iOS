@@ -73,4 +73,11 @@ class ReadListService {
       queryItems: queryItems
     )
   }
+
+  func deleteReadList(readListId: String) async throws {
+    let _: EmptyResponse = try await apiClient.request(
+      path: "/api/v1/readlists/\(readListId)",
+      method: "DELETE"
+    )
+  }
 }
