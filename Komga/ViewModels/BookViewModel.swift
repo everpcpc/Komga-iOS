@@ -85,7 +85,9 @@ class BookViewModel {
 
     do {
       let page = try await bookService.getBooksOnDeck(libraryId: libraryId, size: 20)
-      books = page.content
+      withAnimation {
+        books = page.content
+      }
     } catch {
       errorMessage = error.localizedDescription
     }
@@ -154,10 +156,12 @@ class BookViewModel {
         size: 20
       )
 
-      if refresh {
-        books = page.content
-      } else {
-        books.append(contentsOf: page.content)
+      withAnimation {
+        if refresh {
+          books = page.content
+        } else {
+          books.append(contentsOf: page.content)
+        }
       }
 
       hasMorePages = !page.last

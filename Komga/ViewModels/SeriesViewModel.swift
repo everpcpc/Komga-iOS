@@ -74,7 +74,9 @@ class SeriesViewModel {
 
     do {
       let page = try await seriesService.getNewSeries(libraryId: libraryId, size: 20)
-      series = page.content
+      withAnimation {
+        series = page.content
+      }
     } catch {
       errorMessage = error.localizedDescription
     }
@@ -88,7 +90,9 @@ class SeriesViewModel {
 
     do {
       let page = try await seriesService.getUpdatedSeries(libraryId: libraryId, size: 20)
-      series = page.content
+      withAnimation {
+        series = page.content
+      }
     } catch {
       errorMessage = error.localizedDescription
     }
