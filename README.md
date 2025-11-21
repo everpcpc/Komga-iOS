@@ -1,4 +1,7 @@
-# KMReader
+<div align="center">
+  <img src="icon.svg" alt="KMReader Icon" width="128" height="128">
+  <h1>KMReader</h1>
+</div>
 
 A native iOS client for [Komga](https://github.com/gotson/komga) - a media server for comics/mangas/BDs/magazines.
 
@@ -9,18 +12,53 @@ A native iOS client for [Komga](https://github.com/gotson/komga) - a media serve
 - Remember-me support and session management
 
 ### 📚 Browsing
-- Browse libraries, series, and books
-- **Series Filtering & Sorting**:
+- **Unified Browse View** with content type selector (Series, Books, Collections, Read Lists)
+- **Layout Modes**: Grid and List views (switchable via toolbar)
+- **Search**: Full-text search across all content types
+- **Library Filtering**: Filter content by library across all views
+
+- **Series Browsing**:
   - Filter by read status (All, Read, Unread, In Progress)
   - Filter by series status (All, Ongoing, Ended, Hiatus, Cancelled)
   - Sort by: Name, Date Added, Date Updated, Date Read, Release Date, Folder Name, Books Count, Random
   - Sort direction: Ascending/Descending (except Random)
-  - Library filtering across all views
-- **Series Details**:
-  - Full metadata (title, status, age rating, language, publisher, authors, genres, tags, summary)
-  - Reading direction and book count
-  - Books list with reading progress indicators
-  - Book list sorting (ascending/descending by book number)
+  - **Series Details**:
+    - Full metadata (title, status, age rating, language, publisher, authors, genres, tags, summary)
+    - Reading direction and book count
+    - Books list with reading progress indicators
+    - Book list sorting (ascending/descending by book number)
+
+- **Books Browsing**:
+  - Filter by read status (All, Read, Unread, In Progress)
+  - Sort by: Series, Name, Date Added, Date Updated, Release Date, Date Read, File Size, File Name, Page Count
+  - Sort direction: Ascending/Descending
+  - Grid and list layouts
+  - Direct book reading from browse view
+  - **Book Details**:
+    - Full metadata and reading progress
+    - Add to Read List
+    - Mark as read/unread
+    - Analyze book, refresh metadata
+    - Delete book, clear cache
+
+- **Collections Browsing**:
+  - Browse all collections
+  - Sort and search collections
+  - Grid and list layouts
+  - **Collection Details**:
+    - Collection metadata (name, series count, created/modified dates, ordered status)
+    - Browse series within collection
+    - Delete collection
+
+- **Read Lists Browsing**:
+  - Browse all read lists
+  - Sort and search read lists
+  - Grid and list layouts
+  - **Read List Details**:
+    - Read list metadata (name, book count, summary, created/modified dates, ordered status)
+    - Browse books within read list
+    - Direct reading from read list
+    - Delete read list
 
 ### 📖 Reading Experience
 - **Multiple Reading Modes**:
@@ -93,9 +131,9 @@ A native iOS client for [Komga](https://github.com/gotson/komga) - a media serve
 Built with SwiftUI following MVVM pattern:
 
 - **Models**: Library, Series, Book, Page, Collection, ReadList
-- **Services**: APIClient, AuthService, LibraryService, SeriesService, BookService, ImageCache
-- **ViewModels**: AuthViewModel, LibraryViewModel, SeriesViewModel, BookViewModel, ReaderViewModel
-- **Views**: Login, Dashboard, Browse, History, Settings, Reader (multiple modes), Series/Book details
+- **Services**: APIClient, AuthService, LibraryService, SeriesService, BookService, CollectionService, ReadListService, ImageCache
+- **ViewModels**: AuthViewModel, LibraryViewModel, SeriesViewModel, BookViewModel, CollectionViewModel, ReadListViewModel, ReaderViewModel
+- **Views**: Login, Dashboard, Browse (Series/Books/Collections/ReadLists), History, Settings, Reader (multiple modes), Series/Book/Collection/ReadList details
 
 ## Setup
 
@@ -148,6 +186,3 @@ The app includes comprehensive API logging using Apple's unified logging system 
 ### Reader Features
 - [ ] Two page spread function when the screen is turned landscape
 - [ ] Skip cover option for two page spread
-
-### Collections & Read Lists
-- [ ] Ability to view "Collections/Read Lists"
