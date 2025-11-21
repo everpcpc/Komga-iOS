@@ -12,7 +12,7 @@ struct ReadListsBrowseView: View {
   let height: CGFloat
   let searchText: String
 
-  private let spacing: CGFloat = 8
+  private let spacing: CGFloat = 12
 
   @AppStorage("readListSortOptions") private var sortOpts: SimpleSortOptions =
     SimpleSortOptions()

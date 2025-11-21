@@ -11,7 +11,7 @@ struct SeriesBrowseView: View {
   let width: CGFloat
   let height: CGFloat
   let searchText: String
-  let spacing: CGFloat = 8
+  let spacing: CGFloat = 12
 
   @AppStorage("seriesBrowseOptions") private var browseOpts: SeriesBrowseOptions =
     SeriesBrowseOptions()

@@ -31,13 +31,12 @@ struct ReadHistorySection: View {
         .fontWeight(.bold)
         .padding(.horizontal)
 
-      LazyVStack(spacing: 0) {
+      LazyVStack(spacing: 12) {
         ForEach(Array(bookViewModel.books.enumerated()), id: \.element.id) { index, book in
           Button {
             readerState = BookReaderState(bookId: book.id, incognito: false)
           } label: {
             ReadHistoryBookRow(book: book)
-              .padding(8)
               .contentShape(Rectangle())
               .contextMenu {
                 BookContextMenu(

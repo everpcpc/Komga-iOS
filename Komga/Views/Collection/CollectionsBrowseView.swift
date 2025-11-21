@@ -12,7 +12,7 @@ struct CollectionsBrowseView: View {
   let height: CGFloat
   let searchText: String
 
-  private let spacing: CGFloat = 8
+  private let spacing: CGFloat = 12
 
   @AppStorage("collectionSortOptions") private var sortOpts: SimpleSortOptions =
     SimpleSortOptions()
