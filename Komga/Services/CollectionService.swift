@@ -45,7 +45,7 @@ class CollectionService {
   }
 
   func getCollectionThumbnailURL(id: String) -> URL? {
-    let baseURL = UserDefaults.standard.string(forKey: "serverURL") ?? ""
+    let baseURL = AppConfig.serverURL
     guard !baseURL.isEmpty else { return nil }
     return URL(string: baseURL + "/api/v1/collections/\(id)/thumbnail")
   }

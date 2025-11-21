@@ -22,26 +22,13 @@ struct ReadListsBrowseView: View {
   @AppStorage("browseLayout") private var browseLayout: BrowseLayoutMode = .grid
   @State private var viewModel = ReadListViewModel()
 
-  private var availableWidth: CGFloat {
-    width - spacing * 2
-  }
-
-  private var isLandscape: Bool {
-    width > height
-  }
-
-  private var columnsCount: Int {
-    isLandscape ? browseColumns.landscape : browseColumns.portrait
-  }
-
-  private var cardWidth: CGFloat {
-    guard columnsCount > 0 else { return availableWidth }
-    let totalSpacing = CGFloat(columnsCount - 1) * spacing
-    return (availableWidth - totalSpacing) / CGFloat(columnsCount)
-  }
-
-  private var columns: [GridItem] {
-    Array(repeating: GridItem(.fixed(cardWidth), spacing: spacing), count: max(columnsCount, 1))
+  private var layoutHelper: BrowseLayoutHelper {
+    BrowseLayoutHelper(
+      width: width,
+      height: height,
+      spacing: spacing,
+      browseColumns: browseColumns
+    )
   }
 
   var body: some View {
@@ -49,43 +36,25 @@ struct ReadListsBrowseView: View {
       ReadListSortView()
         .padding(spacing)
 
-      if viewModel.isLoading && viewModel.readLists.isEmpty {
-        ProgressView()
-          .frame(maxWidth: .infinity)
-          .padding()
-      } else if let errorMessage = viewModel.errorMessage {
-        VStack(spacing: 16) {
-          Image(systemName: "exclamationmark.triangle")
-            .font(.largeTitle)
-            .foregroundColor(themeColorOption.color)
-          Text(errorMessage)
-            .multilineTextAlignment(.center)
-          Button("Retry") {
-            Task {
-              await loadReadLists(refresh: true)
-            }
+      BrowseStateView(
+        isLoading: viewModel.isLoading,
+        isEmpty: viewModel.readLists.isEmpty,
+        errorMessage: viewModel.errorMessage,
+        emptyIcon: "list.bullet.rectangle",
+        emptyTitle: "No read lists found",
+        emptyMessage: "Try selecting a different library.",
+        themeColor: themeColorOption.color,
+        onRetry: {
+          Task {
+            await loadReadLists(refresh: true)
           }
         }
-        .padding()
-      } else if viewModel.readLists.isEmpty {
-        VStack(spacing: 12) {
-          Image(systemName: "list.bullet.rectangle")
-            .font(.system(size: 40))
-            .foregroundColor(.secondary)
-          Text("No read lists found")
-            .font(.headline)
-          Text("Try selecting a different library.")
-            .font(.subheadline)
-            .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
-      } else {
+      ) {
         switch browseLayout {
         case .grid:
-          LazyVGrid(columns: columns, spacing: spacing) {
+          LazyVGrid(columns: layoutHelper.columns, spacing: spacing) {
             ForEach(Array(viewModel.readLists.enumerated()), id: \.element.id) { index, readList in
-              ReadListCardView(readList: readList, width: cardWidth)
+              ReadListCardView(readList: readList, width: layoutHelper.cardWidth)
                 .onAppear {
                   if index >= viewModel.readLists.count - 3 {
                     Task {
@@ -110,11 +79,6 @@ struct ReadListsBrowseView: View {
             }
           }
           .padding(spacing)
-        }
-
-        if viewModel.isLoading {
-          ProgressView()
-            .padding()
         }
       }
     }

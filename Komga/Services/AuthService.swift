@@ -41,8 +41,8 @@ class AuthService {
       path: "/api/v2/users/me", queryItems: queryItems)
 
     // Store credentials if successful
-    UserDefaults.standard.set(username, forKey: "username")
-    UserDefaults.standard.set(true, forKey: "isLoggedIn")
+    AppConfig.username = username
+    AppConfig.isLoggedIn = true
 
     return user
   }
@@ -57,13 +57,11 @@ class AuthService {
 
     // Clear local data
     apiClient.setAuthToken(nil)
-    UserDefaults.standard.removeObject(forKey: "username")
-    UserDefaults.standard.removeObject(forKey: "isLoggedIn")
-    UserDefaults.standard.removeObject(forKey: "authToken")
+    AppConfig.clearAuthData()
   }
 
   func isLoggedIn() -> Bool {
-    return UserDefaults.standard.bool(forKey: "isLoggedIn")
+    return AppConfig.isLoggedIn
   }
 
   func getCurrentUser() async throws -> User {

@@ -20,16 +20,14 @@ struct ContentView: View {
       }
     }
     .tint(themeColorOption.color)
-    .onChange(of: authViewModel.isLoggedIn) { _, isLoggedIn in
-      if isLoggedIn {
-        Task {
-          await authViewModel.loadCurrentUser()
-          await LibraryManager.shared.loadLibraries()
-        }
+    .task {
+      if authViewModel.isLoggedIn {
+        await authViewModel.loadCurrentUser()
+        await LibraryManager.shared.loadLibraries()
       }
     }
-    .onAppear {
-      if authViewModel.isLoggedIn {
+    .onChange(of: authViewModel.isLoggedIn) { _, isLoggedIn in
+      if isLoggedIn {
         Task {
           await authViewModel.loadCurrentUser()
           await LibraryManager.shared.loadLibraries()

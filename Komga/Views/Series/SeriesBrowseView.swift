@@ -22,27 +22,13 @@ struct SeriesBrowseView: View {
 
   @State private var viewModel = SeriesViewModel()
 
-  var availableWidth: CGFloat {
-    width - spacing * 2
-  }
-
-  var isLandscape: Bool {
-    width > height
-  }
-
-  var columnsCount: Int {
-    return isLandscape ? browseColumns.landscape : browseColumns.portrait
-  }
-
-  var cardWidth: CGFloat {
-    let totalSpacing = CGFloat(columnsCount - 1) * spacing
-    return (availableWidth - totalSpacing) / CGFloat(columnsCount)
-  }
-
-  var columns: [GridItem] {
-    Array(
-      repeating: GridItem(.fixed(cardWidth), spacing: spacing),
-      count: columnsCount)
+  private var layoutHelper: BrowseLayoutHelper {
+    BrowseLayoutHelper(
+      width: width,
+      height: height,
+      spacing: spacing,
+      browseColumns: browseColumns
+    )
   }
 
   var body: some View {
@@ -50,102 +36,75 @@ struct SeriesBrowseView: View {
       SeriesFilterView(browseOpts: $browseOpts)
         .padding(spacing)
 
-      Group {
-        if viewModel.isLoading && viewModel.series.isEmpty {
-          VStack(spacing: 16) {
-            ProgressView()
-              .frame(maxWidth: .infinity)
-              .padding()
+      BrowseStateView(
+        isLoading: viewModel.isLoading,
+        isEmpty: viewModel.series.isEmpty,
+        errorMessage: viewModel.errorMessage,
+        emptyIcon: "books.vertical",
+        emptyTitle: "No series found",
+        emptyMessage: "Try selecting a different library.",
+        themeColor: themeColorOption.color,
+        onRetry: {
+          Task {
+            await viewModel.loadSeries(
+              browseOpts: browseOpts, searchText: searchText, refresh: true)
           }
-        } else if let errorMessage = viewModel.errorMessage {
-          VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle")
-              .font(.largeTitle)
-              .foregroundColor(themeColorOption.color)
-            Text(errorMessage)
-              .multilineTextAlignment(.center)
-            Button("Retry") {
-              Task {
-                await viewModel.loadSeries(
-                  browseOpts: browseOpts, searchText: searchText, refresh: true)
-              }
-            }
-          }
-          .padding()
-        } else if viewModel.series.isEmpty {
-          VStack(spacing: 12) {
-            Image(systemName: "books.vertical")
-              .font(.system(size: 40))
-              .foregroundColor(.secondary)
-            Text("No series found")
-              .font(.headline)
-            Text("Try selecting a different library.")
-              .font(.subheadline)
-              .foregroundColor(.secondary)
-          }
-          .frame(maxWidth: .infinity)
-          .padding()
-        } else {
-          switch browseLayout {
-          case .grid:
-            LazyVGrid(columns: columns, spacing: spacing) {
-              ForEach(Array(viewModel.series.enumerated()), id: \.element.id) { index, series in
-                NavigationLink(value: NavDestination.seriesDetail(seriesId: series.id)) {
-                  SeriesCardView(
-                    series: series,
-                    cardWidth: cardWidth,
-                    onActionCompleted: {
-                      Task {
-                        await viewModel.loadSeries(
-                          browseOpts: browseOpts, searchText: searchText, refresh: true)
-                      }
-                    }
-                  )
-                }
-                .buttonStyle(.plain)
-                .onAppear {
-                  if index >= viewModel.series.count - 3 {
+        }
+      ) {
+        switch browseLayout {
+        case .grid:
+          LazyVGrid(columns: layoutHelper.columns, spacing: spacing) {
+            ForEach(Array(viewModel.series.enumerated()), id: \.element.id) { index, series in
+              NavigationLink(value: NavDestination.seriesDetail(seriesId: series.id)) {
+                SeriesCardView(
+                  series: series,
+                  cardWidth: layoutHelper.cardWidth,
+                  onActionCompleted: {
                     Task {
                       await viewModel.loadSeries(
-                        browseOpts: browseOpts, searchText: searchText, refresh: false)
+                        browseOpts: browseOpts, searchText: searchText, refresh: true)
                     }
+                  }
+                )
+              }
+              .buttonStyle(.plain)
+              .onAppear {
+                if index >= viewModel.series.count - 3 {
+                  Task {
+                    await viewModel.loadSeries(
+                      browseOpts: browseOpts, searchText: searchText, refresh: false)
                   }
                 }
               }
             }
-            .padding(spacing)
-          case .list:
-            LazyVStack(spacing: spacing) {
-              ForEach(Array(viewModel.series.enumerated()), id: \.element.id) { index, series in
-                NavigationLink(value: NavDestination.seriesDetail(seriesId: series.id)) {
-                  SeriesRowView(
-                    series: series,
-                    onActionCompleted: {
-                      Task {
-                        await viewModel.loadSeries(
-                          browseOpts: browseOpts, searchText: searchText, refresh: true)
-                      }
-                    }
-                  )
-                }
-                .buttonStyle(.plain)
-                .onAppear {
-                  if index >= viewModel.series.count - 3 {
+          }
+          .padding(spacing)
+        case .list:
+          LazyVStack(spacing: spacing) {
+            ForEach(Array(viewModel.series.enumerated()), id: \.element.id) { index, series in
+              NavigationLink(value: NavDestination.seriesDetail(seriesId: series.id)) {
+                SeriesRowView(
+                  series: series,
+                  onActionCompleted: {
                     Task {
                       await viewModel.loadSeries(
-                        browseOpts: browseOpts, searchText: searchText, refresh: false)
+                        browseOpts: browseOpts, searchText: searchText, refresh: true)
                     }
+                  }
+                )
+              }
+              .buttonStyle(.plain)
+              .onAppear {
+                if index >= viewModel.series.count - 3 {
+                  Task {
+                    await viewModel.loadSeries(
+                      browseOpts: browseOpts, searchText: searchText, refresh: false)
                   }
                 }
               }
             }
-            .padding(spacing)
           }
-
-          if viewModel.isLoading {
-            ProgressView()
-              .padding()
-          }
+          .padding(spacing)
         }
       }
     }

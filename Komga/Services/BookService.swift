@@ -91,7 +91,7 @@ class BookService {
 
   /// Get thumbnail URL for a book
   func getBookThumbnailURL(id: String) -> URL? {
-    let baseURL = UserDefaults.standard.string(forKey: "serverURL") ?? ""
+    let baseURL = AppConfig.serverURL
     guard !baseURL.isEmpty else { return nil }
     return URL(string: baseURL + "/api/v1/books/\(id)/thumbnail")
   }

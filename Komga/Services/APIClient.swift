@@ -23,11 +23,11 @@ class APIClient {
   private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Komga", category: "API")
 
   private var baseURL: String {
-    UserDefaults.standard.string(forKey: "serverURL") ?? ""
+    AppConfig.serverURL
   }
 
   private var authToken: String? {
-    UserDefaults.standard.string(forKey: "authToken")
+    AppConfig.authToken
   }
 
   // URLSession with cache configuration for all requests
@@ -46,23 +46,21 @@ class APIClient {
   private init() {}
 
   func setServer(url: String) {
-    UserDefaults.standard.set(url, forKey: "serverURL")
+    AppConfig.serverURL = url
   }
 
   func setAuthToken(_ token: String?) {
-    if let token = token {
-      UserDefaults.standard.set(token, forKey: "authToken")
-    } else {
-      UserDefaults.standard.removeObject(forKey: "authToken")
-    }
+    AppConfig.authToken = token
   }
 
-  func request<T: Decodable>(
+  // MARK: - Private Helpers
+
+  private func buildRequest(
     path: String,
-    method: String = "GET",
+    method: String,
     body: Data? = nil,
     queryItems: [URLQueryItem]? = nil
-  ) async throws -> T {
+  ) throws -> URLRequest {
     guard var urlComponents = URLComponents(string: baseURL + path) else {
       throw APIError.invalidURL
     }
@@ -87,30 +85,33 @@ class APIClient {
       request.addValue("application/json", forHTTPHeaderField: "Content-Type")
     }
 
-    // Log request
-    logger.info("📡 \(method) \(url.absoluteString)")
+    return request
+  }
+
+  private func executeRequest(_ request: URLRequest) async throws -> (
+    data: Data, response: HTTPURLResponse
+  ) {
+    logger.info("📡 \(request.httpMethod ?? "GET") \(request.url?.absoluteString ?? "")")
 
     let startTime = Date()
 
     do {
       let (data, response) = try await cachedSession.data(for: request)
-
       let duration = Date().timeIntervalSince(startTime)
 
       guard let httpResponse = response as? HTTPURLResponse else {
-        logger.error("❌ Invalid response from \(url.absoluteString)")
+        logger.error("❌ Invalid response from \(request.url?.absoluteString ?? "")")
         throw APIError.invalidResponse
       }
 
-      // Log response
       let statusEmoji = (200...299).contains(httpResponse.statusCode) ? "✅" : "❌"
       logger.info(
-        "\(statusEmoji) \(httpResponse.statusCode) \(method) \(url.absoluteString) (\(String(format: "%.2f", duration * 1000))ms)"
+        "\(statusEmoji) \(httpResponse.statusCode) \(request.httpMethod ?? "GET") \(request.url?.absoluteString ?? "") (\(String(format: "%.2f", duration * 1000))ms)"
       )
 
       guard (200...299).contains(httpResponse.statusCode) else {
         if httpResponse.statusCode == 401 {
-          logger.warning("🔒 Unauthorized: \(url.absoluteString)")
+          logger.warning("🔒 Unauthorized: \(request.url?.absoluteString ?? "")")
           throw APIError.unauthorized
         }
 
@@ -119,72 +120,88 @@ class APIClient {
         throw APIError.httpError(httpResponse.statusCode, errorMessage)
       }
 
-      // Handle 204 No Content responses - skip JSON decoding
-      if httpResponse.statusCode == 204 || data.isEmpty {
-        // Check if we're expecting an EmptyResponse by comparing type names
-        let expectedTypeName = String(describing: T.self)
-        let emptyResponseTypeName = String(describing: EmptyResponse.self)
-
-        if expectedTypeName == emptyResponseTypeName {
-          // Return empty response instance for 204/empty responses
-          return EmptyResponse() as! T
-        } else if data.isEmpty {
-          // For non-empty response types, empty data is an error
-          logger.warning("⚠️ Empty response data from \(url.absoluteString)")
-          throw APIError.decodingError(
-            NSError(
-              domain: "APIClient", code: -1,
-              userInfo: [NSLocalizedDescriptionKey: "Empty response data"]))
-        }
-      }
-
-      let decoder = JSONDecoder()
-      decoder.dateDecodingStrategy = .iso8601
-
-      do {
-        return try decoder.decode(T.self, from: data)
-      } catch let decodingError as DecodingError {
-        // Provide detailed decoding error information
-        switch decodingError {
-        case .keyNotFound(let key, let context):
-          logger.error(
-            "❌ Missing key '\(key.stringValue)' at path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))"
-          )
-        case .typeMismatch(let type, let context):
-          logger.error(
-            "❌ Type mismatch for type '\(type)' at path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))"
-          )
-        case .valueNotFound(let type, let context):
-          logger.error(
-            "❌ Value not found for type '\(type)' at path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))"
-          )
-        case .dataCorrupted(let context):
-          logger.error("❌ Data corrupted: \(context.debugDescription)")
-        @unknown default:
-          logger.error("❌ Unknown decoding error: \(decodingError.localizedDescription)")
-        }
-
-        // Log raw response for debugging
-        if let jsonString = String(data: data, encoding: .utf8) {
-          logger.debug("Response data: \(jsonString.prefix(1000))")
-        }
-
-        throw APIError.decodingError(decodingError)
-      } catch {
-        logger.error("❌ Decoding error for \(url.absoluteString): \(error.localizedDescription)")
-
-        // Log raw response for debugging
-        if let jsonString = String(data: data, encoding: .utf8) {
-          logger.debug("Response data: \(jsonString.prefix(1000))")
-        }
-
-        throw APIError.decodingError(error)
-      }
+      return (data, httpResponse)
     } catch let error as APIError {
       throw error
     } catch {
-      logger.error("❌ Network error for \(url.absoluteString): \(error.localizedDescription)")
+      logger.error(
+        "❌ Network error for \(request.url?.absoluteString ?? ""): \(error.localizedDescription)")
       throw APIError.networkError(error)
+    }
+  }
+
+  func request<T: Decodable>(
+    path: String,
+    method: String = "GET",
+    body: Data? = nil,
+    queryItems: [URLQueryItem]? = nil
+  ) async throws -> T {
+    let urlRequest = try buildRequest(
+      path: path, method: method, body: body, queryItems: queryItems)
+    let (data, httpResponse) = try await executeRequest(urlRequest)
+
+    // Handle 204 No Content responses - skip JSON decoding
+    if httpResponse.statusCode == 204 || data.isEmpty {
+      // Check if we're expecting an EmptyResponse by comparing type names
+      let expectedTypeName = String(describing: T.self)
+      let emptyResponseTypeName = String(describing: EmptyResponse.self)
+
+      if expectedTypeName == emptyResponseTypeName {
+        // Return empty response instance for 204/empty responses
+        return EmptyResponse() as! T
+      } else if data.isEmpty {
+        // For non-empty response types, empty data is an error
+        logger.warning("⚠️ Empty response data from \(urlRequest.url?.absoluteString ?? "")")
+        throw APIError.decodingError(
+          NSError(
+            domain: "APIClient", code: -1,
+            userInfo: [NSLocalizedDescriptionKey: "Empty response data"]))
+      }
+    }
+
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+
+    do {
+      return try decoder.decode(T.self, from: data)
+    } catch let decodingError as DecodingError {
+      // Provide detailed decoding error information
+      switch decodingError {
+      case .keyNotFound(let key, let context):
+        logger.error(
+          "❌ Missing key '\(key.stringValue)' at path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))"
+        )
+      case .typeMismatch(let type, let context):
+        logger.error(
+          "❌ Type mismatch for type '\(type)' at path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))"
+        )
+      case .valueNotFound(let type, let context):
+        logger.error(
+          "❌ Value not found for type '\(type)' at path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))"
+        )
+      case .dataCorrupted(let context):
+        logger.error("❌ Data corrupted: \(context.debugDescription)")
+      @unknown default:
+        logger.error("❌ Unknown decoding error: \(decodingError.localizedDescription)")
+      }
+
+      // Log raw response for debugging
+      if let jsonString = String(data: data, encoding: .utf8) {
+        logger.debug("Response data: \(jsonString.prefix(1000))")
+      }
+
+      throw APIError.decodingError(decodingError)
+    } catch {
+      logger.error(
+        "❌ Decoding error for \(urlRequest.url?.absoluteString ?? ""): \(error.localizedDescription)"
+      )
+
+      // Log raw response for debugging
+      if let jsonString = String(data: data, encoding: .utf8) {
+        logger.debug("Response data: \(jsonString.prefix(1000))")
+      }
+
+      throw APIError.decodingError(error)
     }
   }
 
@@ -192,58 +209,19 @@ class APIClient {
     path: String,
     method: String = "GET"
   ) async throws -> (data: Data, contentType: String?) {
-    guard let url = URL(string: baseURL + path) else {
-      throw APIError.invalidURL
-    }
+    let urlRequest = try buildRequest(path: path, method: method)
+    let (data, httpResponse) = try await executeRequest(urlRequest)
 
-    var request = URLRequest(url: url)
-    request.httpMethod = method
+    // Get content type from response
+    let contentType = httpResponse.value(forHTTPHeaderField: "Content-Type")
 
-    if let authToken = authToken {
-      request.addValue("Basic \(authToken)", forHTTPHeaderField: "Authorization")
-    }
+    // Log response with data size
+    let dataSize = ByteCountFormatter.string(
+      fromByteCount: Int64(data.count), countStyle: .binary)
+    logger.info(
+      "\(httpResponse.statusCode) \(urlRequest.httpMethod ?? "GET") \(urlRequest.url?.absoluteString ?? "") [\(dataSize)]"
+    )
 
-    // Log request
-    logger.info("📡 \(method) \(url.absoluteString) [Data]")
-
-    let startTime = Date()
-
-    do {
-      let (data, response) = try await cachedSession.data(for: request)
-
-      let duration = Date().timeIntervalSince(startTime)
-
-      guard let httpResponse = response as? HTTPURLResponse else {
-        logger.error("❌ Invalid response from \(url.absoluteString)")
-        throw APIError.invalidResponse
-      }
-
-      // Get content type from response
-      let contentType = httpResponse.value(forHTTPHeaderField: "Content-Type")
-
-      // Log response with data size
-      let statusEmoji = (200...299).contains(httpResponse.statusCode) ? "✅" : "❌"
-      let dataSize = ByteCountFormatter.string(
-        fromByteCount: Int64(data.count), countStyle: .binary)
-      logger.info(
-        "\(statusEmoji) \(httpResponse.statusCode) \(method) \(url.absoluteString) (\(String(format: "%.2f", duration * 1000))ms, \(dataSize))"
-      )
-
-      guard (200...299).contains(httpResponse.statusCode) else {
-        if httpResponse.statusCode == 401 {
-          logger.warning("🔒 Unauthorized: \(url.absoluteString)")
-          throw APIError.unauthorized
-        }
-        logger.error("❌ HTTP \(httpResponse.statusCode): Failed to fetch data")
-        throw APIError.httpError(httpResponse.statusCode, "Failed to fetch data")
-      }
-
-      return (data, contentType)
-    } catch let error as APIError {
-      throw error
-    } catch {
-      logger.error("❌ Network error for \(url.absoluteString): \(error.localizedDescription)")
-      throw APIError.networkError(error)
-    }
+    return (data, contentType)
   }
 }

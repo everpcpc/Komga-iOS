@@ -29,7 +29,7 @@ struct KomgaApp: App {
 
   private func configureSDWebImage() {
     // Set authentication header for SDWebImage
-    if let authToken = UserDefaults.standard.string(forKey: "authToken") {
+    if let authToken = AppConfig.authToken {
       SDWebImageDownloader.shared.setValue(
         "Basic \(authToken)", forHTTPHeaderField: "Authorization")
     } else {

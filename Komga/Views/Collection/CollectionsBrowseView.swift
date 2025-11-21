@@ -22,26 +22,13 @@ struct CollectionsBrowseView: View {
   @AppStorage("browseLayout") private var browseLayout: BrowseLayoutMode = .grid
   @State private var viewModel = CollectionViewModel()
 
-  private var availableWidth: CGFloat {
-    width - spacing * 2
-  }
-
-  private var isLandscape: Bool {
-    width > height
-  }
-
-  private var columnsCount: Int {
-    isLandscape ? browseColumns.landscape : browseColumns.portrait
-  }
-
-  private var cardWidth: CGFloat {
-    guard columnsCount > 0 else { return availableWidth }
-    let totalSpacing = CGFloat(columnsCount - 1) * spacing
-    return (availableWidth - totalSpacing) / CGFloat(columnsCount)
-  }
-
-  private var columns: [GridItem] {
-    Array(repeating: GridItem(.fixed(cardWidth), spacing: spacing), count: max(columnsCount, 1))
+  private var layoutHelper: BrowseLayoutHelper {
+    BrowseLayoutHelper(
+      width: width,
+      height: height,
+      spacing: spacing,
+      browseColumns: browseColumns
+    )
   }
 
   var body: some View {
@@ -49,44 +36,26 @@ struct CollectionsBrowseView: View {
       CollectionSortView()
         .padding(spacing)
 
-      if viewModel.isLoading && viewModel.collections.isEmpty {
-        ProgressView()
-          .frame(maxWidth: .infinity)
-          .padding()
-      } else if let errorMessage = viewModel.errorMessage {
-        VStack(spacing: 16) {
-          Image(systemName: "exclamationmark.triangle")
-            .font(.largeTitle)
-            .foregroundColor(themeColorOption.color)
-          Text(errorMessage)
-            .multilineTextAlignment(.center)
-          Button("Retry") {
-            Task {
-              await loadCollections(refresh: true)
-            }
+      BrowseStateView(
+        isLoading: viewModel.isLoading,
+        isEmpty: viewModel.collections.isEmpty,
+        errorMessage: viewModel.errorMessage,
+        emptyIcon: "square.grid.2x2",
+        emptyTitle: "No collections found",
+        emptyMessage: "Try selecting a different library.",
+        themeColor: themeColorOption.color,
+        onRetry: {
+          Task {
+            await loadCollections(refresh: true)
           }
         }
-        .padding()
-      } else if viewModel.collections.isEmpty {
-        VStack(spacing: 12) {
-          Image(systemName: "square.grid.2x2")
-            .font(.system(size: 40))
-            .foregroundColor(.secondary)
-          Text("No collections found")
-            .font(.headline)
-          Text("Try selecting a different library.")
-            .font(.subheadline)
-            .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
-      } else {
+      ) {
         switch browseLayout {
         case .grid:
-          LazyVGrid(columns: columns, spacing: spacing) {
+          LazyVGrid(columns: layoutHelper.columns, spacing: spacing) {
             ForEach(Array(viewModel.collections.enumerated()), id: \.element.id) {
               index, collection in
-              CollectionCardView(collection: collection, width: cardWidth)
+              CollectionCardView(collection: collection, width: layoutHelper.cardWidth)
                 .onAppear {
                   if index >= viewModel.collections.count - 3 {
                     Task {
@@ -112,11 +81,6 @@ struct CollectionsBrowseView: View {
             }
           }
           .padding(spacing)
-        }
-
-        if viewModel.isLoading {
-          ProgressView()
-            .padding()
         }
       }
     }

@@ -22,26 +22,13 @@ struct BooksBrowseView: View {
   @State private var viewModel = BookViewModel()
   @State private var readerState: BookReaderState?
 
-  private var availableWidth: CGFloat {
-    width - spacing * 2
-  }
-
-  private var isLandscape: Bool {
-    width > height
-  }
-
-  private var columnsCount: Int {
-    isLandscape ? browseColumns.landscape : browseColumns.portrait
-  }
-
-  private var cardWidth: CGFloat {
-    guard columnsCount > 0 else { return availableWidth }
-    let totalSpacing = CGFloat(columnsCount - 1) * spacing
-    return (availableWidth - totalSpacing) / CGFloat(columnsCount)
-  }
-
-  private var columns: [GridItem] {
-    Array(repeating: GridItem(.fixed(cardWidth), spacing: spacing), count: max(columnsCount, 1))
+  private var layoutHelper: BrowseLayoutHelper {
+    BrowseLayoutHelper(
+      width: width,
+      height: height,
+      spacing: spacing,
+      browseColumns: browseColumns
+    )
   }
 
   private var isBookReaderPresented: Binding<Bool> {
@@ -56,51 +43,26 @@ struct BooksBrowseView: View {
       BookFilterView(browseOpts: $browseOpts)
         .padding(spacing)
 
-      Group {
-        if viewModel.isLoading && viewModel.books.isEmpty {
-          ProgressView()
-            .frame(maxWidth: .infinity)
-            .padding()
-        } else if let errorMessage = viewModel.errorMessage {
-          VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle")
-              .font(.largeTitle)
-              .foregroundColor(themeColorOption.color)
-            Text(errorMessage)
-              .multilineTextAlignment(.center)
-            Button("Retry") {
-              Task {
-                await viewModel.loadBrowseBooks(
-                  browseOpts: browseOpts, searchText: searchText, refresh: true)
-              }
-            }
+      BrowseStateView(
+        isLoading: viewModel.isLoading,
+        isEmpty: viewModel.books.isEmpty,
+        errorMessage: viewModel.errorMessage,
+        emptyIcon: "book",
+        emptyTitle: "No books found",
+        emptyMessage: "Try selecting a different library.",
+        themeColor: themeColorOption.color,
+        onRetry: {
+          Task {
+            await viewModel.loadBrowseBooks(
+              browseOpts: browseOpts, searchText: searchText, refresh: true)
           }
-          .padding()
-        } else if viewModel.books.isEmpty {
-          VStack(spacing: 12) {
-            Image(systemName: "book")
-              .font(.system(size: 40))
-              .foregroundColor(.secondary)
-            Text("No books found")
-              .font(.headline)
-            Text("Try selecting a different library.")
-              .font(.subheadline)
-              .foregroundColor(.secondary)
-          }
-          .frame(maxWidth: .infinity)
-          .padding()
-        } else {
-          switch browseLayout {
-          case .grid:
-            gridView
-          case .list:
-            listView
-          }
-
-          if viewModel.isLoading {
-            ProgressView()
-              .padding()
-          }
+        }
+      ) {
+        switch browseLayout {
+        case .grid:
+          gridView
+        case .list:
+          listView
         }
       }
     }
@@ -134,12 +96,12 @@ struct BooksBrowseView: View {
   }
 
   private var gridView: some View {
-    LazyVGrid(columns: columns, spacing: spacing) {
+    LazyVGrid(columns: layoutHelper.columns, spacing: spacing) {
       ForEach(Array(viewModel.books.enumerated()), id: \.element.id) { index, book in
         BookCardView(
           book: book,
           viewModel: viewModel,
-          cardWidth: cardWidth,
+          cardWidth: layoutHelper.cardWidth,
           onBookUpdated: {
             Task {
               await viewModel.loadBrowseBooks(
