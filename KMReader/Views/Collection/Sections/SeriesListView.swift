@@ -79,19 +79,63 @@ struct SeriesListView: View {
           case .grid:
             LazyVGrid(columns: layoutHelper.columns, spacing: 12) {
               ForEach(seriesViewModel.series) { series in
-                NavigationLink(value: NavDestination.seriesDetail(seriesId: series.id)) {
-                  SeriesCardView(
-                    series: series,
-                    cardWidth: layoutHelper.cardWidth,
-                    onActionCompleted: {
-                      Task {
-                        await seriesViewModel.loadCollectionSeries(
-                          collectionId: collectionId, browseOpts: browseOpts, refresh: true)
+                Group {
+                  if isSelectionMode {
+                    SeriesCardView(
+                      series: series,
+                      cardWidth: layoutHelper.cardWidth,
+                      onActionCompleted: {
+                        Task {
+                          await seriesViewModel.loadCollectionSeries(
+                            collectionId: collectionId, browseOpts: browseOpts, refresh: true)
+                        }
+                      }
+                    )
+                    .overlay(alignment: .topTrailing) {
+                      Image(
+                        systemName: selectedSeriesIds.contains(series.id)
+                          ? "checkmark.circle.fill" : "circle"
+                      )
+                      .foregroundColor(
+                        selectedSeriesIds.contains(series.id) ? .accentColor : .secondary
+                      )
+                      .font(.title2)
+                      .padding(8)
+                      .background(
+                        Circle()
+                          .fill(.ultraThinMaterial)
+                      )
+                      .transition(.scale.combined(with: .opacity))
+                      .animation(
+                        .spring(response: 0.3, dampingFraction: 0.7),
+                        value: selectedSeriesIds.contains(series.id))
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                      withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        if selectedSeriesIds.contains(series.id) {
+                          selectedSeriesIds.remove(series.id)
+                        } else {
+                          selectedSeriesIds.insert(series.id)
+                        }
                       }
                     }
-                  )
+                  } else {
+                    NavigationLink(value: NavDestination.seriesDetail(seriesId: series.id)) {
+                      SeriesCardView(
+                        series: series,
+                        cardWidth: layoutHelper.cardWidth,
+                        onActionCompleted: {
+                          Task {
+                            await seriesViewModel.loadCollectionSeries(
+                              collectionId: collectionId, browseOpts: browseOpts, refresh: true)
+                          }
+                        }
+                      )
+                    }
+                    .buttonStyle(.plain)
+                  }
                 }
-                .buttonStyle(.plain)
                 .onAppear {
                   if series.id == seriesViewModel.series.last?.id {
                     Task {
@@ -112,7 +156,9 @@ struct SeriesListView: View {
                       systemName: selectedSeriesIds.contains(series.id)
                         ? "checkmark.circle.fill" : "circle"
                     )
-                    .foregroundColor(selectedSeriesIds.contains(series.id) ? .accentColor : .secondary)
+                    .foregroundColor(
+                      selectedSeriesIds.contains(series.id) ? .accentColor : .secondary
+                    )
                     .onTapGesture {
                       withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         if selectedSeriesIds.contains(series.id) {
@@ -175,7 +221,7 @@ struct SeriesListView: View {
             }
           }
         }
-        
+
         if seriesViewModel.isLoading && !seriesViewModel.series.isEmpty {
           ProgressView()
             .frame(maxWidth: .infinity)

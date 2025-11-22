@@ -80,14 +80,56 @@ struct BooksListViewForReadList: View {
           case .grid:
             LazyVGrid(columns: layoutHelper.columns, spacing: 12) {
               ForEach(bookViewModel.books) { book in
-                BookCardView(
-                  book: book,
-                  viewModel: bookViewModel,
-                  cardWidth: layoutHelper.cardWidth,
-                  onBookUpdated: {
-                    refreshBooks()
+                Group {
+                  if isSelectionMode {
+                    BookCardView(
+                      book: book,
+                      viewModel: bookViewModel,
+                      cardWidth: layoutHelper.cardWidth,
+                      onBookUpdated: {
+                        refreshBooks()
+                      }
+                    )
+                    .overlay(alignment: .topTrailing) {
+                      Image(
+                        systemName: selectedBookIds.contains(book.id)
+                          ? "checkmark.circle.fill" : "circle"
+                      )
+                      .foregroundColor(
+                        selectedBookIds.contains(book.id) ? .accentColor : .secondary
+                      )
+                      .font(.title2)
+                      .padding(8)
+                      .background(
+                        Circle()
+                          .fill(.ultraThinMaterial)
+                      )
+                      .transition(.scale.combined(with: .opacity))
+                      .animation(
+                        .spring(response: 0.3, dampingFraction: 0.7),
+                        value: selectedBookIds.contains(book.id))
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                      withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        if selectedBookIds.contains(book.id) {
+                          selectedBookIds.remove(book.id)
+                        } else {
+                          selectedBookIds.insert(book.id)
+                        }
+                      }
+                    }
+                  } else {
+                    BookCardView(
+                      book: book,
+                      viewModel: bookViewModel,
+                      cardWidth: layoutHelper.cardWidth,
+                      onBookUpdated: {
+                        refreshBooks()
+                      }
+                    )
                   }
-                )
+                }
                 .onAppear {
                   if book.id == bookViewModel.books.last?.id {
                     Task {
