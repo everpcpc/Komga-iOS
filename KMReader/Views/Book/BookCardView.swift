@@ -44,6 +44,14 @@ struct BookCardView: View {
     return !readProgress.completed
   }
 
+  var showTitle: Bool {
+    showSeriesTitle && !book.seriesTitle.isEmpty
+  }
+
+  var bookTitleLineLimit: Int {
+    showTitle ? 2 : 1
+  }
+
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
       ThumbnailImage(url: thumbnailURL, width: cardWidth) {
@@ -58,7 +66,7 @@ struct BookCardView: View {
       }
 
       VStack(alignment: .leading, spacing: 2) {
-        if showSeriesTitle {
+        if showTitle {
           Text(book.seriesTitle)
             .font(.caption)
             .foregroundColor(.primary)
@@ -67,7 +75,7 @@ struct BookCardView: View {
         Text("\(book.metadata.number) - \(book.metadata.title)")
           .font(.caption)
           .foregroundColor(.primary)
-          .lineLimit(1)
+          .lineLimit(bookTitleLineLimit)
 
         Group {
           if book.deleted {

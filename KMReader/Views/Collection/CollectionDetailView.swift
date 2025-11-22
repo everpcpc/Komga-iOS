@@ -34,10 +34,10 @@ struct CollectionDetailView: View {
   var body: some View {
     GeometryReader { geometry in
       ScrollView {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading) {
           if let collection = collection {
             // Header with thumbnail and info
-            HStack(alignment: .top, spacing: 16) {
+            HStack(alignment: .top) {
               ThumbnailImage(url: thumbnailURL, showPlaceholder: false, width: 120)
 
               VStack(alignment: .leading) {

@@ -56,10 +56,10 @@ struct SeriesDetailView: View {
   var body: some View {
     GeometryReader { geometry in
       ScrollView {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading) {
           if let series = series {
             // Header with thumbnail and info
-            HStack(alignment: .top, spacing: 16) {
+            HStack(alignment: .top) {
               ThumbnailImage(url: thumbnailURL, showPlaceholder: false, width: 120)
 
               VStack(alignment: .leading) {
@@ -74,26 +74,26 @@ struct SeriesDetailView: View {
                     if let totalBookCount = series.metadata.totalBookCount {
                       InfoChip(
                         label: "\(series.booksCount) / \(totalBookCount) books",
-                        systemImage: "books.vertical",
+                        systemImage: "book",
                         backgroundColor: Color.blue.opacity(0.2),
                         foregroundColor: .blue
                       )
                     } else {
                       InfoChip(
                         label: "\(series.booksCount) books",
-                        systemImage: "books.vertical",
+                        systemImage: "book",
                         backgroundColor: Color.blue.opacity(0.2),
                         foregroundColor: .blue
                       )
                     }
 
                     // Unread count, in progress, or complete
-                    if series.booksUnreadCount > 0 {
+                    if series.booksUnreadCount > 0 && series.booksUnreadCount < series.booksCount {
                       InfoChip(
                         label: "\(series.booksUnreadCount) unread",
-                        systemImage: "book",
-                        backgroundColor: themeColor.color.opacity(0.2),
-                        foregroundColor: themeColor.color
+                        systemImage: "circlebadge",
+                        backgroundColor: Color.gray.opacity(0.2),
+                        foregroundColor: .gray
                       )
                     } else if series.booksInProgressCount > 0 {
                       InfoChip(
@@ -102,9 +102,9 @@ struct SeriesDetailView: View {
                         backgroundColor: Color.orange.opacity(0.2),
                         foregroundColor: .orange
                       )
-                    } else {
+                    } else if series.booksUnreadCount == 0 && series.booksCount > 0 {
                       InfoChip(
-                        label: "Complete",
+                        label: "All read",
                         systemImage: "checkmark.circle.fill",
                         backgroundColor: Color.green.opacity(0.2),
                         foregroundColor: .green

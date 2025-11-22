@@ -15,14 +15,14 @@ struct ReadHistoryBookRow: View {
   }
 
   var body: some View {
-    HStack(spacing: 12) {
+    HStack {
       // Thumbnail
       ThumbnailImage(url: thumbnailURL, width: 80, cornerRadius: 6)
 
       // Book info
       VStack(alignment: .leading, spacing: 6) {
         Text(book.seriesTitle)
-          .font(.subheadline)
+          .font(.footnote)
           .foregroundColor(.secondary)
           .lineLimit(1)
 

@@ -15,19 +15,31 @@ struct SelectionToolbar: View {
   let onDelete: () -> Void
   let onCancel: () -> Void
 
+  var selectAllLabel: String {
+    selectedCount == totalCount ? "Deselect All" : "Select All"
+  }
+
+  var selectAllImage: String {
+    selectedCount == totalCount ? "checkmark.circle.fill" : "checkmark.circle"
+  }
+
+  var deleteLabel: String {
+    selectedCount == 0 ? "Delete" : "Delete (\(selectedCount))"
+  }
+
+  var submitDisabled: Bool {
+    isDeleting || selectedCount == 0 || selectedCount == totalCount
+  }
+
   var body: some View {
-    HStack(spacing: 12) {
+    HStack {
       Button {
         withAnimation {
           onSelectAll()
         }
       } label: {
-        Label(
-          selectedCount == totalCount ? "Deselect All" : "Select All",
-          systemImage: selectedCount == totalCount
-            ? "checkmark.circle.fill" : "checkmark.circle"
-        )
-        .font(.footnote)
+        Label(selectAllLabel, systemImage: selectAllImage)
+          .font(.footnote)
       }
       .buttonStyle(.bordered)
 
@@ -36,11 +48,11 @@ struct SelectionToolbar: View {
           onDelete()
         }
       } label: {
-        Label("Delete (\(selectedCount))", systemImage: "trash.fill")
+        Label(deleteLabel, systemImage: "trash.fill")
           .font(.footnote)
       }
       .buttonStyle(.borderedProminent)
-      .disabled(isDeleting || selectedCount == 0)
+      .disabled(submitDisabled)
       .opacity(selectedCount == 0 ? 0 : 1)
 
       Spacer()

@@ -53,12 +53,12 @@ struct BookDetailView: View {
 
   var body: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: 16) {
+      VStack(alignment: .leading) {
         if let book = book {
-          HStack(alignment: .top, spacing: 16) {
+          HStack(alignment: .top) {
             ThumbnailImage(url: thumbnailURL, width: 120)
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading) {
               Text(book.metadata.title)
                 .font(.headline)
                 .fixedSize(horizontal: false, vertical: true)

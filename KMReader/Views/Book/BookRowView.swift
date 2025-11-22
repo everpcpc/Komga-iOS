@@ -30,6 +30,14 @@ struct BookRowView: View {
     return !readProgress.completed
   }
 
+  var showTitle: Bool {
+    showSeriesTitle && !book.seriesTitle.isEmpty
+  }
+
+  var bookTitleLineLimit: Int {
+    showTitle ? 2 : 1
+  }
+
   var body: some View {
     HStack(spacing: 12) {
       ThumbnailImage(url: thumbnailURL, showPlaceholder: false, width: 60, cornerRadius: 4)
@@ -37,15 +45,15 @@ struct BookRowView: View {
       VStack(alignment: .leading, spacing: 4) {
         if showSeriesTitle && !book.seriesTitle.isEmpty {
           Text(book.seriesTitle)
-            .font(.caption)
+            .font(.footnote)
             .foregroundColor(.secondary)
             .lineLimit(1)
         }
 
         Text("#\(formatNumber(book.number)) - \(book.metadata.title)")
-          .font(.callout)
+          .font(.body)
           .foregroundColor(completed ? .secondary : .primary)
-          .lineLimit(2)
+          .lineLimit(bookTitleLineLimit)
 
         HStack(spacing: 4) {
           if let releaseDate = book.metadata.releaseDate, !releaseDate.isEmpty {
