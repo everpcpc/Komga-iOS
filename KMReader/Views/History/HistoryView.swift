@@ -35,19 +35,6 @@ struct HistoryView: View {
               .frame(maxWidth: .infinity)
               .padding()
               .transition(.opacity)
-          } else if let errorMessage = bookViewModel.errorMessage {
-            VStack(spacing: 16) {
-              Image(systemName: "exclamationmark.triangle")
-                .font(.largeTitle)
-                .foregroundColor(themeColor.color)
-              Text(errorMessage)
-                .multilineTextAlignment(.center)
-              Button("Retry") {
-                refreshRecentlyReadBooks()
-              }
-            }
-            .padding()
-            .transition(.opacity)
           } else if !bookViewModel.books.isEmpty {
             // Recently Read Books Section
             ReadHistorySection(

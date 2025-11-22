@@ -45,7 +45,6 @@ struct BooksBrowseView: View {
       BrowseStateView(
         isLoading: viewModel.isLoading,
         isEmpty: viewModel.books.isEmpty,
-        errorMessage: viewModel.errorMessage,
         emptyIcon: "book",
         emptyTitle: "No books found",
         emptyMessage: "Try selecting a different library.",

@@ -116,9 +116,8 @@ struct BookReaderView: View {
           ProgressView()
             .tint(.white)
         } else {
-          // No pages available - only show error when loading has completed
+          // No pages available
           NoPagesView(
-            errorMessage: viewModel.errorMessage,
             onDismiss: { dismiss() }
           )
         }

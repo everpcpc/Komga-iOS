@@ -14,7 +14,6 @@ struct ReadListPickerSheet: View {
   @State private var readListViewModel = ReadListViewModel()
   @State private var selectedReadListId: String?
   @State private var isLoading = false
-  @State private var errorMessage: String?
   @State private var searchText: String = ""
   @State private var showCreateSheet = false
   @State private var isCreating = false
@@ -39,9 +38,6 @@ struct ReadListPickerSheet: View {
         if isLoading && readListViewModel.readLists.isEmpty {
           ProgressView()
             .frame(maxWidth: .infinity)
-        } else if let errorMessage = errorMessage {
-          Text(errorMessage)
-            .foregroundColor(.red)
         } else if readListViewModel.readLists.isEmpty && searchText.isEmpty {
           Text("No read lists found")
             .foregroundColor(.secondary)
@@ -111,7 +107,6 @@ struct ReadListPickerSheet: View {
 
   private func loadReadLists(searchText: String = "") async {
     isLoading = true
-    errorMessage = nil
 
     await readListViewModel.loadReadLists(
       libraryId: selectedLibraryId,
@@ -119,10 +114,6 @@ struct ReadListPickerSheet: View {
       searchText: searchText,
       refresh: true
     )
-
-    if let viewModelError = readListViewModel.errorMessage {
-      errorMessage = viewModelError
-    }
 
     isLoading = false
   }
@@ -136,7 +127,6 @@ struct CreateReadListSheet: View {
 
   @State private var name: String = ""
   @State private var summary: String = ""
-  @State private var errorMessage: String?
 
   var body: some View {
     NavigationStack {
@@ -145,13 +135,6 @@ struct CreateReadListSheet: View {
           TextField("Read List Name", text: $name)
           TextField("Summary (Optional)", text: $summary, axis: .vertical)
             .lineLimit(3...6)
-        }
-
-        if let errorMessage = errorMessage {
-          Section {
-            Text(errorMessage)
-              .foregroundColor(.red)
-          }
         }
       }
       .navigationTitle("Create Read List")
@@ -184,7 +167,6 @@ struct CreateReadListSheet: View {
     guard !name.isEmpty else { return }
 
     isCreating = true
-    errorMessage = nil
 
     Task {
       do {
@@ -201,7 +183,7 @@ struct CreateReadListSheet: View {
       } catch {
         await MainActor.run {
           isCreating = false
-          errorMessage = error.localizedDescription
+          ErrorManager.shared.alert(error: error)
         }
       }
     }

@@ -53,13 +53,6 @@ struct LoginView: View {
             serverURL.isEmpty || username.isEmpty || password.isEmpty || authViewModel.isLoading)
         }
 
-        if let errorMessage = authViewModel.errorMessage {
-          Section {
-            Text(errorMessage)
-              .foregroundColor(.red)
-              .font(.caption)
-          }
-        }
       }
       .navigationTitle("Komga")
     }

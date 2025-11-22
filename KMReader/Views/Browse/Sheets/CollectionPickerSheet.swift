@@ -14,7 +14,6 @@ struct CollectionPickerSheet: View {
   @State private var collectionViewModel = CollectionViewModel()
   @State private var selectedCollectionId: String?
   @State private var isLoading = false
-  @State private var errorMessage: String?
   @State private var searchText: String = ""
   @State private var showCreateSheet = false
   @State private var isCreating = false
@@ -39,9 +38,6 @@ struct CollectionPickerSheet: View {
         if isLoading && collectionViewModel.collections.isEmpty {
           ProgressView()
             .frame(maxWidth: .infinity)
-        } else if let errorMessage = errorMessage {
-          Text(errorMessage)
-            .foregroundColor(.red)
         } else if collectionViewModel.collections.isEmpty && searchText.isEmpty {
           Text("No collections found")
             .foregroundColor(.secondary)
@@ -111,7 +107,6 @@ struct CollectionPickerSheet: View {
 
   private func loadCollections(searchText: String = "") async {
     isLoading = true
-    errorMessage = nil
 
     await collectionViewModel.loadCollections(
       libraryId: selectedLibraryId,
@@ -119,10 +114,6 @@ struct CollectionPickerSheet: View {
       searchText: searchText,
       refresh: true
     )
-
-    if let viewModelError = collectionViewModel.errorMessage {
-      errorMessage = viewModelError
-    }
 
     isLoading = false
   }
@@ -135,20 +126,12 @@ struct CreateCollectionSheet: View {
   let onCreate: (String) -> Void
 
   @State private var name: String = ""
-  @State private var errorMessage: String?
 
   var body: some View {
     NavigationStack {
       Form {
         Section {
           TextField("Collection Name", text: $name)
-        }
-
-        if let errorMessage = errorMessage {
-          Section {
-            Text(errorMessage)
-              .foregroundColor(.red)
-          }
         }
       }
       .navigationTitle("Create Collection")
@@ -181,7 +164,6 @@ struct CreateCollectionSheet: View {
     guard !name.isEmpty else { return }
 
     isCreating = true
-    errorMessage = nil
 
     Task {
       do {
@@ -197,7 +179,7 @@ struct CreateCollectionSheet: View {
       } catch {
         await MainActor.run {
           isCreating = false
-          errorMessage = error.localizedDescription
+          ErrorManager.shared.alert(error: error)
         }
       }
     }

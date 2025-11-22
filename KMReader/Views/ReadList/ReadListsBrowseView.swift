@@ -38,7 +38,6 @@ struct ReadListsBrowseView: View {
       BrowseStateView(
         isLoading: viewModel.isLoading,
         isEmpty: viewModel.readLists.isEmpty,
-        errorMessage: viewModel.errorMessage,
         emptyIcon: "list.bullet.rectangle",
         emptyTitle: "No read lists found",
         emptyMessage: "Try selecting a different library.",

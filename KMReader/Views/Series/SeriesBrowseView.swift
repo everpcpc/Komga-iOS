@@ -38,7 +38,6 @@ struct SeriesBrowseView: View {
       BrowseStateView(
         isLoading: viewModel.isLoading,
         isEmpty: viewModel.series.isEmpty,
-        errorMessage: viewModel.errorMessage,
         emptyIcon: "books.vertical",
         emptyTitle: "No series found",
         emptyMessage: "Try selecting a different library.",

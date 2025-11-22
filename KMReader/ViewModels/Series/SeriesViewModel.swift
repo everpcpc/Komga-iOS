@@ -13,7 +13,6 @@ import SwiftUI
 class SeriesViewModel {
   var series: [Series] = []
   var isLoading = false
-  var errorMessage: String?
 
   private let seriesService = SeriesService.shared
   private var currentPage = 0
@@ -44,7 +43,6 @@ class SeriesViewModel {
     guard hasMorePages && !isLoading else { return }
 
     isLoading = true
-    errorMessage = nil
 
     do {
       let page = try await seriesService.getSeries(
@@ -68,7 +66,7 @@ class SeriesViewModel {
       hasMorePages = !page.last
       currentPage += 1
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
 
     isLoading = false
@@ -76,7 +74,6 @@ class SeriesViewModel {
 
   func loadNewSeries(libraryId: String = "") async {
     isLoading = true
-    errorMessage = nil
 
     do {
       let page = try await seriesService.getNewSeries(libraryId: libraryId, size: 20)
@@ -84,7 +81,7 @@ class SeriesViewModel {
         series = page.content
       }
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
 
     isLoading = false
@@ -92,7 +89,6 @@ class SeriesViewModel {
 
   func loadUpdatedSeries(libraryId: String = "") async {
     isLoading = true
-    errorMessage = nil
 
     do {
       let page = try await seriesService.getUpdatedSeries(libraryId: libraryId, size: 20)
@@ -100,7 +96,7 @@ class SeriesViewModel {
         series = page.content
       }
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
 
     isLoading = false
@@ -111,7 +107,7 @@ class SeriesViewModel {
       try await seriesService.markAsRead(seriesId: seriesId)
       await loadSeries(browseOpts: browseOpts, searchText: currentSearchText, refresh: true)
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
   }
 
@@ -120,7 +116,7 @@ class SeriesViewModel {
       try await seriesService.markAsUnread(seriesId: seriesId)
       await loadSeries(browseOpts: browseOpts, searchText: currentSearchText, refresh: true)
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
   }
 
@@ -137,7 +133,6 @@ class SeriesViewModel {
     }
 
     isLoading = true
-    errorMessage = nil
 
     do {
       let page = try await CollectionService.shared.getCollectionSeries(
@@ -158,7 +153,7 @@ class SeriesViewModel {
       hasMorePages = !page.last
       currentPage += 1
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
 
     isLoading = false

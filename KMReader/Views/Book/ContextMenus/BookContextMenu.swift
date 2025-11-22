@@ -110,7 +110,7 @@ struct BookContextMenu: View {
         }
       } catch {
         await MainActor.run {
-          viewModel.errorMessage = error.localizedDescription
+          ErrorManager.shared.alert(error: error)
         }
       }
     }
@@ -125,7 +125,7 @@ struct BookContextMenu: View {
         }
       } catch {
         await MainActor.run {
-          viewModel.errorMessage = error.localizedDescription
+          ErrorManager.shared.alert(error: error)
         }
       }
     }
@@ -141,7 +141,7 @@ struct BookContextMenu: View {
         }
       } catch {
         await MainActor.run {
-          viewModel.errorMessage = error.localizedDescription
+          ErrorManager.shared.alert(error: error)
         }
       }
     }
@@ -159,7 +159,7 @@ struct BookContextMenu: View {
         }
       } catch {
         await MainActor.run {
-          viewModel.errorMessage = error.localizedDescription
+          ErrorManager.shared.alert(error: error)
         }
       }
     }

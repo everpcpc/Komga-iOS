@@ -39,33 +39,23 @@ struct SettingsLibrariesView: View {
             Spacer()
           }
         }
-      } else if let errorMessage = viewModel.errorMessage {
+      } else if viewModel.libraries.isEmpty {
         Section {
           VStack(spacing: 12) {
-            Text(errorMessage)
-              .font(.body)
+            Image(systemName: "books.vertical")
+              .font(.largeTitle)
+              .foregroundColor(.secondary)
+            Text("No libraries found")
+              .font(.headline)
+            Text("Add a library from Komga's web interface to manage it here.")
+              .font(.caption)
+              .foregroundColor(.secondary)
               .multilineTextAlignment(.center)
             Button("Retry") {
               Task {
                 await viewModel.loadLibraries()
               }
             }
-          }
-          .frame(maxWidth: .infinity)
-          .padding(.vertical, 8)
-        }
-      } else if viewModel.libraries.isEmpty {
-        Section {
-          VStack(spacing: 8) {
-            Image(systemName: "books.vertical")
-              .font(.largeTitle)
-              .foregroundColor(.secondary)
-            Text("No libraries found")
-              .font(.headline)
-            Text("Add a library from Komga’s web interface to manage it here.")
-              .font(.caption)
-              .foregroundColor(.secondary)
-              .multilineTextAlignment(.center)
           }
           .frame(maxWidth: .infinity)
           .padding(.vertical, 16)

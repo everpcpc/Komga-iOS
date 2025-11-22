@@ -38,7 +38,6 @@ struct CollectionsBrowseView: View {
       BrowseStateView(
         isLoading: viewModel.isLoading,
         isEmpty: viewModel.collections.isEmpty,
-        errorMessage: viewModel.errorMessage,
         emptyIcon: "square.grid.2x2",
         emptyTitle: "No collections found",
         emptyMessage: "Try selecting a different library.",

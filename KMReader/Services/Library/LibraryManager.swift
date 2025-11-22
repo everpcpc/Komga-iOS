@@ -15,7 +15,6 @@ class LibraryManager {
 
   private(set) var libraries: [LibraryInfo] = []
   private(set) var isLoading = false
-  private(set) var errorMessage: String?
 
   private let libraryService = LibraryService.shared
   private var hasLoaded = false
@@ -27,7 +26,6 @@ class LibraryManager {
     guard !hasLoaded else { return }
 
     isLoading = true
-    errorMessage = nil
 
     do {
       let fullLibraries = try await libraryService.getLibraries()
@@ -35,7 +33,7 @@ class LibraryManager {
       libraries = fullLibraries.map { LibraryInfo(id: $0.id, name: $0.name) }
       hasLoaded = true
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
 
     isLoading = false

@@ -13,7 +13,6 @@ import SwiftUI
 class ReadListViewModel {
   var readLists: [ReadList] = []
   var isLoading = false
-  var errorMessage: String?
 
   private let readListService = ReadListService.shared
   private var currentPage = 0
@@ -28,7 +27,8 @@ class ReadListViewModel {
     searchText: String,
     refresh: Bool = false
   ) async {
-    let paramsChanged = currentLibraryId != libraryId || currentSort != sort || currentSearchText != searchText
+    let paramsChanged =
+      currentLibraryId != libraryId || currentSort != sort || currentSearchText != searchText
     let shouldReset = refresh || paramsChanged
 
     if shouldReset {
@@ -42,7 +42,6 @@ class ReadListViewModel {
     guard hasMorePages && !isLoading else { return }
 
     isLoading = true
-    errorMessage = nil
 
     do {
       let page = try await readListService.getReadLists(
@@ -63,7 +62,7 @@ class ReadListViewModel {
       hasMorePages = !page.last
       currentPage += 1
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
 
     isLoading = false

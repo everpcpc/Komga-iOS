@@ -11,7 +11,6 @@ import SwiftUI
 struct BrowseStateView<Content: View>: View {
   let isLoading: Bool
   let isEmpty: Bool
-  let errorMessage: String?
   let emptyIcon: String
   let emptyTitle: String
   let emptyMessage: String
@@ -26,20 +25,8 @@ struct BrowseStateView<Content: View>: View {
         ProgressView()
           .frame(maxWidth: .infinity)
           .padding()
-      } else if let errorMessage = errorMessage {
-        VStack(spacing: 16) {
-          Image(systemName: "exclamationmark.triangle")
-            .font(.largeTitle)
-            .foregroundColor(themeColor.color)
-          Text(errorMessage)
-            .multilineTextAlignment(.center)
-          Button("Retry") {
-            onRetry()
-          }
-        }
-        .padding()
       } else if isEmpty {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
           Image(systemName: emptyIcon)
             .font(.system(size: 40))
             .foregroundColor(.secondary)
@@ -48,6 +35,9 @@ struct BrowseStateView<Content: View>: View {
           Text(emptyMessage)
             .font(.subheadline)
             .foregroundColor(.secondary)
+          Button("Retry") {
+            onRetry()
+          }
         }
         .frame(maxWidth: .infinity)
         .padding()

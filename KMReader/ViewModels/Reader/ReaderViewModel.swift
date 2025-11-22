@@ -18,7 +18,6 @@ class ReaderViewModel {
   var pages: [BookPage] = []
   var currentPageIndex = 0
   var isLoading = true
-  var errorMessage: String?
   var pageImageCache: ImageCache
   var incognitoMode: Bool = false
 
@@ -45,7 +44,6 @@ class ReaderViewModel {
   func loadPages(bookId: String, initialPageNumber: Int? = nil) async {
     self.bookId = bookId
     isLoading = true
-    errorMessage = nil
 
     // Cancel all ongoing download tasks when loading a new book
     for (_, task) in downloadingTasks {
@@ -62,7 +60,7 @@ class ReaderViewModel {
         }
       }
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
 
     isLoading = false

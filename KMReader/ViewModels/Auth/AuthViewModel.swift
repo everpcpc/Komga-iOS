@@ -13,7 +13,6 @@ import SwiftUI
 class AuthViewModel {
   var isLoggedIn = false
   var isLoading = false
-  var errorMessage: String?
   var user: User?
 
   private let authService = AuthService.shared
@@ -24,14 +23,13 @@ class AuthViewModel {
 
   func login(username: String, password: String, serverURL: String) async {
     isLoading = true
-    errorMessage = nil
 
     do {
       user = try await authService.login(
         username: username, password: password, serverURL: serverURL)
       isLoggedIn = true
     } catch {
-      errorMessage = handleError(error)
+      ErrorManager.shared.alert(error: error)
       isLoggedIn = false
     }
 
@@ -53,25 +51,12 @@ class AuthViewModel {
         AppConfig.isAdmin = user.roles.contains("ADMIN")
       }
     } catch {
-      errorMessage = handleError(error)
-    }
-  }
-
-  private func handleError(_ error: Error) -> String {
-    if let apiError = error as? APIError {
-      switch apiError {
-      case .unauthorized:
-        return "Invalid credentials"
-      case .httpError(let code, let message):
-        return "Server error (\(code)): \(message)"
-      case .networkError:
-        return "Network error. Please check your connection."
-      case .invalidURL:
-        return "Invalid server URL"
-      default:
-        return error.localizedDescription
+      // Don't show alert for unauthorized errors during background refresh
+      if let apiError = error as? APIError, case .unauthorized = apiError {
+        // Silently handle unauthorized during background refresh
+        return
       }
+      ErrorManager.shared.alert(error: error)
     }
-    return error.localizedDescription
   }
 }

@@ -15,7 +15,6 @@ struct DashboardView: View {
   @State private var recentlyAddedSeries: [Series] = []
   @State private var recentlyUpdatedSeries: [Series] = []
   @State private var isLoading = false
-  @State private var errorMessage: String?
 
   @State private var bookViewModel = BookViewModel()
   @State private var seriesViewModel = SeriesViewModel()
@@ -35,21 +34,6 @@ struct DashboardView: View {
               .frame(maxWidth: .infinity)
               .padding()
               .transition(.opacity)
-          } else if let errorMessage = errorMessage {
-            VStack(spacing: 16) {
-              Image(systemName: "exclamationmark.triangle")
-                .font(.largeTitle)
-                .foregroundColor(themeColor.color)
-              Text(errorMessage)
-                .multilineTextAlignment(.center)
-              Button("Retry") {
-                Task {
-                  await loadAll()
-                }
-              }
-            }
-            .padding()
-            .transition(.opacity)
           } else {
             // Keep Reading Section
             if !keepReadingBooks.isEmpty {
@@ -171,7 +155,6 @@ struct DashboardView: View {
 
   private func loadAll() async {
     isLoading = true
-    errorMessage = nil
 
     await withTaskGroup(of: Void.self) { group in
       group.addTask { await self.loadKeepReading() }
@@ -203,7 +186,7 @@ struct DashboardView: View {
         keepReadingBooks = page.content
       }
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
   }
 
@@ -215,7 +198,7 @@ struct DashboardView: View {
         onDeckBooks = page.content
       }
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
   }
 
@@ -227,7 +210,7 @@ struct DashboardView: View {
         recentlyAddedBooks = page.content
       }
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
   }
 

@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct NoPagesView: View {
-  let errorMessage: String?
   let onDismiss: () -> Void
 
   var body: some View {
@@ -23,21 +22,13 @@ struct NoPagesView: View {
           .fontWeight(.semibold)
           .foregroundColor(.white)
 
-        if let error = errorMessage {
-          Text(error)
-            .font(.body)
-            .foregroundColor(.white.opacity(0.8))
-            .multilineTextAlignment(.center)
-            .padding(.horizontal, 32)
-        } else {
-          Text(
-            "Unable to load pages for this book. This format may not be supported."
-          )
-          .font(.body)
-          .foregroundColor(.white.opacity(0.8))
-          .multilineTextAlignment(.center)
-          .padding(.horizontal, 32)
-        }
+        Text(
+          "Unable to load pages for this book. This format may not be supported."
+        )
+        .font(.body)
+        .foregroundColor(.white.opacity(0.8))
+        .multilineTextAlignment(.center)
+        .padding(.horizontal, 32)
       }
 
       Button {

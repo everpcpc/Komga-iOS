@@ -10,28 +10,62 @@ import SwiftUI
 struct ContentView: View {
   @Environment(AuthViewModel.self) private var authViewModel
   @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
+  @State private var errorManager = ErrorManager.shared
 
   var body: some View {
-    Group {
-      if authViewModel.isLoggedIn {
-        MainTabView()
-      } else {
-        LoginView()
+    ZStack {
+      Group {
+        if authViewModel.isLoggedIn {
+          MainTabView()
+        } else {
+          LoginView()
+        }
       }
-    }
-    .tint(themeColor.color)
-    .task {
-      if authViewModel.isLoggedIn {
-        await authViewModel.loadCurrentUser()
-        await LibraryManager.shared.loadLibraries()
-      }
-    }
-    .onChange(of: authViewModel.isLoggedIn) { _, isLoggedIn in
-      if isLoggedIn {
-        Task {
+      .tint(themeColor.color)
+      .task {
+        if authViewModel.isLoggedIn {
           await authViewModel.loadCurrentUser()
           await LibraryManager.shared.loadLibraries()
         }
+      }
+      .onChange(of: authViewModel.isLoggedIn) { _, isLoggedIn in
+        if isLoggedIn {
+          Task {
+            await authViewModel.loadCurrentUser()
+            await LibraryManager.shared.loadLibraries()
+          }
+        }
+      }
+
+      // Notification overlay
+      VStack(alignment: .center) {
+        ForEach($errorManager.notifications, id: \.self) { $notification in
+          Text(notification)
+            .padding(8)
+            .foregroundStyle(.white)
+            .background(themeColor.color)
+            .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 10)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+        Spacer()
+      }
+      .animation(.default, value: errorManager.notifications)
+      .padding(.horizontal, 8)
+      .padding(.top, 64)
+    }
+    .alert("Error", isPresented: $errorManager.hasAlert) {
+      Button("OK") {
+        ErrorManager.shared.vanishError()
+      }
+      Button("Copy") {
+        UIPasteboard.general.string = errorManager.currentError?.description
+        ErrorManager.shared.notify(message: "Copied")
+      }
+    } message: {
+      if let error = errorManager.currentError {
+        Text(verbatim: error.description)
+      } else {
+        Text("Unknown Error")
       }
     }
   }

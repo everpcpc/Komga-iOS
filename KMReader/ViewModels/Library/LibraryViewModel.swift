@@ -12,18 +12,16 @@ import Foundation
 class LibraryViewModel {
   var libraries: [Library] = []
   var isLoading = false
-  var errorMessage: String?
 
   private let libraryService = LibraryService.shared
 
   func loadLibraries() async {
     isLoading = true
-    errorMessage = nil
 
     do {
       libraries = try await libraryService.getLibraries()
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
 
     isLoading = false

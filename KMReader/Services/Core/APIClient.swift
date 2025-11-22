@@ -117,19 +117,39 @@ class APIClient {
         "\(statusEmoji) \(httpResponse.statusCode) \(method) \(urlString) (\(durationMs)ms)")
 
       guard (200...299).contains(httpResponse.statusCode) else {
-        if httpResponse.statusCode == 401 {
+        let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
+
+        switch httpResponse.statusCode {
+        case 400:
+          logger.warning("🔒 Bad Request: \(urlString)")
+          throw APIError.badRequest(errorMessage)
+        case 401:
           logger.warning("🔒 Unauthorized: \(urlString)")
           throw APIError.unauthorized
+        case 403:
+          logger.warning("🔒 Forbidden: \(urlString)")
+          throw APIError.forbidden(errorMessage)
+        case 404:
+          logger.warning("🔒 Not Found: \(urlString)")
+          throw APIError.notFound(errorMessage)
+        case 429:
+          logger.warning("🔒 Too Many Requests: \(urlString)")
+          throw APIError.tooManyRequests(errorMessage)
+        case 500...599:
+          logger.error("❌ Server Error \(httpResponse.statusCode): \(errorMessage)")
+          throw APIError.serverError(errorMessage)
+        default:
+          logger.error("❌ HTTP \(httpResponse.statusCode): \(errorMessage)")
+          throw APIError.httpError(httpResponse.statusCode, errorMessage)
         }
-
-        let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
-        logger.error("❌ HTTP \(httpResponse.statusCode): \(errorMessage)")
-        throw APIError.httpError(httpResponse.statusCode, errorMessage)
       }
 
       return (data, httpResponse)
     } catch let error as APIError {
       throw error
+    } catch let nsError as NSError where nsError.domain == NSURLErrorDomain {
+      logger.error("❌ Network error for \(urlString): \(nsError.localizedDescription)")
+      throw APIError.networkError(nsError)
     } catch {
       let errorDesc = error.localizedDescription
       logger.error("❌ Network error for \(urlString): \(errorDesc)")

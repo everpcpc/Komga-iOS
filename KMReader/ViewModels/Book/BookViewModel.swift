@@ -14,7 +14,6 @@ class BookViewModel {
   var books: [Book] = []
   var currentBook: Book?
   var isLoading = false
-  var errorMessage: String?
 
   private let bookService = BookService.shared
   private var currentPage = 0
@@ -32,7 +31,6 @@ class BookViewModel {
     books = []
     hasMorePages = true
     isLoading = true
-    errorMessage = nil
 
     do {
       let page = try await bookService.getBooks(
@@ -43,7 +41,7 @@ class BookViewModel {
       hasMorePages = !page.last
       currentPage = 1
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
 
     isLoading = false
@@ -55,7 +53,6 @@ class BookViewModel {
     else { return }
 
     isLoading = true
-    errorMessage = nil
 
     do {
       let page = try await bookService.getBooks(
@@ -66,7 +63,7 @@ class BookViewModel {
       hasMorePages = !page.last
       currentPage += 1
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
 
     isLoading = false
@@ -74,12 +71,11 @@ class BookViewModel {
 
   func loadBook(id: String) async {
     isLoading = true
-    errorMessage = nil
 
     do {
       currentBook = try await bookService.getBook(id: id)
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
 
     isLoading = false
@@ -87,7 +83,6 @@ class BookViewModel {
 
   func loadBooksOnDeck(libraryId: String = "") async {
     isLoading = true
-    errorMessage = nil
 
     do {
       let page = try await bookService.getBooksOnDeck(libraryId: libraryId, size: 20)
@@ -95,7 +90,7 @@ class BookViewModel {
         books = page.content
       }
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
 
     isLoading = false
@@ -108,7 +103,7 @@ class BookViewModel {
         await loadBook(id: bookId)
       }
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
   }
 
@@ -123,7 +118,7 @@ class BookViewModel {
         currentBook = updatedBook
       }
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
   }
 
@@ -138,7 +133,7 @@ class BookViewModel {
         currentBook = updatedBook
       }
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
   }
 
@@ -153,7 +148,6 @@ class BookViewModel {
     guard !isLoading else { return }
 
     isLoading = true
-    errorMessage = nil
 
     do {
       let page = try await bookService.getRecentlyReadBooks(
@@ -173,7 +167,7 @@ class BookViewModel {
       hasMorePages = !page.last
       currentPage += 1
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
 
     isLoading = false
@@ -204,7 +198,6 @@ class BookViewModel {
     guard hasMorePages && !isLoading else { return }
 
     isLoading = true
-    errorMessage = nil
 
     do {
       let condition = BookSearch.buildCondition(
@@ -234,7 +227,7 @@ class BookViewModel {
       hasMorePages = !page.last
       currentPage += 1
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
 
     isLoading = false
@@ -253,7 +246,6 @@ class BookViewModel {
     }
 
     isLoading = true
-    errorMessage = nil
 
     do {
       let page = try await ReadListService.shared.getReadListBooks(
@@ -274,7 +266,7 @@ class BookViewModel {
       hasMorePages = !page.last
       currentPage += 1
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
 
     isLoading = false
