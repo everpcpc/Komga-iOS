@@ -96,6 +96,13 @@ class BookService {
     return URL(string: baseURL + "/api/v1/books/\(id)/thumbnail")
   }
 
+  /// Get page thumbnail URL for a book
+  func getBookPageThumbnailURL(bookId: String, page: Int) -> URL? {
+    let baseURL = AppConfig.serverURL
+    guard !baseURL.isEmpty else { return nil }
+    return URL(string: baseURL + "/api/v1/books/\(bookId)/pages/\(page)/thumbnail")
+  }
+
   func getBookPage(bookId: String, page: Int) async throws -> (data: Data, contentType: String?) {
     return try await apiClient.requestData(path: "/api/v1/books/\(bookId)/pages/\(page)")
   }

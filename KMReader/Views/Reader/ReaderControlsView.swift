@@ -209,12 +209,11 @@ struct ReaderControlsView: View {
     }
     .sheet(isPresented: $showingPageJumpSheet) {
       PageJumpSheetView(
+        bookId: viewModel.bookId,
         totalPages: viewModel.pages.count,
         currentPage: min(viewModel.currentPageIndex + 1, viewModel.pages.count),
         onJump: jumpToPage
       )
-      .presentationDetents([.height(360)])
-      .presentationDragIndicator(.visible)
     }
     .sheet(isPresented: $showingReadingDirectionPicker) {
       ReadingDirectionPickerSheetView(readingDirection: $readingDirection)

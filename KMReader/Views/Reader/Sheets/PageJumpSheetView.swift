@@ -5,9 +5,12 @@
 //  Created by Komga iOS Client
 //
 
+import SDWebImage
+import SDWebImageSwiftUI
 import SwiftUI
 
 struct PageJumpSheetView: View {
+  let bookId: String
   let totalPages: Int
   let currentPage: Int
   let onJump: (Int) -> Void
@@ -38,13 +41,26 @@ struct PageJumpSheetView: View {
     )
   }
 
-  init(totalPages: Int, currentPage: Int, onJump: @escaping (Int) -> Void) {
+  init(bookId: String, totalPages: Int, currentPage: Int, onJump: @escaping (Int) -> Void) {
+    self.bookId = bookId
     self.totalPages = totalPages
     self.currentPage = currentPage
     self.onJump = onJump
 
     let safeInitialPage = max(1, min(currentPage, max(totalPages, 1)))
     _pageValue = State(initialValue: safeInitialPage)
+  }
+
+  // Get preview pages range (current page ± offset)
+  private var previewPages: [Int] {
+    let offset = 2  // Show 2 pages before and after
+    let startPage = max(1, pageValue - offset)
+    let endPage = min(maxPage, pageValue + offset)
+    return Array(startPage...endPage)
+  }
+
+  private func getPreviewImageURL(page: Int) -> URL? {
+    BookService.shared.getBookPageThumbnailURL(bookId: bookId, page: page)
   }
 
   var body: some View {
@@ -63,10 +79,81 @@ struct PageJumpSheetView: View {
 
         if canJump {
           VStack(spacing: 20) {
-            Text("Selected page: \(pageValue)")
-              .font(.headline)
-
             VStack(spacing: 8) {
+              // Preview view above slider - scrolling fan effect
+              GeometryReader { geometry in
+                let sliderWidth = geometry.size.width
+                let previewHeight: CGFloat = 200
+                let imageWidth: CGFloat = 80
+                let imageHeight: CGFloat = 110
+                let centerY = previewHeight / 2
+
+                ZStack {
+                  ForEach(Array(previewPages.enumerated()), id: \.element) { index, page in
+                    let isCenter = page == pageValue
+                    let offset = page - pageValue
+                    let progress = (Double(pageValue) - 1) / Double(maxPage - 1)
+                    let baseX = progress * sliderWidth
+
+                    // Calculate position with fan effect
+                    let spacing: CGFloat = 70
+                    let xOffset = CGFloat(offset) * spacing
+                    let x = baseX + xOffset
+                    let rotation = Double(offset) * 8.0  // Rotation angle in degrees
+                    let scale = isCenter ? 1.0 : 0.75
+                    let opacity = isCenter ? 1.0 : 0.6
+                    let zIndex = isCenter ? 10 : abs(offset)
+
+                    if let imageURL = getPreviewImageURL(page: page) {
+                      VStack(spacing: 4) {
+                        WebImage(
+                          url: imageURL,
+                          options: [.retryFailed, .scaleDownLargeImages],
+                          context: [.customManager: SDImageCacheProvider.thumbnailManager]
+                        )
+                        .resizable()
+                        .placeholder {
+                          RoundedRectangle(cornerRadius: 6)
+                            .fill(Color.gray.opacity(0.3))
+                            .overlay {
+                              ProgressView()
+                            }
+                        }
+                        .indicator(.activity)
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: imageWidth, height: imageHeight)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .shadow(
+                          color: Color.black.opacity(isCenter ? 0.4 : 0.2),
+                          radius: isCenter ? 8 : 4, x: 0, y: 2)
+
+                        if isCenter {
+                          Text("\(page)")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background {
+                              RoundedRectangle(cornerRadius: 4)
+                                .fill(themeColor.color)
+                            }
+                        }
+                      }
+                      .scaleEffect(scale)
+                      .opacity(opacity)
+                      .rotationEffect(.degrees(rotation))
+                      .position(
+                        x: max(imageWidth / 2, min(x, sliderWidth - imageWidth / 2)),
+                        y: centerY
+                      )
+                      .zIndex(Double(zIndex))
+                      .animation(.spring(response: 0.3, dampingFraction: 0.7), value: pageValue)
+                    }
+                  }
+                }
+              }
+              .frame(height: 200)
+
               Slider(
                 value: sliderBinding,
                 in: 1...Double(maxPage),
