@@ -44,10 +44,16 @@ enum AppConfig {
     set { defaults.set(newValue, forKey: "isLoggedIn") }
   }
 
+  static var isAdmin: Bool {
+    get { defaults.bool(forKey: "isAdmin") }
+    set { defaults.set(newValue, forKey: "isAdmin") }
+  }
+
   // MARK: - Clear all auth data
   static func clearAuthData() {
     authToken = nil
     username = nil
     isLoggedIn = false
+    isAdmin = false
   }
 }

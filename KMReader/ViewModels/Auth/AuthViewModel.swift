@@ -49,6 +49,9 @@ class AuthViewModel {
   func loadCurrentUser() async {
     do {
       user = try await authService.getCurrentUser()
+      if let user = user {
+        AppConfig.isAdmin = user.roles.contains("ADMIN")
+      }
     } catch {
       errorMessage = handleError(error)
     }
