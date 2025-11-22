@@ -39,7 +39,8 @@ struct BooksListViewForReadList: View {
                 isSelectionMode = true
               }
             } label: {
-              Image(systemName: "checkmark.circle")
+              Image(systemName: "square.and.pencil.circle")
+                .imageScale(.large)
             }
             .transition(.opacity.combined(with: .scale))
           }
@@ -90,6 +91,7 @@ struct BooksListViewForReadList: View {
                         refreshBooks()
                       }
                     )
+                    .allowsHitTesting(false)
                     .overlay(alignment: .topTrailing) {
                       Image(
                         systemName: selectedBookIds.contains(book.id)
@@ -110,15 +112,18 @@ struct BooksListViewForReadList: View {
                         value: selectedBookIds.contains(book.id))
                     }
                     .contentShape(Rectangle())
-                    .onTapGesture {
-                      withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        if selectedBookIds.contains(book.id) {
-                          selectedBookIds.remove(book.id)
-                        } else {
-                          selectedBookIds.insert(book.id)
+                    .highPriorityGesture(
+                      TapGesture()
+                        .onEnded {
+                          withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            if selectedBookIds.contains(book.id) {
+                              selectedBookIds.remove(book.id)
+                            } else {
+                              selectedBookIds.insert(book.id)
+                            }
+                          }
                         }
-                      }
-                    }
+                    )
                   } else {
                     BookCardView(
                       book: book,
@@ -144,33 +149,17 @@ struct BooksListViewForReadList: View {
           case .list:
             LazyVStack(spacing: 8) {
               ForEach(bookViewModel.books) { book in
-                HStack(spacing: 12) {
+                Group {
                   if isSelectionMode {
-                    Image(
-                      systemName: selectedBookIds.contains(book.id)
-                        ? "checkmark.circle.fill" : "circle"
-                    )
-                    .foregroundColor(selectedBookIds.contains(book.id) ? .accentColor : .secondary)
-                    .onTapGesture {
-                      withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        if selectedBookIds.contains(book.id) {
-                          selectedBookIds.remove(book.id)
-                        } else {
-                          selectedBookIds.insert(book.id)
-                        }
-                      }
-                    }
-                    .transition(.scale.combined(with: .opacity))
-                    .animation(
-                      .spring(response: 0.3, dampingFraction: 0.7),
-                      value: selectedBookIds.contains(book.id))
-                  }
-
-                  BookRowView(
-                    book: book,
-                    viewModel: bookViewModel,
-                    onReadBook: { incognito in
-                      if isSelectionMode {
+                    HStack(spacing: 12) {
+                      Image(
+                        systemName: selectedBookIds.contains(book.id)
+                          ? "checkmark.circle.fill" : "circle"
+                      )
+                      .foregroundColor(
+                        selectedBookIds.contains(book.id) ? .accentColor : .secondary
+                      )
+                      .onTapGesture {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                           if selectedBookIds.contains(book.id) {
                             selectedBookIds.remove(book.id)
@@ -178,15 +167,51 @@ struct BooksListViewForReadList: View {
                             selectedBookIds.insert(book.id)
                           }
                         }
-                      } else {
-                        onReadBook(book.id, incognito)
                       }
-                    },
-                    onBookUpdated: {
-                      refreshBooks()
-                    },
-                    showSeriesTitle: true
-                  )
+                      .transition(.scale.combined(with: .opacity))
+                      .animation(
+                        .spring(response: 0.3, dampingFraction: 0.7),
+                        value: selectedBookIds.contains(book.id))
+
+                      BookRowView(
+                        book: book,
+                        viewModel: bookViewModel,
+                        onReadBook: { _ in },
+                        onBookUpdated: {
+                          refreshBooks()
+                        },
+                        showSeriesTitle: true
+                      )
+                      .allowsHitTesting(false)
+                    }
+                    .contentShape(Rectangle())
+                    .highPriorityGesture(
+                      TapGesture()
+                        .onEnded {
+                          withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            if selectedBookIds.contains(book.id) {
+                              selectedBookIds.remove(book.id)
+                            } else {
+                              selectedBookIds.insert(book.id)
+                            }
+                          }
+                        }
+                    )
+                  } else {
+                    HStack(spacing: 12) {
+                      BookRowView(
+                        book: book,
+                        viewModel: bookViewModel,
+                        onReadBook: { incognito in
+                          onReadBook(book.id, incognito)
+                        },
+                        onBookUpdated: {
+                          refreshBooks()
+                        },
+                        showSeriesTitle: true
+                      )
+                    }
+                  }
                 }
                 .onAppear {
                   if book.id == bookViewModel.books.last?.id {

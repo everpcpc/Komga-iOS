@@ -80,7 +80,7 @@ struct CollectionDetailView: View {
             }
 
             // Series list
-            SeriesListView(
+            CollectionSeriesListView(
               collectionId: collectionId,
               seriesViewModel: seriesViewModel,
               layoutMode: layoutMode,

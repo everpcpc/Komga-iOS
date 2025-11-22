@@ -1,5 +1,5 @@
 //
-//  SeriesListView.swift
+//  CollectionSeriesListView.swift
 //  Komga
 //
 //  Created by Komga iOS Client
@@ -8,7 +8,7 @@
 import SwiftUI
 
 // Series list view for collection
-struct SeriesListView: View {
+struct CollectionSeriesListView: View {
   let collectionId: String
   @Bindable var seriesViewModel: SeriesViewModel
   let layoutMode: BrowseLayoutMode
@@ -38,7 +38,8 @@ struct SeriesListView: View {
                 isSelectionMode = true
               }
             } label: {
-              Image(systemName: "checkmark.circle")
+              Image(systemName: "square.and.pencil.circle")
+                .imageScale(.large)
             }
             .transition(.opacity.combined(with: .scale))
           }
@@ -91,6 +92,7 @@ struct SeriesListView: View {
                         }
                       }
                     )
+                    .allowsHitTesting(false)
                     .overlay(alignment: .topTrailing) {
                       Image(
                         systemName: selectedSeriesIds.contains(series.id)
@@ -111,15 +113,18 @@ struct SeriesListView: View {
                         value: selectedSeriesIds.contains(series.id))
                     }
                     .contentShape(Rectangle())
-                    .onTapGesture {
-                      withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        if selectedSeriesIds.contains(series.id) {
-                          selectedSeriesIds.remove(series.id)
-                        } else {
-                          selectedSeriesIds.insert(series.id)
+                    .highPriorityGesture(
+                      TapGesture()
+                        .onEnded {
+                          withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            if selectedSeriesIds.contains(series.id) {
+                              selectedSeriesIds.remove(series.id)
+                            } else {
+                              selectedSeriesIds.insert(series.id)
+                            }
+                          }
                         }
-                      }
-                    }
+                    )
                   } else {
                     NavigationLink(value: NavDestination.seriesDetail(seriesId: series.id)) {
                       SeriesCardView(
@@ -150,52 +155,30 @@ struct SeriesListView: View {
           case .list:
             LazyVStack(spacing: 8) {
               ForEach(seriesViewModel.series) { series in
-                HStack(spacing: 12) {
+                Group {
                   if isSelectionMode {
-                    Image(
-                      systemName: selectedSeriesIds.contains(series.id)
-                        ? "checkmark.circle.fill" : "circle"
-                    )
-                    .foregroundColor(
-                      selectedSeriesIds.contains(series.id) ? .accentColor : .secondary
-                    )
-                    .onTapGesture {
-                      withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        if selectedSeriesIds.contains(series.id) {
-                          selectedSeriesIds.remove(series.id)
-                        } else {
-                          selectedSeriesIds.insert(series.id)
+                    HStack(spacing: 12) {
+                      Image(
+                        systemName: selectedSeriesIds.contains(series.id)
+                          ? "checkmark.circle.fill" : "circle"
+                      )
+                      .foregroundColor(
+                        selectedSeriesIds.contains(series.id) ? .accentColor : .secondary
+                      )
+                      .onTapGesture {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                          if selectedSeriesIds.contains(series.id) {
+                            selectedSeriesIds.remove(series.id)
+                          } else {
+                            selectedSeriesIds.insert(series.id)
+                          }
                         }
                       }
-                    }
-                    .transition(.scale.combined(with: .opacity))
-                    .animation(
-                      .spring(response: 0.3, dampingFraction: 0.7),
-                      value: selectedSeriesIds.contains(series.id))
-                  }
+                      .transition(.scale.combined(with: .opacity))
+                      .animation(
+                        .spring(response: 0.3, dampingFraction: 0.7),
+                        value: selectedSeriesIds.contains(series.id))
 
-                  if isSelectionMode {
-                    SeriesRowView(
-                      series: series,
-                      onActionCompleted: {
-                        Task {
-                          await seriesViewModel.loadCollectionSeries(
-                            collectionId: collectionId, browseOpts: browseOpts, refresh: true)
-                        }
-                      }
-                    )
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                      withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        if selectedSeriesIds.contains(series.id) {
-                          selectedSeriesIds.remove(series.id)
-                        } else {
-                          selectedSeriesIds.insert(series.id)
-                        }
-                      }
-                    }
-                  } else {
-                    NavigationLink(value: NavDestination.seriesDetail(seriesId: series.id)) {
                       SeriesRowView(
                         series: series,
                         onActionCompleted: {
@@ -205,8 +188,36 @@ struct SeriesListView: View {
                           }
                         }
                       )
+                      .allowsHitTesting(false)
                     }
-                    .buttonStyle(.plain)
+                    .contentShape(Rectangle())
+                    .highPriorityGesture(
+                      TapGesture()
+                        .onEnded {
+                          withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            if selectedSeriesIds.contains(series.id) {
+                              selectedSeriesIds.remove(series.id)
+                            } else {
+                              selectedSeriesIds.insert(series.id)
+                            }
+                          }
+                        }
+                    )
+                  } else {
+                    HStack(spacing: 12) {
+                      NavigationLink(value: NavDestination.seriesDetail(seriesId: series.id)) {
+                        SeriesRowView(
+                          series: series,
+                          onActionCompleted: {
+                            Task {
+                              await seriesViewModel.loadCollectionSeries(
+                                collectionId: collectionId, browseOpts: browseOpts, refresh: true)
+                            }
+                          }
+                        )
+                      }
+                      .buttonStyle(.plain)
+                    }
                   }
                 }
                 .onAppear {
@@ -242,7 +253,7 @@ struct SeriesListView: View {
   }
 }
 
-extension SeriesListView {
+extension CollectionSeriesListView {
   @MainActor
   private func deleteSelectedSeries() async {
     guard !selectedSeriesIds.isEmpty else { return }

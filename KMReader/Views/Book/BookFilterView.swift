@@ -17,6 +17,7 @@ struct BookFilterView: View {
         showOptionsSheet = true
       } label: {
         Image(systemName: "line.3.horizontal.decrease.circle")
+          .imageScale(.large)
       }
       ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: 6) {

@@ -18,6 +18,7 @@ struct ReadListSortView: View {
         showSortSheet = true
       } label: {
         Image(systemName: "arrow.up.arrow.down.circle")
+          .imageScale(.large)
       }
       ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: 6) {
