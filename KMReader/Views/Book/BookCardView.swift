@@ -46,17 +46,16 @@ struct BookCardView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
-      ThumbnailImage(url: thumbnailURL, width: cardWidth)
-        .overlay(alignment: .topTrailing) {
-          if book.readProgress == nil {
-            UnreadIndicator()
-          }
+      ThumbnailImage(url: thumbnailURL, width: cardWidth) {
+        if book.readProgress == nil {
+          UnreadIndicator()
         }
-        .overlay(alignment: .bottom) {
-          if isInProgress {
-            ReadingProgressBar(progress: progress)
-          }
+      }
+      .overlay(alignment: .bottom) {
+        if isInProgress {
+          ReadingProgressBar(progress: progress)
         }
+      }
 
       VStack(alignment: .leading, spacing: 2) {
         if showSeriesTitle {

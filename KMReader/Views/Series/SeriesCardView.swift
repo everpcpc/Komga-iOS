@@ -30,13 +30,12 @@ struct SeriesCardView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
-      ThumbnailImage(url: thumbnailURL, width: cardWidth)
-        .overlay(alignment: .topTrailing) {
-          if series.booksUnreadCount > 0 {
-            UnreadCountBadge(count: series.booksUnreadCount)
-              .padding(4)
-          }
+      ThumbnailImage(url: thumbnailURL, width: cardWidth) {
+        if series.booksUnreadCount > 0 {
+          UnreadCountBadge(count: series.booksUnreadCount)
+            .padding(4)
         }
+      }
 
       VStack(alignment: .leading, spacing: 2) {
         if showTitle {
