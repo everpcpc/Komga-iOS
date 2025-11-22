@@ -17,7 +17,6 @@ struct CollectionsBrowseView: View {
   @AppStorage("collectionSortOptions") private var sortOpts: SimpleSortOptions =
     SimpleSortOptions()
   @AppStorage("selectedLibraryId") private var selectedLibraryId: String = ""
-  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
   @AppStorage("browseColumns") private var browseColumns: BrowseColumns = BrowseColumns()
   @AppStorage("browseLayout") private var browseLayout: BrowseLayoutMode = .grid
   @State private var viewModel = CollectionViewModel()
@@ -43,7 +42,6 @@ struct CollectionsBrowseView: View {
         emptyIcon: "square.grid.2x2",
         emptyTitle: "No collections found",
         emptyMessage: "Try selecting a different library.",
-        themeColor: themeColorOption.color,
         onRetry: {
           Task {
             await loadCollections(refresh: true)

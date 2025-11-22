@@ -9,7 +9,7 @@ import SwiftUI
 
 struct UnreadCountBadge: View {
   let count: Int
-  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
+  @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
 
   var body: some View {
     ZStack {
@@ -28,7 +28,7 @@ struct UnreadCountBadge: View {
         .foregroundColor(.white)
         .padding(.horizontal, 4)
         .padding(.vertical, 2)
-        .background(themeColorOption.color)
+        .background(themeColor.color)
         .clipShape(Capsule())
     }
     .padding(-8)

@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct UnreadIndicator: View {
-  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
+  @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
 
   var body: some View {
     ZStack {
@@ -19,7 +19,7 @@ struct UnreadIndicator: View {
 
       // Inner circle with theme color
       Circle()
-        .fill(themeColorOption.color)
+        .fill(themeColor.color)
         .frame(width: 8, height: 8)
     }
     .padding(-8)

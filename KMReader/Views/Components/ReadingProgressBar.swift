@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ReadingProgressBar: View {
   let progress: Double
-  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
+  @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
 
   var body: some View {
     GeometryReader { geometry in
@@ -20,7 +20,7 @@ struct ReadingProgressBar: View {
           .cornerRadius(2)
 
         Rectangle()
-          .fill(themeColorOption.color)
+          .fill(themeColor.color)
           .frame(width: geometry.size.width * progress, height: 4)
           .cornerRadius(2)
       }

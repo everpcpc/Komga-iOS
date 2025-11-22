@@ -10,7 +10,7 @@ import SwiftUI
 struct NextBookInfoView: View {
   let nextBook: Book?
 
-  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
+  @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
 
   var body: some View {
     if let nextBook = nextBook {
@@ -23,7 +23,7 @@ struct NextBookInfoView: View {
       .padding(.vertical, 8)
       .background(
         RoundedRectangle(cornerRadius: 12)
-          .fill(themeColorOption.color.opacity(0.6))
+          .fill(themeColor.color.opacity(0.6))
       )
     } else {
       HStack(spacing: 8) {
@@ -35,7 +35,7 @@ struct NextBookInfoView: View {
       .padding(.vertical, 8)
       .background(
         RoundedRectangle(cornerRadius: 12)
-          .fill(themeColorOption.color.opacity(0.6))
+          .fill(themeColor.color.opacity(0.6))
       )
     }
   }

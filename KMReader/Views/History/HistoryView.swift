@@ -11,7 +11,7 @@ struct HistoryView: View {
   @State private var bookViewModel = BookViewModel()
 
   @AppStorage("selectedLibraryId") private var selectedLibraryId: String = ""
-  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
+  @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
   @State private var showLibraryPickerSheet = false
 
   private func refreshRecentlyReadBooks() {
@@ -39,7 +39,7 @@ struct HistoryView: View {
             VStack(spacing: 16) {
               Image(systemName: "exclamationmark.triangle")
                 .font(.largeTitle)
-                .foregroundColor(themeColorOption.color)
+                .foregroundColor(themeColor.color)
               Text(errorMessage)
                 .multilineTextAlignment(.center)
               Button("Retry") {

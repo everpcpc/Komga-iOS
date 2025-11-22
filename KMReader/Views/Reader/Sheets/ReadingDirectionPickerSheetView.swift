@@ -10,7 +10,7 @@ import SwiftUI
 struct ReadingDirectionPickerSheetView: View {
   @Binding var readingDirection: ReadingDirection
 
-  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
+  @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
 
   var body: some View {
     NavigationStack {
@@ -19,7 +19,7 @@ struct ReadingDirectionPickerSheetView: View {
           ForEach(ReadingDirection.allCases, id: \.self) { direction in
             HStack(spacing: 12) {
               Image(systemName: direction.icon)
-                .foregroundStyle(themeColorOption.color)
+                .foregroundStyle(themeColor.color)
               Text(direction.displayName)
             }
             .tag(direction)

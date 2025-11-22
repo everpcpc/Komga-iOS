@@ -10,7 +10,7 @@ import SwiftUI
 struct SeriesDetailView: View {
   let seriesId: String
 
-  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
+  @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
 
   @Environment(\.dismiss) private var dismiss
 
@@ -89,8 +89,8 @@ struct SeriesDetailView: View {
                     InfoChip(
                       label: "\(series.booksUnreadCount) unread",
                       systemImage: "book",
-                      backgroundColor: themeColorOption.color.opacity(0.2),
-                      foregroundColor: themeColorOption.color
+                      backgroundColor: themeColor.color.opacity(0.2),
+                      foregroundColor: themeColor.color
                     )
                   } else if series.booksInProgressCount > 0 {
                     InfoChip(

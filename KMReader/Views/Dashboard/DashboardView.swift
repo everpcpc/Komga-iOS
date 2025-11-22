@@ -21,7 +21,7 @@ struct DashboardView: View {
   @State private var seriesViewModel = SeriesViewModel()
 
   @AppStorage("selectedLibraryId") private var selectedLibraryId: String = ""
-  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
+  @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
   @State private var showLibraryPickerSheet = false
 
   var body: some View {
@@ -39,7 +39,7 @@ struct DashboardView: View {
             VStack(spacing: 16) {
               Image(systemName: "exclamationmark.triangle")
                 .font(.largeTitle)
-                .foregroundColor(themeColorOption.color)
+                .foregroundColor(themeColor.color)
               Text(errorMessage)
                 .multilineTextAlignment(.center)
               Button("Retry") {

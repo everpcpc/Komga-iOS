@@ -10,8 +10,6 @@ import SwiftUI
 struct ReadListDetailView: View {
   let readListId: String
 
-  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
-
   @Environment(\.dismiss) private var dismiss
 
   @State private var bookViewModel = BookViewModel()

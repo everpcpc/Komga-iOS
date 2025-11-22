@@ -16,7 +16,7 @@ struct ReaderControlsView: View {
   let currentBook: Book?
   let onDismiss: () -> Void
 
-  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
+  @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
 
   @State private var saveImageResult: SaveImageResult?
   @State private var showSaveAlert = false
@@ -50,7 +50,7 @@ struct ReaderControlsView: View {
               .font(.title2)
               .foregroundColor(.white)
               .padding()
-              .background(themeColorOption.color.opacity(0.8))
+              .background(themeColor.color.opacity(0.8))
               .clipShape(Circle())
           }
           .frame(minWidth: 40, minHeight: 40)
@@ -67,7 +67,7 @@ struct ReaderControlsView: View {
               .foregroundColor(.white)
               .padding(.horizontal, 16)
               .padding(.vertical, 8)
-              .background(themeColorOption.color.opacity(0.8))
+              .background(themeColor.color.opacity(0.8))
               .cornerRadius(20)
               .monospacedDigit()
           }
@@ -84,7 +84,7 @@ struct ReaderControlsView: View {
               .font(.title3)
               .foregroundColor(.white)
               .padding()
-              .background(themeColorOption.color.opacity(0.8))
+              .background(themeColor.color.opacity(0.8))
               .clipShape(Circle())
           }
           .frame(minWidth: 40, minHeight: 40)
@@ -106,7 +106,7 @@ struct ReaderControlsView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .background(themeColorOption.color.opacity(0.8))
+        .background(themeColor.color.opacity(0.8))
         .cornerRadius(12)
       }
 
@@ -125,7 +125,7 @@ struct ReaderControlsView: View {
               .font(.title3)
               .foregroundColor(.white)
               .padding()
-              .background(themeColorOption.color.opacity(0.8))
+              .background(themeColor.color.opacity(0.8))
               .clipShape(Circle())
           }
           .frame(minWidth: 40, minHeight: 40)
@@ -143,7 +143,7 @@ struct ReaderControlsView: View {
               .font(.title3)
               .foregroundColor(.white)
               .padding()
-              .background(themeColorOption.color.opacity(0.8))
+              .background(themeColor.color.opacity(0.8))
               .clipShape(Circle())
           }
           .frame(minWidth: 40, minHeight: 40)

@@ -13,7 +13,7 @@ struct EndPageView: View {
   let onNextBook: (String) -> Void
   let isRTL: Bool
 
-  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
+  @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
 
   var body: some View {
     VStack(spacing: 12) {
@@ -35,7 +35,7 @@ struct EndPageView: View {
             .padding(.vertical, 12)
             .background(
               RoundedRectangle(cornerRadius: 25)
-                .fill(themeColorOption.color.opacity(0.85))
+                .fill(themeColor.color.opacity(0.85))
                 .overlay(
                   RoundedRectangle(cornerRadius: 25)
                     .stroke(Color.white.opacity(0.2), lineWidth: 1)
@@ -60,7 +60,7 @@ struct EndPageView: View {
                 .font(.system(size: 16, weight: .semibold))
             }
           }
-          .foregroundColor(themeColorOption.color)
+          .foregroundColor(themeColor.color)
           .padding(.horizontal, 20)
           .padding(.vertical, 12)
           .background(
@@ -68,7 +68,7 @@ struct EndPageView: View {
               .fill(Color.clear)
               .overlay(
                 RoundedRectangle(cornerRadius: 25)
-                  .stroke(themeColorOption.color.opacity(0.5), lineWidth: 1)
+                  .stroke(themeColor.color.opacity(0.5), lineWidth: 1)
               )
           )
         }
@@ -89,7 +89,7 @@ struct EndPageView: View {
             .padding(.vertical, 12)
             .background(
               RoundedRectangle(cornerRadius: 25)
-                .fill(themeColorOption.color.opacity(0.85))
+                .fill(themeColor.color.opacity(0.85))
                 .overlay(
                   RoundedRectangle(cornerRadius: 25)
                     .stroke(Color.white.opacity(0.2), lineWidth: 1)

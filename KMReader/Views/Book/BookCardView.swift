@@ -14,7 +14,6 @@ struct BookCardView: View {
   var onBookUpdated: (() -> Void)? = nil
 
   @AppStorage("showBookCardSeriesTitle") private var showSeriesTitle: Bool = true
-  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
 
   @State private var readerState: BookReaderState?
   @State private var showReadListPicker = false

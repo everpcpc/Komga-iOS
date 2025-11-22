@@ -16,7 +16,6 @@ struct SeriesBrowseView: View {
   @AppStorage("seriesBrowseOptions") private var browseOpts: SeriesBrowseOptions =
     SeriesBrowseOptions()
   @AppStorage("selectedLibraryId") private var selectedLibraryId: String = ""
-  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
   @AppStorage("browseColumns") private var browseColumns: BrowseColumns = BrowseColumns()
   @AppStorage("browseLayout") private var browseLayout: BrowseLayoutMode = .grid
 
@@ -43,7 +42,6 @@ struct SeriesBrowseView: View {
         emptyIcon: "books.vertical",
         emptyTitle: "No series found",
         emptyMessage: "Try selecting a different library.",
-        themeColor: themeColorOption.color,
         onRetry: {
           Task {
             await viewModel.loadSeries(

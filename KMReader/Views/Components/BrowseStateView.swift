@@ -15,9 +15,10 @@ struct BrowseStateView<Content: View>: View {
   let emptyIcon: String
   let emptyTitle: String
   let emptyMessage: String
-  let themeColor: Color
   let onRetry: () -> Void
   @ViewBuilder let content: () -> Content
+
+  @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
 
   var body: some View {
     Group {
@@ -29,7 +30,7 @@ struct BrowseStateView<Content: View>: View {
         VStack(spacing: 16) {
           Image(systemName: "exclamationmark.triangle")
             .font(.largeTitle)
-            .foregroundColor(themeColor)
+            .foregroundColor(themeColor.color)
           Text(errorMessage)
             .multilineTextAlignment(.center)
           Button("Retry") {

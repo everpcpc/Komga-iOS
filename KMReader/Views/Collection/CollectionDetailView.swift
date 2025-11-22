@@ -10,8 +10,6 @@ import SwiftUI
 struct CollectionDetailView: View {
   let collectionId: String
 
-  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
-
   @Environment(\.dismiss) private var dismiss
 
   @State private var seriesViewModel = SeriesViewModel()

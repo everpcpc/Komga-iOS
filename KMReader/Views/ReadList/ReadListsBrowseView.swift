@@ -17,7 +17,6 @@ struct ReadListsBrowseView: View {
   @AppStorage("readListSortOptions") private var sortOpts: SimpleSortOptions =
     SimpleSortOptions()
   @AppStorage("selectedLibraryId") private var selectedLibraryId: String = ""
-  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
   @AppStorage("browseColumns") private var browseColumns: BrowseColumns = BrowseColumns()
   @AppStorage("browseLayout") private var browseLayout: BrowseLayoutMode = .grid
   @State private var viewModel = ReadListViewModel()
@@ -43,7 +42,6 @@ struct ReadListsBrowseView: View {
         emptyIcon: "list.bullet.rectangle",
         emptyTitle: "No read lists found",
         emptyMessage: "Try selecting a different library.",
-        themeColor: themeColorOption.color,
         onRetry: {
           Task {
             await loadReadLists(refresh: true)

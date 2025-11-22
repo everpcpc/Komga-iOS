@@ -12,7 +12,7 @@ struct PageJumpSheetView: View {
   let currentPage: Int
   let onJump: (Int) -> Void
 
-  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
+  @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
 
   @Environment(\.dismiss) private var dismiss
   @State private var pageValue: Int
@@ -72,7 +72,7 @@ struct PageJumpSheetView: View {
                 in: 1...Double(maxPage),
                 step: 1
               )
-              .tint(themeColorOption.color)
+              .tint(themeColor.color)
 
               HStack {
                 Text("1")

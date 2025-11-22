@@ -12,7 +12,6 @@ struct SeriesRowView: View {
   var onActionCompleted: (() -> Void)? = nil
 
   @State private var actionErrorMessage: String?
-  @AppStorage("themeColorName") private var themeColorOption: ThemeColorOption = .orange
   @State private var showCollectionPicker = false
 
   private var thumbnailURL: URL? {
