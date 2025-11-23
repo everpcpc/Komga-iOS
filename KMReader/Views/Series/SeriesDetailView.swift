@@ -104,60 +104,35 @@ struct SeriesDetailView: View {
                     }
                   }
 
-                  // Additional rows: Status, Age Rating, Language, Reading Direction (max 2 per row)
-                  if let status = series.metadata.status, !status.isEmpty {
-                    HStack(spacing: 6) {
+                  // Additional info: Status, Age Rating, Language, Reading Direction (all in one row)
+                  HStack(spacing: 6) {
+                    if let status = series.metadata.status, !status.isEmpty {
                       InfoChip(
                         label: series.statusDisplayName,
                         backgroundColor: series.statusColor.opacity(0.8),
                         foregroundColor: .white
                       )
-                      if let ageRating = series.metadata.ageRating, ageRating > 0 {
-                        InfoChip(
-                          label: "\(ageRating)+",
-                          backgroundColor: ageRating > 16 ? Color.red : Color.green,
-                          foregroundColor: .white
-                        )
-                      } else {
-                        Spacer()
-                      }
                     }
-                  } else if let ageRating = series.metadata.ageRating, ageRating > 0 {
-                    HStack(spacing: 6) {
+                    if let ageRating = series.metadata.ageRating, ageRating > 0 {
                       InfoChip(
                         label: "\(ageRating)+",
                         backgroundColor: ageRating > 16 ? Color.red : Color.green,
                         foregroundColor: .white
                       )
-                      Spacer()
                     }
-                  }
-
-                  if let language = series.metadata.language, !language.isEmpty {
-                    HStack(spacing: 6) {
+                    if let language = series.metadata.language, !language.isEmpty {
                       InfoChip(
                         label: languageDisplayName(language),
                         backgroundColor: Color.purple.opacity(0.2),
                         foregroundColor: .purple
                       )
-                      if let direction = series.metadata.readingDirection, !direction.isEmpty {
-                        InfoChip(
-                          label: ReadingDirection.fromString(direction).displayName,
-                          backgroundColor: Color.cyan.opacity(0.2),
-                          foregroundColor: .cyan
-                        )
-                      } else {
-                        Spacer()
-                      }
                     }
-                  } else if let direction = series.metadata.readingDirection, !direction.isEmpty {
-                    HStack(spacing: 6) {
+                    if let direction = series.metadata.readingDirection, !direction.isEmpty {
                       InfoChip(
                         label: ReadingDirection.fromString(direction).displayName,
                         backgroundColor: Color.cyan.opacity(0.2),
                         foregroundColor: .cyan
                       )
-                      Spacer()
                     }
                   }
 
@@ -179,9 +154,15 @@ struct SeriesDetailView: View {
 
                 // Publisher
                 if let publisher = series.metadata.publisher, !publisher.isEmpty {
-                  Text(publisher)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                  HStack(alignment: .top, spacing: 4) {
+                    Text("Publisher:")
+                      .font(.caption)
+                      .foregroundColor(.secondary)
+                      .frame(width: 60, alignment: .leading)
+                    Text(publisher)
+                      .font(.caption)
+                      .foregroundColor(.primary)
+                  }
                 }
 
                 // Release date chip
@@ -215,16 +196,21 @@ struct SeriesDetailView: View {
 
                 // Genres
                 if let genres = series.metadata.genres, !genres.isEmpty {
-                  ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
-                      ForEach(genres.sorted(), id: \.self) { genre in
-                        Text(genre)
-                          .font(.caption)
-                          .padding(.horizontal, 8)
-                          .padding(.vertical, 4)
-                          .background(Color.blue.opacity(0.1))
-                          .foregroundColor(.blue)
-                          .cornerRadius(4)
+                  HStack(alignment: .center, spacing: 4) {
+                    Text("Genres:")
+                      .font(.caption)
+                      .foregroundColor(.secondary)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                      HStack(spacing: 6) {
+                        ForEach(genres.sorted(), id: \.self) { genre in
+                          Text(genre)
+                            .font(.caption)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.blue.opacity(0.1))
+                            .foregroundColor(.blue)
+                            .cornerRadius(4)
+                        }
                       }
                     }
                   }
@@ -232,16 +218,21 @@ struct SeriesDetailView: View {
 
                 // Tags
                 if let tags = series.metadata.tags, !tags.isEmpty {
-                  ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
-                      ForEach(tags.sorted(), id: \.self) { tag in
-                        Text(tag)
-                          .font(.caption)
-                          .padding(.horizontal, 8)
-                          .padding(.vertical, 4)
-                          .background(Color.secondary.opacity(0.1))
-                          .foregroundColor(.secondary)
-                          .cornerRadius(4)
+                  HStack(alignment: .center, spacing: 4) {
+                    Text("Tags:")
+                      .font(.caption)
+                      .foregroundColor(.secondary)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                      HStack(spacing: 6) {
+                        ForEach(tags.sorted(), id: \.self) { tag in
+                          Text(tag)
+                            .font(.caption)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.secondary.opacity(0.1))
+                            .foregroundColor(.secondary)
+                            .cornerRadius(4)
+                        }
                       }
                     }
                   }
