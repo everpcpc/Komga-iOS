@@ -89,7 +89,8 @@ struct BooksListViewForReadList: View {
                       cardWidth: layoutHelper.cardWidth,
                       onBookUpdated: {
                         refreshBooks()
-                      }
+                      },
+                      showSeriesTitle: true,
                     )
                     .allowsHitTesting(false)
                     .overlay(alignment: .topTrailing) {
@@ -131,7 +132,8 @@ struct BooksListViewForReadList: View {
                       cardWidth: layoutHelper.cardWidth,
                       onBookUpdated: {
                         refreshBooks()
-                      }
+                      },
+                      showSeriesTitle: true,
                     )
                   }
                 }

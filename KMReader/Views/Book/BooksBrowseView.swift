@@ -104,7 +104,8 @@ struct BooksBrowseView: View {
               await viewModel.loadBrowseBooks(
                 browseOpts: browseOpts, searchText: searchText, refresh: true)
             }
-          }
+          },
+          showSeriesTitle: true,
         )
         .onAppear {
           if index >= viewModel.books.count - 3 {

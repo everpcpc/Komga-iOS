@@ -32,12 +32,12 @@ struct BookRowView: View {
     return !readProgress.completed
   }
 
-  var showTitle: Bool {
+  var shouldShowSeriesTitle: Bool {
     showSeriesTitle && !book.seriesTitle.isEmpty
   }
 
   var bookTitleLineLimit: Int {
-    showTitle ? 1 : 2
+    shouldShowSeriesTitle ? 1 : 2
   }
 
   var body: some View {
@@ -45,7 +45,7 @@ struct BookRowView: View {
       ThumbnailImage(url: thumbnailURL, showPlaceholder: false, width: 60, cornerRadius: 4)
 
       VStack(alignment: .leading, spacing: 4) {
-        if showSeriesTitle && !book.seriesTitle.isEmpty {
+        if shouldShowSeriesTitle {
           Text(book.seriesTitle)
             .font(.footnote)
             .foregroundColor(.secondary)

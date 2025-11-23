@@ -12,8 +12,9 @@ struct BookCardView: View {
   var viewModel: BookViewModel
   let cardWidth: CGFloat
   var onBookUpdated: (() -> Void)? = nil
+  var showSeriesTitle: Bool = false
 
-  @AppStorage("showBookCardSeriesTitle") private var showSeriesTitle: Bool = true
+  @AppStorage("showBookCardSeriesTitle") private var showBookCardSeriesTitle: Bool = true
 
   @State private var readerState: BookReaderState?
   @State private var showReadListPicker = false
@@ -46,12 +47,12 @@ struct BookCardView: View {
     return !readProgress.completed
   }
 
-  var showTitle: Bool {
-    showSeriesTitle && !book.seriesTitle.isEmpty
+  var shouldShowSeriesTitle: Bool {
+    showSeriesTitle && showBookCardSeriesTitle && !book.seriesTitle.isEmpty
   }
 
   var bookTitleLineLimit: Int {
-    showTitle ? 1 : 2
+    shouldShowSeriesTitle ? 1 : 2
   }
 
   var body: some View {
@@ -68,10 +69,10 @@ struct BookCardView: View {
       }
 
       VStack(alignment: .leading, spacing: 2) {
-        if showTitle {
+        if shouldShowSeriesTitle {
           Text(book.seriesTitle)
             .font(.caption)
-            .foregroundColor(.primary)
+            .foregroundColor(.secondary)
             .lineLimit(1)
         }
         Text("\(book.metadata.number) - \(book.metadata.title)")

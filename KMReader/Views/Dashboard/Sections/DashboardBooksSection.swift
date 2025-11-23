@@ -27,7 +27,8 @@ struct DashboardBooksSection: View {
               book: book,
               viewModel: bookViewModel,
               cardWidth: 120,
-              onBookUpdated: onBookUpdated
+              onBookUpdated: onBookUpdated,
+              showSeriesTitle: true,
             )
           }
         }.padding()

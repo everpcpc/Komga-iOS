@@ -45,7 +45,8 @@ struct BooksListViewForSeries: View {
                   cardWidth: layoutHelper.cardWidth,
                   onBookUpdated: {
                     refreshBooks()
-                  }
+                  },
+                  showSeriesTitle: false,
                 )
                 .onAppear {
                   if book.id == bookViewModel.books.last?.id {
@@ -68,7 +69,8 @@ struct BooksListViewForSeries: View {
                   },
                   onBookUpdated: {
                     refreshBooks()
-                  }
+                  },
+                  showSeriesTitle: false,
                 )
                 .onAppear {
                   if book.id == bookViewModel.books.last?.id {
