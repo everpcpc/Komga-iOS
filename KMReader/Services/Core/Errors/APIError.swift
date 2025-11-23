@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum APIError: Error, CustomStringConvertible {
+enum APIError: Error, CustomStringConvertible, LocalizedError {
   case invalidURL
   case invalidResponse
   case httpError(Int, String)
@@ -96,5 +96,9 @@ enum APIError: Error, CustomStringConvertible {
     case .serverError:
       return "Server error. Please try again later."
     }
+  }
+
+  var errorDescription: String? {
+    description
   }
 }
