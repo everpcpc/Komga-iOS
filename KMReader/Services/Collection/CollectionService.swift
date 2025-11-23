@@ -152,4 +152,22 @@ class CollectionService {
       body: jsonData
     )
   }
+
+  func updateCollection(collectionId: String, name: String? = nil, ordered: Bool? = nil)
+    async throws
+  {
+    var body: [String: Any] = [:]
+    if let name = name {
+      body["name"] = name
+    }
+    if let ordered = ordered {
+      body["ordered"] = ordered
+    }
+    let jsonData = try JSONSerialization.data(withJSONObject: body)
+    let _: EmptyResponse = try await apiClient.request(
+      path: "/api/v1/collections/\(collectionId)",
+      method: "PATCH",
+      body: jsonData
+    )
+  }
 }

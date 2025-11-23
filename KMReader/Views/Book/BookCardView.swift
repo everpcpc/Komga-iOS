@@ -18,6 +18,7 @@ struct BookCardView: View {
   @State private var readerState: BookReaderState?
   @State private var showReadListPicker = false
   @State private var showDeleteConfirmation = false
+  @State private var showEditSheet = false
 
   private var thumbnailURL: URL? {
     BookService.shared.getBookThumbnailURL(id: book.id)
@@ -115,6 +116,9 @@ struct BookCardView: View {
         },
         onDeleteRequested: {
           showDeleteConfirmation = true
+        },
+        onEditRequested: {
+          showEditSheet = true
         }
       )
     }
@@ -137,6 +141,12 @@ struct BookCardView: View {
           onBookUpdated?()
         }
       )
+    }
+    .sheet(isPresented: $showEditSheet) {
+      BookEditSheet(book: book)
+        .onDisappear {
+          onBookUpdated?()
+        }
     }
     .fullScreenCover(
       isPresented: isBookReaderPresented,

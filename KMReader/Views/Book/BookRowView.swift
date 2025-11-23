@@ -16,6 +16,7 @@ struct BookRowView: View {
 
   @State private var showReadListPicker = false
   @State private var showDeleteConfirmation = false
+  @State private var showEditSheet = false
 
   private var thumbnailURL: URL? {
     BookService.shared.getBookThumbnailURL(id: book.id)
@@ -115,6 +116,9 @@ struct BookRowView: View {
         },
         onDeleteRequested: {
           showDeleteConfirmation = true
+        },
+        onEditRequested: {
+          showEditSheet = true
         }
       )
     }
@@ -137,6 +141,12 @@ struct BookRowView: View {
           onBookUpdated?()
         }
       )
+    }
+    .sheet(isPresented: $showEditSheet) {
+      BookEditSheet(book: book)
+        .onDisappear {
+          onBookUpdated?()
+        }
     }
   }
 

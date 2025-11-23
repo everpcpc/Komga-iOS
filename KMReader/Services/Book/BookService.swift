@@ -226,4 +226,13 @@ class BookService {
       sort: "createdDate,desc"
     )
   }
+
+  func updateBookMetadata(bookId: String, metadata: [String: Any]) async throws {
+    let jsonData = try JSONSerialization.data(withJSONObject: metadata)
+    let _: EmptyResponse = try await apiClient.request(
+      path: "/api/v1/books/\(bookId)/metadata",
+      method: "PATCH",
+      body: jsonData
+    )
+  }
 }

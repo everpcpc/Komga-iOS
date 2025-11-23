@@ -13,6 +13,7 @@ struct SeriesContextMenu: View {
   var onActionCompleted: (() -> Void)?
   var onShowCollectionPicker: (() -> Void)? = nil
   var onDeleteRequested: (() -> Void)? = nil
+  var onEditRequested: (() -> Void)? = nil
 
   private var canMarkAsRead: Bool {
     series.booksUnreadCount > 0
@@ -25,6 +26,15 @@ struct SeriesContextMenu: View {
   var body: some View {
     Group {
       Menu {
+        Button {
+          onEditRequested?()
+        } label: {
+          Label("Edit", systemImage: "pencil")
+        }
+        .disabled(!AppConfig.isAdmin)
+
+        Divider()
+
         Button {
           analyzeSeries()
         } label: {

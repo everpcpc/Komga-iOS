@@ -14,7 +14,10 @@ enum ReadingDirection: CaseIterable, Hashable {
   case vertical
   case webtoon
 
-  static func fromString(_ direction: String) -> ReadingDirection {
+  static func fromString(_ direction: String?) -> ReadingDirection {
+    guard let direction = direction else {
+      return .ltr
+    }
     switch direction.uppercased() {
     case "LEFT_TO_RIGHT":
       return .ltr
@@ -52,6 +55,19 @@ enum ReadingDirection: CaseIterable, Hashable {
       return "arrow.up.arrow.down.square"
     case .webtoon:
       return "arrow.up.and.down.square"
+    }
+  }
+
+  var apiValue: String {
+    switch self {
+    case .ltr:
+      return "LEFT_TO_RIGHT"
+    case .rtl:
+      return "RIGHT_TO_LEFT"
+    case .vertical:
+      return "VERTICAL"
+    case .webtoon:
+      return "WEBTOON"
     }
   }
 }

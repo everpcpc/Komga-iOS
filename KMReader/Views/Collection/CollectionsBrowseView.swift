@@ -52,14 +52,22 @@ struct CollectionsBrowseView: View {
           LazyVGrid(columns: layoutHelper.columns, spacing: spacing) {
             ForEach(Array(viewModel.collections.enumerated()), id: \.element.id) {
               index, collection in
-              CollectionCardView(collection: collection, width: layoutHelper.cardWidth)
-                .onAppear {
-                  if index >= viewModel.collections.count - 3 {
-                    Task {
-                      await loadCollections(refresh: false)
-                    }
+              CollectionCardView(
+                collection: collection,
+                width: layoutHelper.cardWidth,
+                onActionCompleted: {
+                  Task {
+                    await loadCollections(refresh: true)
                   }
                 }
+              )
+              .onAppear {
+                if index >= viewModel.collections.count - 3 {
+                  Task {
+                    await loadCollections(refresh: false)
+                  }
+                }
+              }
             }
           }
           .padding(spacing)
@@ -67,14 +75,21 @@ struct CollectionsBrowseView: View {
           LazyVStack(spacing: spacing) {
             ForEach(Array(viewModel.collections.enumerated()), id: \.element.id) {
               index, collection in
-              CollectionRowView(collection: collection)
-                .onAppear {
-                  if index >= viewModel.collections.count - 3 {
-                    Task {
-                      await loadCollections(refresh: false)
-                    }
+              CollectionRowView(
+                collection: collection,
+                onActionCompleted: {
+                  Task {
+                    await loadCollections(refresh: true)
                   }
                 }
+              )
+              .onAppear {
+                if index >= viewModel.collections.count - 3 {
+                  Task {
+                    await loadCollections(refresh: false)
+                  }
+                }
+              }
             }
           }
           .padding(spacing)

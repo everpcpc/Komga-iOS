@@ -18,6 +18,7 @@ struct CollectionDetailView: View {
   @State private var seriesViewModel = SeriesViewModel()
   @State private var collection: KomgaCollection?
   @State private var showDeleteConfirmation = false
+  @State private var showEditSheet = false
 
   private var thumbnailURL: URL? {
     collection.flatMap { CollectionService.shared.getCollectionThumbnailURL(id: $0.id) }
@@ -117,6 +118,15 @@ struct CollectionDetailView: View {
             }
 
             Menu {
+              Button {
+                showEditSheet = true
+              } label: {
+                Label("Edit", systemImage: "pencil")
+              }
+              .disabled(!AppConfig.isAdmin)
+
+              Divider()
+
               Button(role: .destructive) {
                 showDeleteConfirmation = true
               } label: {
@@ -127,6 +137,16 @@ struct CollectionDetailView: View {
               Image(systemName: "ellipsis.circle")
             }
           }
+        }
+      }
+      .sheet(isPresented: $showEditSheet) {
+        if let collection = collection {
+          CollectionEditSheet(collection: collection)
+            .onDisappear {
+              Task {
+                await loadCollectionDetails()
+              }
+            }
         }
       }
       .task {

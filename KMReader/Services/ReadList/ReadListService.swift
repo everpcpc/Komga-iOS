@@ -156,4 +156,25 @@ class ReadListService {
       body: jsonData
     )
   }
+
+  func updateReadList(
+    readListId: String, name: String? = nil, summary: String? = nil, ordered: Bool? = nil
+  ) async throws {
+    var body: [String: Any] = [:]
+    if let name = name {
+      body["name"] = name
+    }
+    if let summary = summary {
+      body["summary"] = summary
+    }
+    if let ordered = ordered {
+      body["ordered"] = ordered
+    }
+    let jsonData = try JSONSerialization.data(withJSONObject: body)
+    let _: EmptyResponse = try await apiClient.request(
+      path: "/api/v1/readlists/\(readListId)",
+      method: "PATCH",
+      body: jsonData
+    )
+  }
 }

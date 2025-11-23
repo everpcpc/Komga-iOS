@@ -51,28 +51,43 @@ struct ReadListsBrowseView: View {
         case .grid:
           LazyVGrid(columns: layoutHelper.columns, spacing: spacing) {
             ForEach(Array(viewModel.readLists.enumerated()), id: \.element.id) { index, readList in
-              ReadListCardView(readList: readList, width: layoutHelper.cardWidth)
-                .onAppear {
-                  if index >= viewModel.readLists.count - 3 {
-                    Task {
-                      await loadReadLists(refresh: false)
-                    }
+              ReadListCardView(
+                readList: readList,
+                width: layoutHelper.cardWidth,
+                onActionCompleted: {
+                  Task {
+                    await loadReadLists(refresh: true)
                   }
                 }
+              )
+              .onAppear {
+                if index >= viewModel.readLists.count - 3 {
+                  Task {
+                    await loadReadLists(refresh: false)
+                  }
+                }
+              }
             }
           }
           .padding(spacing)
         case .list:
           LazyVStack(spacing: spacing) {
             ForEach(Array(viewModel.readLists.enumerated()), id: \.element.id) { index, readList in
-              ReadListRowView(readList: readList)
-                .onAppear {
-                  if index >= viewModel.readLists.count - 3 {
-                    Task {
-                      await loadReadLists(refresh: false)
-                    }
+              ReadListRowView(
+                readList: readList,
+                onActionCompleted: {
+                  Task {
+                    await loadReadLists(refresh: true)
                   }
                 }
+              )
+              .onAppear {
+                if index >= viewModel.readLists.count - 3 {
+                  Task {
+                    await loadReadLists(refresh: false)
+                  }
+                }
+              }
             }
           }
           .padding(spacing)

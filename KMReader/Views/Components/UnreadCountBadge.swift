@@ -26,6 +26,6 @@ struct UnreadCountBadge: View {
       .padding(.vertical, 2)
       .background(themeColor.color)
       .clipShape(Capsule())
-      .padding(4)
+      .padding(2)
   }
 }

@@ -171,4 +171,13 @@ class SeriesService {
       method: "DELETE"
     )
   }
+
+  func updateSeriesMetadata(seriesId: String, metadata: [String: Any]) async throws {
+    let jsonData = try JSONSerialization.data(withJSONObject: metadata)
+    let _: EmptyResponse = try await apiClient.request(
+      path: "/api/v1/series/\(seriesId)/metadata",
+      method: "PATCH",
+      body: jsonData
+    )
+  }
 }

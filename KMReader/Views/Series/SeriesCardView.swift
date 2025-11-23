@@ -16,6 +16,7 @@ struct SeriesCardView: View {
 
   @State private var showCollectionPicker = false
   @State private var showDeleteConfirmation = false
+  @State private var showEditSheet = false
 
   private var thumbnailURL: URL? {
     SeriesService.shared.getSeriesThumbnailURL(id: series.id)
@@ -66,6 +67,9 @@ struct SeriesCardView: View {
         },
         onDeleteRequested: {
           showDeleteConfirmation = true
+        },
+        onEditRequested: {
+          showEditSheet = true
         }
       )
     }
@@ -88,6 +92,12 @@ struct SeriesCardView: View {
           onActionCompleted?()
         }
       )
+    }
+    .sheet(isPresented: $showEditSheet) {
+      SeriesEditSheet(series: series)
+        .onDisappear {
+          onActionCompleted?()
+        }
     }
   }
 

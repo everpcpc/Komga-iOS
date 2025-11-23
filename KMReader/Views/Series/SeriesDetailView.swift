@@ -22,6 +22,7 @@ struct SeriesDetailView: View {
   @State private var readerState: BookReaderState?
   @State private var showDeleteConfirmation = false
   @State private var showCollectionPicker = false
+  @State private var showEditSheet = false
 
   private var thumbnailURL: URL? {
     guard let series = series else { return nil }
@@ -324,6 +325,15 @@ struct SeriesDetailView: View {
 
             Menu {
               Button {
+                showEditSheet = true
+              } label: {
+                Label("Edit", systemImage: "pencil")
+              }
+              .disabled(!AppConfig.isAdmin)
+
+              Divider()
+
+              Button {
                 analyzeSeries()
               } label: {
                 Label("Analyze", systemImage: "waveform.path.ecg")
@@ -392,6 +402,16 @@ struct SeriesDetailView: View {
             }
           }
         )
+      }
+      .sheet(isPresented: $showEditSheet) {
+        if let series = series {
+          SeriesEditSheet(series: series)
+            .onDisappear {
+              Task {
+                await refreshSeriesData()
+              }
+            }
+        }
       }
       .task {
         await loadSeriesDetails()

@@ -16,6 +16,7 @@ struct BookDetailView: View {
   @State private var readerState: BookReaderState?
   @State private var showDeleteConfirmation = false
   @State private var showReadListPicker = false
+  @State private var showEditSheet = false
 
   private var thumbnailURL: URL? {
     return BookService.shared.getBookThumbnailURL(id: bookId)
@@ -233,6 +234,15 @@ struct BookDetailView: View {
       ToolbarItem(placement: .topBarTrailing) {
         Menu {
           Button {
+            showEditSheet = true
+          } label: {
+            Label("Edit", systemImage: "pencil")
+          }
+          .disabled(!AppConfig.isAdmin)
+
+          Divider()
+
+          Button {
             analyzeBook()
           } label: {
             Label("Analyze", systemImage: "waveform.path.ecg")
@@ -306,6 +316,16 @@ struct BookDetailView: View {
           }
         }
       )
+    }
+    .sheet(isPresented: $showEditSheet) {
+      if let book = book {
+        BookEditSheet(book: book)
+          .onDisappear {
+            Task {
+              await loadBook()
+            }
+          }
+      }
     }
     .task {
       await loadBook()

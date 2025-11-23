@@ -10,6 +10,10 @@ import SwiftUI
 struct ReadListCardView: View {
   let readList: ReadList
   let width: CGFloat
+  var onActionCompleted: (() -> Void)? = nil
+
+  @State private var showEditSheet = false
+  @State private var showDeleteConfirmation = false
 
   private var bookCountText: String {
     let count = readList.bookIds.count
@@ -45,5 +49,47 @@ struct ReadListCardView: View {
       }
     }
     .buttonStyle(.plain)
+    .contextMenu {
+      ReadListContextMenu(
+        readList: readList,
+        onActionCompleted: onActionCompleted,
+        onDeleteRequested: {
+          showDeleteConfirmation = true
+        },
+        onEditRequested: {
+          showEditSheet = true
+        }
+      )
+    }
+    .alert("Delete Read List", isPresented: $showDeleteConfirmation) {
+      Button("Cancel", role: .cancel) {}
+      Button("Delete", role: .destructive) {
+        deleteReadList()
+      }
+    } message: {
+      Text("Are you sure you want to delete this read list? This action cannot be undone.")
+    }
+    .sheet(isPresented: $showEditSheet) {
+      ReadListEditSheet(readList: readList)
+        .onDisappear {
+          onActionCompleted?()
+        }
+    }
+  }
+
+  private func deleteReadList() {
+    Task {
+      do {
+        try await ReadListService.shared.deleteReadList(readListId: readList.id)
+        await MainActor.run {
+          ErrorManager.shared.notify(message: "Read list deleted")
+          onActionCompleted?()
+        }
+      } catch {
+        await MainActor.run {
+          ErrorManager.shared.alert(error: error)
+        }
+      }
+    }
   }
 }

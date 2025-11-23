@@ -19,6 +19,7 @@ struct ReadListDetailView: View {
   @State private var readList: ReadList?
   @State private var readerState: BookReaderState?
   @State private var showDeleteConfirmation = false
+  @State private var showEditSheet = false
 
   private var thumbnailURL: URL? {
     readList.flatMap { ReadListService.shared.getReadListThumbnailURL(id: $0.id) }
@@ -150,6 +151,15 @@ struct ReadListDetailView: View {
             }
 
             Menu {
+              Button {
+                showEditSheet = true
+              } label: {
+                Label("Edit", systemImage: "pencil")
+              }
+              .disabled(!AppConfig.isAdmin)
+
+              Divider()
+
               Button(role: .destructive) {
                 showDeleteConfirmation = true
               } label: {
@@ -160,6 +170,16 @@ struct ReadListDetailView: View {
               Image(systemName: "ellipsis.circle")
             }
           }
+        }
+      }
+      .sheet(isPresented: $showEditSheet) {
+        if let readList = readList {
+          ReadListEditSheet(readList: readList)
+            .onDisappear {
+              Task {
+                await loadReadListDetails()
+              }
+            }
         }
       }
       .task {

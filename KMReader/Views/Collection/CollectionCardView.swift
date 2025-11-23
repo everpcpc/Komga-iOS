@@ -10,6 +10,10 @@ import SwiftUI
 struct CollectionCardView: View {
   let collection: KomgaCollection
   let width: CGFloat
+  var onActionCompleted: (() -> Void)? = nil
+
+  @State private var showEditSheet = false
+  @State private var showDeleteConfirmation = false
 
   private var thumbnailURL: URL? {
     CollectionService.shared.getCollectionThumbnailURL(id: collection.id)
@@ -37,5 +41,47 @@ struct CollectionCardView: View {
       }
     }
     .buttonStyle(.plain)
+    .contextMenu {
+      CollectionContextMenu(
+        collection: collection,
+        onActionCompleted: onActionCompleted,
+        onDeleteRequested: {
+          showDeleteConfirmation = true
+        },
+        onEditRequested: {
+          showEditSheet = true
+        }
+      )
+    }
+    .alert("Delete Collection", isPresented: $showDeleteConfirmation) {
+      Button("Cancel", role: .cancel) {}
+      Button("Delete", role: .destructive) {
+        deleteCollection()
+      }
+    } message: {
+      Text("Are you sure you want to delete this collection? This action cannot be undone.")
+    }
+    .sheet(isPresented: $showEditSheet) {
+      CollectionEditSheet(collection: collection)
+        .onDisappear {
+          onActionCompleted?()
+        }
+    }
+  }
+
+  private func deleteCollection() {
+    Task {
+      do {
+        try await CollectionService.shared.deleteCollection(collectionId: collection.id)
+        await MainActor.run {
+          ErrorManager.shared.notify(message: "Collection deleted")
+          onActionCompleted?()
+        }
+      } catch {
+        await MainActor.run {
+          ErrorManager.shared.alert(error: error)
+        }
+      }
+    }
   }
 }

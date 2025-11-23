@@ -15,6 +15,7 @@ struct BookContextMenu: View {
   var onActionCompleted: (() -> Void)? = nil
   var onShowReadListPicker: (() -> Void)? = nil
   var onDeleteRequested: (() -> Void)? = nil
+  var onEditRequested: (() -> Void)? = nil
 
   private var isCompleted: Bool {
     book.readProgress?.completed ?? false
@@ -42,6 +43,15 @@ struct BookContextMenu: View {
       Divider()
 
       Menu {
+        Button {
+          onEditRequested?()
+        } label: {
+          Label("Edit", systemImage: "pencil")
+        }
+        .disabled(!AppConfig.isAdmin)
+
+        Divider()
+
         Button {
           analyzeBook()
         } label: {
