@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct BookReaderView: View {
-  let initialBookId: String
   let incognito: Bool
 
   @AppStorage("readerBackground") private var readerBackground: ReaderBackground = .system
@@ -29,7 +28,6 @@ struct BookReaderView: View {
   @State private var overlayTimer: Timer?
 
   init(bookId: String, incognito: Bool = false) {
-    self.initialBookId = bookId
     self.incognito = incognito
     self._currentBookId = State(initialValue: bookId)
   }
