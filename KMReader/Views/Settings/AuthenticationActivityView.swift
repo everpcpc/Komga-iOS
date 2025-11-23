@@ -11,7 +11,6 @@ struct AuthenticationActivityView: View {
   @State private var activities: [AuthenticationActivity] = []
   @State private var isLoading = false
   @State private var isLoadingMore = false
-  @State private var errorMessage: String?
   @State private var currentPage = 0
   @State private var hasMorePages = true
 
@@ -23,16 +22,6 @@ struct AuthenticationActivityView: View {
             Spacer()
             ProgressView()
             Spacer()
-          }
-        }
-      } else if let errorMessage = errorMessage, activities.isEmpty {
-        Section {
-          HStack {
-            Label("Error", systemImage: "exclamationmark.triangle")
-              .foregroundColor(.red)
-            Spacer()
-            Text(errorMessage)
-              .foregroundColor(.secondary)
           }
         }
       } else if activities.isEmpty {
@@ -144,7 +133,6 @@ struct AuthenticationActivityView: View {
     }
 
     isLoading = true
-    errorMessage = nil
 
     do {
       let page = try await AuthService.shared.getAuthenticationActivity(page: 0, size: 20)
@@ -152,7 +140,7 @@ struct AuthenticationActivityView: View {
       hasMorePages = !page.last
       currentPage = 1
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
 
     isLoading = false
@@ -169,7 +157,7 @@ struct AuthenticationActivityView: View {
       hasMorePages = !page.last
       currentPage += 1
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
 
     isLoadingMore = false

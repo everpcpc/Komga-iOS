@@ -193,7 +193,7 @@ struct PageImageView: View {
     } catch {
       await MainActor.run {
         isSaving = false
-        ErrorManager.shared.alert(message: "Failed to prepare file: \(error.localizedDescription)")
+        ErrorManager.shared.alert(message: "Failed to prepare file: \(error)")
       }
     }
   }

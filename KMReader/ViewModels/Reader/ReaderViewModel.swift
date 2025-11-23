@@ -146,7 +146,7 @@ class ReaderViewModel {
         }
       } catch {
         logger.error(
-          "❌ Failed to download page \(page.number) for book \(self.bookId): \(error.localizedDescription)"
+          "❌ Failed to download page \(page.number) for book \(self.bookId): \(error)"
         )
         return nil
       }

@@ -9,7 +9,6 @@ import SwiftUI
 
 struct SettingsMetricsView: View {
   @State private var isLoading = false
-  @State private var errorMessage: String?
 
   // All libraries metrics
   @State private var booksFileSize: Metric?
@@ -38,16 +37,6 @@ struct SettingsMetricsView: View {
             Spacer()
             ProgressView()
             Spacer()
-          }
-        }
-      } else if let errorMessage = errorMessage {
-        Section {
-          HStack {
-            Label("Error", systemImage: "exclamationmark.triangle")
-              .foregroundColor(.red)
-            Spacer()
-            Text(errorMessage)
-              .foregroundColor(.secondary)
           }
         }
       } else {
@@ -210,7 +199,6 @@ struct SettingsMetricsView: View {
 
   private func loadMetrics() async {
     isLoading = true
-    errorMessage = nil
 
     // Ensure libraries are loaded
     await LibraryManager.shared.loadLibraries()
@@ -253,7 +241,7 @@ struct SettingsMetricsView: View {
       tasksTotalTimeByType = totalTimeByType
 
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
 
     isLoading = false

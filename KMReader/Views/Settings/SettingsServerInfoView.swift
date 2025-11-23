@@ -10,7 +10,6 @@ import SwiftUI
 struct SettingsServerInfoView: View {
   @State private var serverInfo: ServerInfo?
   @State private var isLoading = false
-  @State private var errorMessage: String?
 
   var body: some View {
     List {
@@ -20,16 +19,6 @@ struct SettingsServerInfoView: View {
             Spacer()
             ProgressView()
             Spacer()
-          }
-        }
-      } else if let errorMessage = errorMessage {
-        Section {
-          HStack {
-            Label("Error", systemImage: "exclamationmark.triangle")
-              .foregroundColor(.red)
-            Spacer()
-            Text(errorMessage)
-              .foregroundColor(.secondary)
           }
         }
       } else if let serverInfo = serverInfo {
@@ -249,12 +238,11 @@ struct SettingsServerInfoView: View {
 
   private func loadServerInfo() async {
     isLoading = true
-    errorMessage = nil
 
     do {
       serverInfo = try await ManagementService.shared.getActuatorInfo()
     } catch {
-      errorMessage = error.localizedDescription
+      ErrorManager.shared.alert(error: error)
     }
 
     isLoading = false

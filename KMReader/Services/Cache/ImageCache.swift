@@ -115,7 +115,7 @@ class ImageCache {
       let dataSize = ByteCountFormatter.string(
         fromByteCount: Int64(data.count), countStyle: .binary)
       logger.error(
-        "❌ Failed to write image cache for bookId \(bookId) page \(page.number) (\(page.fileName)) (\(dataSize)): \(error.localizedDescription)"
+        "❌ Failed to write image cache for bookId \(bookId) page \(page.number) (\(page.fileName)) (\(dataSize)): \(error)"
       )
       // If write fails, don't update cache size/count
       // This ensures cache state remains consistent
