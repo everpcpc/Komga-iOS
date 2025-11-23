@@ -31,4 +31,9 @@ struct BookPage: Codable, Identifiable {
       ?? mediaType
     return UTType(mimeType: mimeType)
   }
+
+  var isPortrait: Bool {
+    guard let width = width, let height = height else { return false }
+    return height > width
+  }
 }

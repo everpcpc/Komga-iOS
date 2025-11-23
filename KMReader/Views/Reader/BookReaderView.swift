@@ -11,6 +11,7 @@ struct BookReaderView: View {
   let incognito: Bool
 
   @AppStorage("readerBackground") private var readerBackground: ReaderBackground = .system
+  @AppStorage("pageLayout") private var pageLayout: PageLayout = .dual
 
   @Environment(\.dismiss) private var dismiss
 
@@ -43,10 +44,15 @@ struct BookReaderView: View {
     return viewModel.currentPageIndex >= viewModel.pages.count
   }
 
+  private func shouldUseDualPage(screenSize: CGSize) -> Bool {
+    guard screenSize.width > screenSize.height else { return false }  // Only in landscape
+    return pageLayout == .dual
+  }
+
   var body: some View {
     GeometryReader { geometry in
       let screenKey = "\(Int(geometry.size.width))x\(Int(geometry.size.height))"
-      let screenSize = geometry.size
+      let useDualPage = shouldUseDualPage(screenSize: geometry.size)
 
       ZStack {
         readerBackground.color.ignoresSafeArea()
@@ -56,48 +62,89 @@ struct BookReaderView: View {
           Group {
             switch readingDirection {
             case .ltr:
-              ComicPageView(
-                viewModel: viewModel,
-                nextBook: nextBook,
-                onDismiss: { dismiss() },
-                onNextBook: { openNextBook(nextBookId: $0) },
-                goToNextPage: goToNextPage,
-                goToPreviousPage: goToPreviousPage,
-                toggleControls: toggleControls,
-                screenSize: screenSize
-              ).ignoresSafeArea()
+              if useDualPage {
+                ComicDualPageView(
+                  viewModel: viewModel,
+                  nextBook: nextBook,
+                  onDismiss: { dismiss() },
+                  onNextBook: { openNextBook(nextBookId: $0) },
+                  goToNextPage: goToNextPage,
+                  goToPreviousPage: goToPreviousPage,
+                  toggleControls: toggleControls,
+                  screenSize: geometry.size
+                ).ignoresSafeArea()
+              } else {
+                ComicPageView(
+                  viewModel: viewModel,
+                  nextBook: nextBook,
+                  onDismiss: { dismiss() },
+                  onNextBook: { openNextBook(nextBookId: $0) },
+                  goToNextPage: goToNextPage,
+                  goToPreviousPage: goToPreviousPage,
+                  toggleControls: toggleControls,
+                  screenSize: geometry.size
+                ).ignoresSafeArea()
+              }
+
             case .rtl:
-              MangaPageView(
-                viewModel: viewModel,
-                nextBook: nextBook,
-                onDismiss: { dismiss() },
-                onNextBook: { openNextBook(nextBookId: $0) },
-                goToNextPage: goToNextPage,
-                goToPreviousPage: goToPreviousPage,
-                toggleControls: toggleControls,
-                screenSize: screenSize
-              ).ignoresSafeArea()
+              if useDualPage {
+                MangaDualPageView(
+                  viewModel: viewModel,
+                  nextBook: nextBook,
+                  onDismiss: { dismiss() },
+                  onNextBook: { openNextBook(nextBookId: $0) },
+                  goToNextPage: goToNextPage,
+                  goToPreviousPage: goToPreviousPage,
+                  toggleControls: toggleControls,
+                  screenSize: geometry.size
+                ).ignoresSafeArea()
+              } else {
+                MangaPageView(
+                  viewModel: viewModel,
+                  nextBook: nextBook,
+                  onDismiss: { dismiss() },
+                  onNextBook: { openNextBook(nextBookId: $0) },
+                  goToNextPage: goToNextPage,
+                  goToPreviousPage: goToPreviousPage,
+                  toggleControls: toggleControls,
+                  screenSize: geometry.size
+                ).ignoresSafeArea()
+              }
+
             case .vertical:
-              VerticalPageView(
-                viewModel: viewModel,
-                nextBook: nextBook,
-                onDismiss: { dismiss() },
-                onNextBook: { openNextBook(nextBookId: $0) },
-                goToNextPage: goToNextPage,
-                goToPreviousPage: goToPreviousPage,
-                toggleControls: toggleControls,
-                screenSize: screenSize
-              ).ignoresSafeArea()
+              if useDualPage {
+                VerticalDualPageView(
+                  viewModel: viewModel,
+                  nextBook: nextBook,
+                  onDismiss: { dismiss() },
+                  onNextBook: { openNextBook(nextBookId: $0) },
+                  goToNextPage: goToNextPage,
+                  goToPreviousPage: goToPreviousPage,
+                  toggleControls: toggleControls,
+                  screenSize: geometry.size
+                ).ignoresSafeArea()
+              } else {
+                VerticalPageView(
+                  viewModel: viewModel,
+                  nextBook: nextBook,
+                  onDismiss: { dismiss() },
+                  onNextBook: { openNextBook(nextBookId: $0) },
+                  goToNextPage: goToNextPage,
+                  goToPreviousPage: goToPreviousPage,
+                  toggleControls: toggleControls,
+                  screenSize: geometry.size
+                ).ignoresSafeArea()
+              }
+
             case .webtoon:
               WebtoonPageView(
                 viewModel: viewModel,
-                currentPage: currentPageBinding,
                 isAtBottom: $isAtBottom,
                 nextBook: nextBook,
                 onDismiss: { dismiss() },
                 onNextBook: { openNextBook(nextBookId: $0) },
                 toggleControls: toggleControls,
-                screenSize: screenSize
+                screenSize: geometry.size
               ).ignoresSafeArea()
             }
           }
@@ -161,6 +208,7 @@ struct BookReaderView: View {
           readingDirection: $readingDirection,
           viewModel: viewModel,
           currentBook: currentBook,
+          dualPage: useDualPage,
           onDismiss: { dismiss() }
         )
         .padding(.vertical, 24)
@@ -220,7 +268,7 @@ struct BookReaderView: View {
 
     await viewModel.loadPages(
       bookId: bookId,
-      initialPageNumber: resumePageNumber
+      initialPageNumber: resumePageNumber,
     )
 
     // Only preload pages if pages are available
@@ -230,17 +278,6 @@ struct BookReaderView: View {
     await viewModel.preloadPages()
     // Start timer to auto-hide controls after 3 seconds when entering reader
     resetControlsTimer()
-  }
-
-  private var currentPageBinding: Binding<Int> {
-    Binding(
-      get: { viewModel.currentPageIndex },
-      set: { newPage in
-        if newPage != viewModel.currentPageIndex {
-          viewModel.currentPageIndex = newPage
-        }
-      }
-    )
   }
 
   private func goToNextPage() {

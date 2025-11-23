@@ -12,14 +12,33 @@ import SDWebImage
 import SwiftUI
 import UIKit
 
+struct PagePair: Hashable {
+  let first: Int
+  let second: Int?
+  var id: Int { first }
+
+  var display: String {
+    if let second = second {
+      return "\(first+1),\(second+1)"
+    } else {
+      return "\(first+1)"
+    }
+  }
+}
+
 @MainActor
 @Observable
 class ReaderViewModel {
   var pages: [BookPage] = []
   var currentPageIndex = 0
+  var targetPageIndex: Int? = nil
   var isLoading = true
   var pageImageCache: ImageCache
   var incognitoMode: Bool = false
+
+  var pagePairs: [PagePair] = []
+  // map of page index to dual page index
+  var dualPageIndices: [Int: PagePair] = [:]
 
   private let bookService = BookService.shared
   private let logger = Logger(
@@ -39,6 +58,8 @@ class ReaderViewModel {
 
   init() {
     self.pageImageCache = ImageCache()
+    self.pagePairs = generatePagePairs(pages: pages)
+    self.dualPageIndices = generateDualPageIndices(pairs: pagePairs)
   }
 
   func loadPages(bookId: String, initialPageNumber: Int? = nil) async {
@@ -53,6 +74,10 @@ class ReaderViewModel {
 
     do {
       pages = try await bookService.getBookPages(id: bookId)
+
+      // Update page pairs and dual page indices after loading pages
+      pagePairs = generatePagePairs(pages: pages)
+      dualPageIndices = generateDualPageIndices(pairs: pagePairs)
 
       if let initialPageNumber = initialPageNumber {
         if let pageIndex = pages.firstIndex(where: { $0.number == initialPageNumber }) {
@@ -183,7 +208,7 @@ class ReaderViewModel {
     let completed = currentPageIndex >= pages.count - 1
 
     do {
-      try await bookService.updateReadProgress(
+      try await bookService.updatePageReadProgress(
         bookId: bookId,
         page: currentPage.number,
         completed: completed
@@ -270,4 +295,62 @@ class ReaderViewModel {
       }
     }
   }
+}
+
+private func generatePagePairs(pages: [BookPage]) -> [PagePair] {
+  guard pages.count > 0 else { return [] }
+
+  var pairs: [PagePair] = []
+  let noCover = UserDefaults.standard.bool(forKey: "dualPageNoCover")
+
+  var index = 0
+  while index < pages.count {
+    let currentPage = pages[index]
+
+    var useSinglePage = false
+    // force single page if the page is landscape
+    if !currentPage.isPortrait {
+      useSinglePage = true
+    }
+    // force single page if it's the first page and cover is enabled
+    if !noCover && index == 0 {
+      useSinglePage = true
+    }
+    // force single page if it's the last page
+    if index == pages.count - 1 {
+      useSinglePage = true
+    }
+
+    if useSinglePage {
+      pairs.append(PagePair(first: index, second: nil))
+      index += 1
+    } else {
+      // Try to pair with next page
+      let nextPage = pages[index + 1]
+      // Only pair if next page is also portrait
+      if nextPage.isPortrait {
+        pairs.append(PagePair(first: index, second: index + 1))
+        index += 2
+      } else {
+        // Next page is not portrait, show current as single
+        pairs.append(PagePair(first: index, second: nil))
+        index += 1
+      }
+    }
+  }
+  // insert end page pair at the end
+  pairs.append(PagePair(first: pages.count, second: nil))
+
+  return pairs
+}
+
+private func generateDualPageIndices(pairs: [PagePair]) -> [Int: PagePair] {
+  var indices: [Int: PagePair] = [:]
+  for pair in pairs {
+    indices[pair.first] = pair
+    if let second = pair.second {
+      indices[second] = pair
+    }
+  }
+  return indices
 }

@@ -107,7 +107,7 @@ class BookService {
     return try await apiClient.requestData(path: "/api/v1/books/\(bookId)/pages/\(page)")
   }
 
-  func updateReadProgress(bookId: String, page: Int, completed: Bool = false) async throws {
+  func updatePageReadProgress(bookId: String, page: Int, completed: Bool = false) async throws {
     let body = ["page": page, "completed": completed] as [String: Any]
     let jsonData = try JSONSerialization.data(withJSONObject: body)
 

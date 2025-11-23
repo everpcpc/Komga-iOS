@@ -19,6 +19,7 @@ struct VerticalPageView: View {
 
   @State private var hasSyncedInitialScroll = false
   @State private var scrollPosition: Int?
+  @State private var targetPageIndex: Int?
   @AppStorage("readerBackground") private var readerBackground: ReaderBackground = .system
 
   var body: some View {
@@ -66,16 +67,27 @@ struct VerticalPageView: View {
           hasSyncedInitialScroll = false
           synchronizeInitialScrollIfNeeded(proxy: proxy)
         }
-        .onChange(of: viewModel.currentPageIndex) { _, newIndex in
+        .onChange(of: targetPageIndex) { _, newTarget in
+          guard let newTarget = newTarget else { return }
           guard hasSyncedInitialScroll else { return }
-          guard newIndex >= 0 else { return }
+          guard newTarget >= 0 else { return }
           guard !viewModel.pages.isEmpty else { return }
 
-          let target = min(newIndex, viewModel.pages.count)
+          let target = min(newTarget, viewModel.pages.count)
+
+          // Update scroll position and currentPageIndex
           if scrollPosition != target {
             withAnimation {
               scrollPosition = target
               proxy.scrollTo(target, anchor: .top)
+            }
+          }
+
+          // Update currentPageIndex
+          if viewModel.currentPageIndex != newTarget {
+            viewModel.currentPageIndex = newTarget
+            Task(priority: .userInitiated) {
+              await viewModel.preloadPages()
             }
           }
         }
@@ -96,19 +108,11 @@ struct VerticalPageView: View {
           guard viewModel.currentPageIndex > 0 else { return }
           // Previous page (top tap)
           let current = min(viewModel.currentPageIndex, viewModel.pages.count)
-          viewModel.currentPageIndex = current - 1
-          withAnimation {
-            scrollPosition = viewModel.currentPageIndex
-            proxy.scrollTo(viewModel.currentPageIndex, anchor: .top)
-          }
+          targetPageIndex = current - 1
         } else if normalizedY > 0.65 {
           guard !viewModel.pages.isEmpty else { return }
           // Next page (bottom tap)
-          viewModel.currentPageIndex = min(viewModel.currentPageIndex + 1, viewModel.pages.count)
-          withAnimation {
-            scrollPosition = viewModel.currentPageIndex
-            proxy.scrollTo(viewModel.currentPageIndex, anchor: .top)
-          }
+          targetPageIndex = min(viewModel.currentPageIndex + 1, viewModel.pages.count)
         } else {
           toggleControls()
         }
@@ -133,8 +137,10 @@ struct VerticalPageView: View {
     guard hasSyncedInitialScroll, let target else { return }
     guard target >= 0, target <= viewModel.pages.count else { return }
 
+    // Update currentPageIndex when scroll position changes (user manually scrolled)
     if viewModel.currentPageIndex != target {
       viewModel.currentPageIndex = target
+      targetPageIndex = nil
       Task(priority: .userInitiated) {
         await viewModel.preloadPages()
       }

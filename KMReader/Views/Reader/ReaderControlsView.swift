@@ -14,6 +14,7 @@ struct ReaderControlsView: View {
   @Binding var readingDirection: ReadingDirection
   let viewModel: ReaderViewModel
   let currentBook: Book?
+  let dualPage: Bool
   let onDismiss: () -> Void
 
   @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
@@ -34,7 +35,11 @@ struct ReaderControlsView: View {
     if viewModel.currentPageIndex >= viewModel.pages.count {
       return "END"
     } else {
-      return String(viewModel.currentPageIndex + 1)
+      if dualPage, let pair = viewModel.dualPageIndices[viewModel.currentPageIndex] {
+        return pair.display
+      } else {
+        return String(viewModel.currentPageIndex + 1)
+      }
     }
   }
 
@@ -228,7 +233,7 @@ struct ReaderControlsView: View {
     let clampedPage = min(max(page, 1), viewModel.pages.count)
     let targetIndex = clampedPage - 1
     if targetIndex != viewModel.currentPageIndex {
-      viewModel.currentPageIndex = targetIndex
+      viewModel.targetPageIndex = targetIndex
     }
   }
 

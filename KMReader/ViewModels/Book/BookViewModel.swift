@@ -96,9 +96,9 @@ class BookViewModel {
     isLoading = false
   }
 
-  func updateReadProgress(bookId: String, page: Int, completed: Bool = false) async {
+  func updatePageReadProgress(bookId: String, page: Int, completed: Bool = false) async {
     do {
-      try await bookService.updateReadProgress(bookId: bookId, page: page, completed: completed)
+      try await bookService.updatePageReadProgress(bookId: bookId, page: page, completed: completed)
       if currentBook?.id == bookId {
         await loadBook(id: bookId)
       }

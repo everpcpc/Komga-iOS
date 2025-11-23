@@ -19,6 +19,7 @@ struct ComicPageView: View {
 
   @State private var hasSyncedInitialScroll = false
   @State private var scrollPosition: Int?
+  @State private var targetPageIndex: Int?
   @AppStorage("readerBackground") private var readerBackground: ReaderBackground = .system
 
   var body: some View {
@@ -26,6 +27,7 @@ struct ComicPageView: View {
       ScrollViewReader { proxy in
         ScrollView(.horizontal) {
           LazyHStack(spacing: 0) {
+            // Single page mode
             ForEach(0..<viewModel.pages.count, id: \.self) { pageIndex in
               PageImageView(viewModel: viewModel, pageIndex: pageIndex)
                 .frame(width: screenSize.width, height: screenSize.height)
@@ -65,16 +67,28 @@ struct ComicPageView: View {
           hasSyncedInitialScroll = false
           synchronizeInitialScrollIfNeeded(proxy: proxy)
         }
-        .onChange(of: viewModel.currentPageIndex) { _, newIndex in
+        .onChange(of: targetPageIndex) { _, newTarget in
+          guard let newTarget = newTarget else { return }
           guard hasSyncedInitialScroll else { return }
-          guard newIndex >= 0 else { return }
+          guard newTarget >= 0 else { return }
           guard !viewModel.pages.isEmpty else { return }
 
-          let target = min(newIndex, viewModel.pages.count)
+          // Single page mode only
+          let target = min(newTarget, viewModel.pages.count)
+
+          // Update scroll position and currentPageIndex
           if scrollPosition != target {
             withAnimation {
               scrollPosition = target
               proxy.scrollTo(target, anchor: .leading)
+            }
+          }
+
+          // Update currentPageIndex
+          if viewModel.currentPageIndex != newTarget {
+            viewModel.currentPageIndex = newTarget
+            Task(priority: .userInitiated) {
+              await viewModel.preloadPages()
             }
           }
         }
@@ -92,23 +106,19 @@ struct ComicPageView: View {
         let normalizedX = max(0, min(1, value.location.x / width))
         if normalizedX < 0.25 {
           guard !viewModel.pages.isEmpty else { return }
-          // Previous page (left tap)
           guard viewModel.currentPageIndex > 0 else { return }
-          let current = min(viewModel.currentPageIndex, viewModel.pages.count)
-          viewModel.currentPageIndex = current - 1
-          withAnimation {
-            scrollPosition = viewModel.currentPageIndex
-            proxy.scrollTo(viewModel.currentPageIndex, anchor: .leading)
-          }
+
+          // Previous page (left tap)
+          // Single page mode only
+          let newIndex = min(viewModel.currentPageIndex - 1, viewModel.pages.count)
+          targetPageIndex = newIndex
         } else if normalizedX > 0.65 {
           guard !viewModel.pages.isEmpty else { return }
+
           // Next page (right tap)
-          let next = min(viewModel.currentPageIndex + 1, viewModel.pages.count)
-          viewModel.currentPageIndex = next
-          withAnimation {
-            scrollPosition = next
-            proxy.scrollTo(next, anchor: .leading)
-          }
+          // Single page mode only
+          let newIndex = min(viewModel.currentPageIndex + 1, viewModel.pages.count)
+          targetPageIndex = newIndex
         } else {
           toggleControls()
         }
@@ -120,6 +130,7 @@ struct ComicPageView: View {
     guard viewModel.currentPageIndex >= 0 else { return }
     guard !viewModel.pages.isEmpty else { return }
 
+    // Single page mode only
     let target = max(0, min(viewModel.currentPageIndex, viewModel.pages.count - 1))
 
     DispatchQueue.main.async {
@@ -131,10 +142,15 @@ struct ComicPageView: View {
 
   private func handleScrollPositionChange(_ target: Int?) {
     guard hasSyncedInitialScroll, let target else { return }
-    guard target >= 0, target <= viewModel.pages.count else { return }
 
-    if viewModel.currentPageIndex != target {
-      viewModel.currentPageIndex = target
+    // Single page mode only
+    guard target >= 0, target <= viewModel.pages.count else { return }
+    let newPageIndex = target
+
+    // Update currentPageIndex when scroll position changes (user manually scrolled)
+    if viewModel.currentPageIndex != newPageIndex {
+      viewModel.currentPageIndex = newPageIndex
+      targetPageIndex = nil
       Task(priority: .userInitiated) {
         await viewModel.preloadPages()
       }

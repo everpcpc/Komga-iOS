@@ -9,7 +9,6 @@ import SwiftUI
 
 struct WebtoonPageView: View {
   let viewModel: ReaderViewModel
-  @Binding var currentPage: Int
   @Binding var isAtBottom: Bool
   let nextBook: Book?
   let onDismiss: () -> Void
@@ -25,7 +24,6 @@ struct WebtoonPageView: View {
     ZStack {
       WebtoonReaderView(
         pages: viewModel.pages,
-        currentPage: $currentPage,
         viewModel: viewModel,
         pageWidth: pageWidth,
         onPageChange: { pageIndex in

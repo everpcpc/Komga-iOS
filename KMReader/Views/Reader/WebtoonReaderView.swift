@@ -11,7 +11,6 @@ import SwiftUI
 
 struct WebtoonReaderView: UIViewRepresentable {
   let pages: [BookPage]
-  @Binding var currentPage: Int
   let viewModel: ReaderViewModel
   let onPageChange: ((Int) -> Void)?
   let onCenterTap: (() -> Void)?
@@ -21,14 +20,13 @@ struct WebtoonReaderView: UIViewRepresentable {
   @AppStorage("readerBackground") private var readerBackground: ReaderBackground = .system
 
   init(
-    pages: [BookPage], currentPage: Binding<Int>, viewModel: ReaderViewModel,
+    pages: [BookPage], viewModel: ReaderViewModel,
     pageWidth: CGFloat,
     onPageChange: ((Int) -> Void)? = nil,
     onCenterTap: (() -> Void)? = nil,
     onScrollToBottom: ((Bool) -> Void)? = nil
   ) {
     self.pages = pages
-    self._currentPage = currentPage
     self.viewModel = viewModel
     self.pageWidth = pageWidth
     self.onPageChange = onPageChange
@@ -69,7 +67,6 @@ struct WebtoonReaderView: UIViewRepresentable {
   func updateUIView(_ collectionView: UICollectionView, context: Context) {
     context.coordinator.update(
       pages: pages,
-      currentPage: currentPage,
       viewModel: viewModel,
       onPageChange: onPageChange,
       onCenterTap: onCenterTap,
@@ -96,7 +93,6 @@ struct WebtoonReaderView: UIViewRepresentable {
     var onCenterTap: (() -> Void)?
     var onScrollToBottom: ((Bool) -> Void)?
     var lastPagesCount: Int = 0
-    var lastExternalCurrentPage: Int = -1
     var isUserScrolling: Bool = false
     var hasScrolledToInitialPage: Bool = false
     var lastPreloadTime: Date?
@@ -104,6 +100,7 @@ struct WebtoonReaderView: UIViewRepresentable {
     var lastPageWidth: CGFloat = 0
     var isAtBottom: Bool = false
     var lastVisibleCellsUpdateTime: Date?
+    var lastTargetPageIndex: Int?
 
     var pageHeights: [Int: CGFloat] = [:]
     var loadingPages: Set<Int> = []
@@ -111,8 +108,7 @@ struct WebtoonReaderView: UIViewRepresentable {
     init(_ parent: WebtoonReaderView) {
       self.parent = parent
       self.pages = parent.pages
-      self.currentPage = parent.currentPage
-      self.lastExternalCurrentPage = parent.currentPage
+      self.currentPage = parent.viewModel.currentPageIndex
       self.viewModel = parent.viewModel
       self.onPageChange = parent.onPageChange
       self.onCenterTap = parent.onCenterTap
@@ -208,7 +204,6 @@ struct WebtoonReaderView: UIViewRepresentable {
     /// Updates coordinator state and handles view updates
     func update(
       pages: [BookPage],
-      currentPage: Int,
       viewModel: ReaderViewModel,
       onPageChange: ((Int) -> Void)?,
       onCenterTap: (() -> Void)?,
@@ -217,7 +212,6 @@ struct WebtoonReaderView: UIViewRepresentable {
       collectionView: UICollectionView
     ) {
       self.pages = pages
-      self.currentPage = currentPage
       self.viewModel = viewModel
       self.onPageChange = onPageChange
       self.onCenterTap = onCenterTap
@@ -225,12 +219,35 @@ struct WebtoonReaderView: UIViewRepresentable {
       self.pageWidth = pageWidth
       applyMetadataHeights()
 
+      let currentPage = viewModel.currentPageIndex
+
       if lastPagesCount != pages.count || abs(lastPageWidth - pageWidth) > 0.1 {
         handleDataReload(collectionView: collectionView, currentPage: currentPage)
       }
 
       if !hasScrolledToInitialPage && pages.count > 0 && isValidPageIndex(currentPage) {
         scrollToInitialPage(currentPage)
+      }
+
+      // Handle targetPageIndex changes
+      if let targetPageIndex = viewModel.targetPageIndex,
+        targetPageIndex != lastTargetPageIndex,
+        isValidPageIndex(targetPageIndex)
+      {
+        lastTargetPageIndex = targetPageIndex
+        scrollToPage(targetPageIndex, animated: true)
+        // Clear targetPageIndex after scrolling
+        viewModel.targetPageIndex = nil
+        // Update currentPageIndex
+        if self.currentPage != targetPageIndex {
+          self.currentPage = targetPageIndex
+          onPageChange?(targetPageIndex)
+        }
+      } else {
+        // Sync currentPage from viewModel
+        if self.currentPage != currentPage {
+          self.currentPage = currentPage
+        }
       }
 
       // Layout updates handled via UICollectionViewFlowLayout invalidations
@@ -323,7 +340,6 @@ struct WebtoonReaderView: UIViewRepresentable {
       DispatchQueue.main.async { [weak self] in
         guard let self = self else { return }
         self.hasScrolledToInitialPage = true
-        self.lastExternalCurrentPage = pageIndex
       }
     }
 
