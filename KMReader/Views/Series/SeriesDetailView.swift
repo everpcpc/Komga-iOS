@@ -56,8 +56,18 @@ struct SeriesDetailView: View {
               ThumbnailImage(url: thumbnailURL, showPlaceholder: false, width: 120)
 
               VStack(alignment: .leading) {
-                Text(series.metadata.title)
-                  .font(.title3)
+                HStack {
+                  Text(series.metadata.title)
+                  Spacer()
+                    .font(.title3)
+                  if let ageRating = series.metadata.ageRating, ageRating > 0 {
+                    InfoChip(
+                      label: "\(ageRating)+",
+                      backgroundColor: ageRating > 16 ? Color.red : Color.green,
+                      foregroundColor: .white
+                    )
+                  }
+                }
 
                 // Status and info chips
                 VStack(alignment: .leading, spacing: 6) {
@@ -111,13 +121,6 @@ struct SeriesDetailView: View {
                       InfoChip(
                         label: series.statusDisplayName,
                         backgroundColor: series.statusColor.opacity(0.8),
-                        foregroundColor: .white
-                      )
-                    }
-                    if let ageRating = series.metadata.ageRating, ageRating > 0 {
-                      InfoChip(
-                        label: "\(ageRating)+",
-                        backgroundColor: ageRating > 16 ? Color.red : Color.green,
                         foregroundColor: .white
                       )
                     }
@@ -241,6 +244,63 @@ struct SeriesDetailView: View {
               }
 
               Spacer()
+            }
+
+            // Alternate titles
+            if let alternateTitles = series.metadata.alternateTitles, !alternateTitles.isEmpty {
+              VStack(alignment: .leading, spacing: 8) {
+                Text("Alternate Titles")
+                  .font(.headline)
+                VStack(alignment: .leading, spacing: 4) {
+                  ForEach(Array(alternateTitles.enumerated()), id: \.offset) { index, altTitle in
+                    HStack(alignment: .top, spacing: 4) {
+                      Text("\(altTitle.label):")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(width: 60, alignment: .leading)
+                      Text(altTitle.title)
+                        .font(.caption)
+                        .foregroundColor(.primary)
+                    }
+                  }
+                }
+              }.padding(.bottom, 8)
+            }
+
+            // Links
+            if let links = series.metadata.links, !links.isEmpty {
+              VStack(alignment: .leading, spacing: 8) {
+                Text("Links")
+                  .font(.headline)
+                VStack(alignment: .leading, spacing: 4) {
+                  ForEach(Array(links.enumerated()), id: \.offset) { index, link in
+                    if let url = URL(string: link.url) {
+                      Link(destination: url) {
+                        HStack(spacing: 4) {
+                          Image(systemName: "link")
+                            .font(.caption)
+                          Text(link.label)
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                          Spacer()
+                        }
+                      }
+                    } else {
+                      HStack(spacing: 4) {
+                        Image(systemName: "link")
+                          .font(.caption)
+                        Text(link.label)
+                          .font(.caption)
+                          .foregroundColor(.secondary)
+                        Text("(\(link.url))")
+                          .font(.caption2)
+                          .foregroundColor(.secondary)
+                        Spacer()
+                      }
+                    }
+                  }
+                }
+              }.padding(.bottom, 8)
             }
 
             // Summary section - show series summary or first book summary if available
