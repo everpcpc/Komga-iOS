@@ -55,22 +55,29 @@ struct BookDetailView: View {
             ThumbnailImage(url: thumbnailURL, width: 120)
 
             VStack(alignment: .leading) {
-              Text(book.metadata.title)
-                .font(.headline)
-                .fixedSize(horizontal: false, vertical: true)
-
               Text(book.seriesTitle)
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-              HStack(spacing: 4) {
-                Image(systemName: "book")
-                  .font(.caption)
-                Text("#\(book.metadata.number) · \(book.media.pagesCount) pages")
+              Text(book.metadata.title)
+                .font(.headline)
+                .fixedSize(horizontal: false, vertical: true)
+
+              HStack(spacing: 6) {
+                InfoChip(
+                  label: "\(book.metadata.number)",
+                  systemImage: "number",
+                  backgroundColor: Color.gray.opacity(0.2),
+                  foregroundColor: .gray
+                )
+                InfoChip(
+                  label: "\(book.media.pagesCount) pages",
+                  systemImage: "book.pages",
+                  backgroundColor: Color.blue.opacity(0.2),
+                  foregroundColor: .blue
+                )
               }
-              .font(.caption)
-              .foregroundColor(.secondary)
 
               if book.deleted {
                 InfoChip(
@@ -99,8 +106,33 @@ struct BookDetailView: View {
               } else {
                 InfoChip(
                   label: "Unread",
-                  systemImage: "circle"
+                  systemImage: "circle",
+                  backgroundColor: Color.gray.opacity(0.2),
+                  foregroundColor: .gray
                 )
+              }
+
+              if let releaseDate = book.metadata.releaseDate {
+                InfoChip(
+                  label: "Release: \(releaseDate)",
+                  systemImage: "calendar",
+                  backgroundColor: Color.orange.opacity(0.2),
+                  foregroundColor: .orange
+                )
+              }
+
+              // Authors as chips
+              if let authors = book.metadata.authors, !authors.isEmpty {
+                HStack(spacing: 6) {
+                  ForEach(authors, id: \.name) { author in
+                    InfoChip(
+                      label: author.name,
+                      systemImage: "person",
+                      backgroundColor: Color.indigo.opacity(0.2),
+                      foregroundColor: .indigo
+                    )
+                  }
+                }
               }
             }
 
@@ -126,14 +158,6 @@ struct BookDetailView: View {
                   backgroundColor: Color.blue.opacity(0.2),
                   foregroundColor: .blue
                 )
-                if let releaseDate = book.metadata.releaseDate {
-                  InfoChip(
-                    label: releaseDate,
-                    systemImage: "calendar",
-                    backgroundColor: Color.orange.opacity(0.2),
-                    foregroundColor: .orange
-                  )
-                }
               }
               if let isbn = book.metadata.isbn, !isbn.isEmpty {
                 InfoChip(
@@ -168,14 +192,6 @@ struct BookDetailView: View {
               value: formatDate(book.lastModified),
               icon: "calendar.badge.clock"
             )
-
-            if let authors = book.metadata.authors, !authors.isEmpty {
-              InfoRow(
-                label: "AUTHORS",
-                value: authors.map { $0.name }.joined(separator: ", "),
-                icon: "person"
-              )
-            }
           }
 
           if let summary = book.metadata.summary, !summary.isEmpty {

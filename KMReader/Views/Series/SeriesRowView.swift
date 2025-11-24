@@ -58,9 +58,15 @@ struct SeriesRowView: View {
           }
         }.font(.caption)
 
-        Label(series.lastUpdatedDisplay, systemImage: "clock")
-          .font(.caption)
-          .foregroundColor(.secondary)
+        if let releaseDate = series.booksMetadata.releaseDate {
+          Label("Release: \(releaseDate)", systemImage: "calendar")
+            .font(.caption)
+            .foregroundColor(.secondary)
+        } else {
+          Label("Last Updated: \(series.lastUpdatedDisplay)", systemImage: "clock")
+            .font(.caption)
+            .foregroundColor(.secondary)
+        }
       }
 
       Spacer()

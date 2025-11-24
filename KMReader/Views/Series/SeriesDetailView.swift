@@ -145,14 +145,13 @@ struct SeriesDetailView: View {
 
                   // Created and last modified dates
                   InfoChip(
-                    label: series.created.formatted(date: .abbreviated, time: .omitted),
+                    label: "Created: \(formatDate(series.created))",
                     systemImage: "calendar.badge.plus",
                     backgroundColor: Color.blue.opacity(0.2),
                     foregroundColor: .blue
                   )
                   InfoChip(
-                    label: series.lastModified.formatted(
-                      date: .abbreviated, time: .omitted),
+                    label: "Last Modified: \(formatDate(series.lastModified))",
                     systemImage: "clock",
                     backgroundColor: Color.purple.opacity(0.2),
                     foregroundColor: .purple
@@ -161,41 +160,35 @@ struct SeriesDetailView: View {
 
                 // Publisher
                 if let publisher = series.metadata.publisher, !publisher.isEmpty {
-                  HStack(alignment: .top, spacing: 4) {
-                    Text("Publisher:")
-                      .font(.caption)
-                      .foregroundColor(.secondary)
-                      .frame(width: 60, alignment: .leading)
-                    Text(publisher)
-                      .font(.caption)
-                      .foregroundColor(.primary)
-                  }
+                  InfoChip(
+                    label: publisher,
+                    systemImage: "building.2",
+                    backgroundColor: Color.teal.opacity(0.2),
+                    foregroundColor: .teal
+                  )
                 }
 
                 // Release date chip
                 if let releaseDate = series.booksMetadata.releaseDate {
                   InfoChip(
-                    label: releaseDate,
-                    systemImage: "calendar.badge.clock",
+                    label: "Release: \(releaseDate)",
+                    systemImage: "calendar",
                     backgroundColor: Color.orange.opacity(0.2),
                     foregroundColor: .orange
                   )
                 }
 
-                // Authors
+                // Authors as chips
                 if let authors = series.booksMetadata.authors, !authors.isEmpty {
-                  VStack(alignment: .leading, spacing: 4) {
-                    ForEach(
-                      Array(groupAuthorsByRole(authors).sorted(by: { $0.key < $1.key })), id: \.key
-                    ) { role, names in
-                      HStack(alignment: .top, spacing: 4) {
-                        Text("\(roleDisplayName(role)):")
-                          .font(.caption)
-                          .foregroundColor(.secondary)
-                          .frame(width: 60, alignment: .leading)
-                        Text(names.joined(separator: ", "))
-                          .font(.caption)
-                          .foregroundColor(.primary)
+                  ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                      ForEach(authors, id: \.name) { author in
+                        InfoChip(
+                          label: author.name,
+                          systemImage: "person",
+                          backgroundColor: Color.indigo.opacity(0.2),
+                          foregroundColor: .indigo
+                        )
                       }
                     }
                   }
@@ -203,21 +196,16 @@ struct SeriesDetailView: View {
 
                 // Genres
                 if let genres = series.metadata.genres, !genres.isEmpty {
-                  HStack(alignment: .center, spacing: 4) {
-                    Text("Genres:")
-                      .font(.caption)
-                      .foregroundColor(.secondary)
-                    ScrollView(.horizontal, showsIndicators: false) {
-                      HStack(spacing: 6) {
-                        ForEach(genres.sorted(), id: \.self) { genre in
-                          Text(genre)
-                            .font(.caption)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.blue.opacity(0.1))
-                            .foregroundColor(.blue)
-                            .cornerRadius(4)
-                        }
+                  ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                      ForEach(genres.sorted(), id: \.self) { genre in
+                        InfoChip(
+                          label: genre,
+                          systemImage: "bookmark",
+                          backgroundColor: Color.blue.opacity(0.1),
+                          foregroundColor: .blue,
+                          cornerRadius: 8
+                        )
                       }
                     }
                   }
@@ -225,21 +213,16 @@ struct SeriesDetailView: View {
 
                 // Tags
                 if let tags = series.metadata.tags, !tags.isEmpty {
-                  HStack(alignment: .center, spacing: 4) {
-                    Text("Tags:")
-                      .font(.caption)
-                      .foregroundColor(.secondary)
-                    ScrollView(.horizontal, showsIndicators: false) {
-                      HStack(spacing: 6) {
-                        ForEach(tags.sorted(), id: \.self) { tag in
-                          Text(tag)
-                            .font(.caption)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.secondary.opacity(0.1))
-                            .foregroundColor(.secondary)
-                            .cornerRadius(4)
-                        }
+                  ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                      ForEach(tags.sorted(), id: \.self) { tag in
+                        InfoChip(
+                          label: tag,
+                          systemImage: "tag",
+                          backgroundColor: Color.secondary.opacity(0.1),
+                          foregroundColor: .secondary,
+                          cornerRadius: 8
+                        )
                       }
                     }
                   }
@@ -677,5 +660,12 @@ extension SeriesDetailView {
     default:
       return role.capitalized
     }
+  }
+
+  private func formatDate(_ date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.dateStyle = .medium
+    formatter.timeStyle = .none
+    return formatter.string(from: date)
   }
 }

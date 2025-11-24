@@ -59,7 +59,7 @@ struct BookRowView: View {
 
         HStack(spacing: 4) {
           if let releaseDate = book.metadata.releaseDate, !releaseDate.isEmpty {
-            Label(releaseDate, systemImage: "calendar.badge.clock")
+            Label(releaseDate, systemImage: "calendar")
             Text("•")
           }
           Label(book.created.formatted(date: .abbreviated, time: .omitted), systemImage: "clock")
@@ -83,7 +83,7 @@ struct BookRowView: View {
               .foregroundColor(.red)
           } else {
             HStack(spacing: 4) {
-              Text("\(book.media.pagesCount) pages")
+              Label("\(book.media.pagesCount) pages", systemImage: "book.pages")
               Text("•")
               Label(book.size, systemImage: "doc")
               if book.oneshot {

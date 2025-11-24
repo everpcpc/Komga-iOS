@@ -15,7 +15,7 @@ struct ReadHistoryBookRow: View {
   }
 
   var body: some View {
-    HStack {
+    HStack(spacing: 12) {
       // Thumbnail
       ThumbnailImage(url: thumbnailURL, width: 80, cornerRadius: 6)
 

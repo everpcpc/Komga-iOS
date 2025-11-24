@@ -75,14 +75,13 @@ struct ReadListDetailView: View {
                     }
                   }
                   InfoChip(
-                    label: readList.createdDate.formatted(date: .abbreviated, time: .omitted),
+                    label: "Created: \(formatDate(readList.createdDate))",
                     systemImage: "calendar.badge.plus",
                     backgroundColor: Color.blue.opacity(0.2),
                     foregroundColor: .blue
                   )
                   InfoChip(
-                    label: readList.lastModifiedDate.formatted(
-                      date: .abbreviated, time: .omitted),
+                    label: "Last Modified: \(formatDate(readList.lastModifiedDate))",
                     systemImage: "clock",
                     backgroundColor: Color.purple.opacity(0.2),
                     foregroundColor: .purple
@@ -226,5 +225,12 @@ extension ReadListDetailView {
     } catch {
       ErrorManager.shared.alert(error: error)
     }
+  }
+
+  private func formatDate(_ date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.dateStyle = .medium
+    formatter.timeStyle = .none
+    return formatter.string(from: date)
   }
 }
