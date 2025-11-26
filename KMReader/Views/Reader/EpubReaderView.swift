@@ -71,7 +71,7 @@ struct EpubReaderView: View {
       ZStack {
         readerBackground.color.ignoresSafeArea()
 
-        contentView
+        contentView(for: geometry.size)
 
         if viewModel.navigatorViewController != nil {
           ComicTapZoneOverlay(isVisible: $showTapZoneOverlay)
@@ -90,7 +90,7 @@ struct EpubReaderView: View {
   }
 
   @ViewBuilder
-  private var contentView: some View {
+  private func contentView(for size: CGSize) -> some View {
     if viewModel.isLoading {
       VStack(spacing: 16) {
         ProgressView()
@@ -115,20 +115,15 @@ struct EpubReaderView: View {
       }
       .padding()
     } else if let navigatorViewController = viewModel.navigatorViewController {
-      ZStack {
-        NavigatorView(navigatorViewController: navigatorViewController)
-          .ignoresSafeArea()
-          .simultaneousGesture(
-            TapGesture()
-              .onEnded { _ in
-                if showingControls {
-                  toggleControls()
-                }
-              }
-          )
-
-        tapZonesLayer
-      }
+      NavigatorView(navigatorViewController: navigatorViewController)
+        .ignoresSafeArea()
+        .contentShape(Rectangle())
+        .simultaneousGesture(
+          SpatialTapGesture()
+            .onEnded { value in
+              handleTap(location: value.location, in: size)
+            }
+        )
     } else {
       Text("No content available.")
         .foregroundStyle(.secondary)
@@ -315,46 +310,24 @@ struct EpubReaderView: View {
     }
   }
 
-  private var tapZonesLayer: some View {
-    GeometryReader { geometry in
-      HStack(spacing: 0) {
-        Color.clear
-          .contentShape(Rectangle())
-          .frame(width: geometry.size.width * 0.3)
-          .frame(maxHeight: .infinity)
-          .onTapGesture {
-            goToPreviousPage()
-          }
+  private func handleTap(location: CGPoint, in size: CGSize) {
+    let width = size.width
+    let leftZone = width * 0.3
+    let rightZone = width * 0.7
 
-        Color.clear
-          .contentShape(Rectangle())
-          .frame(width: geometry.size.width * 0.4)
-          .frame(maxHeight: .infinity)
-          .onTapGesture {
-            if !showingControls {
-              toggleControls()
-            }
-          }
-
-        Color.clear
-          .contentShape(Rectangle())
-          .frame(width: geometry.size.width * 0.3)
-          .frame(maxHeight: .infinity)
-          .onTapGesture {
-            goToNextPage()
-          }
-      }
+    if showingControls {
+      toggleControls()
+      return
     }
-    .ignoresSafeArea()
-    .allowsHitTesting(!showingControls && !viewModel.isLoading)
-  }
 
-  private func goToNextPage() {
-    viewModel.goToNextPage()
-  }
-
-  private func goToPreviousPage() {
-    viewModel.goToPreviousPage()
+    switch location.x {
+    case ..<leftZone:
+      viewModel.goToPreviousPage()
+    case rightZone...:
+      viewModel.goToNextPage()
+    default:
+      toggleControls()
+    }
   }
 
   private func triggerTapZoneDisplay() {
