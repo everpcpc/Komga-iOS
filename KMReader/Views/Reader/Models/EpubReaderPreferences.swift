@@ -81,13 +81,14 @@ struct EpubReaderPreferences: RawRepresentable, Equatable {
     return "{}"
   }
 
-  func toPreferences() -> EPUBPreferences {
+  func toPreferences(colorScheme: ColorScheme? = nil) -> EPUBPreferences {
     EPUBPreferences(
+      columnCount: layout.columnCount,
       fontFamily: fontFamily.fontFamily,
       fontSize: fontSize,
       scroll: pagination == .scroll,
-      spread: layout.spread,
-      theme: theme.theme,
+      spread: .auto,
+      theme: theme.resolvedTheme(for: colorScheme)
     )
   }
 
@@ -96,7 +97,7 @@ struct EpubReaderPreferences: RawRepresentable, Equatable {
       fontFamily: FontFamilyChoice.from(preferences.fontFamily),
       fontSize: preferences.fontSize ?? 1.0,
       pagination: (preferences.scroll ?? false) ? .scroll : .paged,
-      layout: LayoutChoice.from(preferences.spread),
+      layout: LayoutChoice.from(preferences.columnCount),
       theme: ThemeChoice.from(preferences.theme)
     )
   }
@@ -144,18 +145,18 @@ enum LayoutChoice: String, CaseIterable, Identifiable {
     }
   }
 
-  var spread: Spread {
+  var columnCount: ColumnCount? {
     switch self {
-    case .auto: return .auto
-    case .single: return .never
-    case .dual: return .always
+    case .auto: return nil
+    case .single: return .one
+    case .dual: return .two
     }
   }
 
-  static func from(_ spread: Spread?) -> LayoutChoice {
-    switch spread {
-    case .some(.never): return .single
-    case .some(.always): return .dual
+  static func from(_ columnCount: ColumnCount?) -> LayoutChoice {
+    switch columnCount {
+    case .some(.one): return .single
+    case .some(.two): return .dual
     default: return .auto
     }
   }
@@ -176,9 +177,11 @@ enum ThemeChoice: String, CaseIterable, Identifiable {
     case .dark: return "Dark"
     }
   }
-  var theme: Theme? {
+  func resolvedTheme(for colorScheme: ColorScheme?) -> Theme? {
     switch self {
-    case .system: return nil
+    case .system:
+      guard let colorScheme else { return nil }
+      return colorScheme == .dark ? .dark : .light
     case .light: return .light
     case .sepia: return .sepia
     case .dark: return .dark

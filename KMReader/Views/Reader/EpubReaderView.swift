@@ -17,6 +17,7 @@ struct EpubReaderView: View {
   @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
   @AppStorage("epubReaderPreferences") private var readerPrefs: EpubReaderPreferences = .init()
   @Environment(\.dismiss) private var dismiss
+  @Environment(\.colorScheme) private var colorScheme
 
   @State private var viewModel: EpubReaderViewModel
   @State private var showingControls = true
@@ -45,7 +46,7 @@ struct EpubReaderView: View {
         triggerTapZoneDisplay()
       }
       .task(id: readerPrefs) {
-        viewModel.applyPreferences(readerPrefs)
+        viewModel.applyPreferences(readerPrefs, colorScheme: colorScheme)
       }
       .onDisappear {
         controlsTimer?.invalidate()
@@ -57,6 +58,10 @@ struct EpubReaderView: View {
         } else {
           overlayTimer?.invalidate()
         }
+      }
+      .onChange(of: colorScheme) { _, newScheme in
+        guard readerPrefs.theme == .system else { return }
+        viewModel.applyPreferences(readerPrefs, colorScheme: newScheme)
       }
   }
 
@@ -240,7 +245,7 @@ struct EpubReaderView: View {
     .sheet(isPresented: $showingPreferencesSheet) {
       EpubPreferencesSheet(readerPrefs) { newPreferences in
         readerPrefs = newPreferences
-        viewModel.applyPreferences(newPreferences)
+        viewModel.applyPreferences(newPreferences, colorScheme: colorScheme)
       }
     }
   }

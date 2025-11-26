@@ -12,6 +12,7 @@ import ReadiumAdapterGCDWebServer
 import ReadiumNavigator
 import ReadiumShared
 import ReadiumStreamer
+import SwiftUI
 
 #if canImport(UIKit)
   import UIKit
@@ -29,7 +30,7 @@ class EpubReaderViewModel: EPUBNavigatorDelegate {
   var publication: Publication?
   var navigatorViewController: EPUBNavigatorViewController?
   var currentLocator: Locator?
-  var tableOfContents: [Link] = []
+  var tableOfContents: [ReadiumShared.Link] = []
   var preferences: EPUBPreferences = .empty
 
   private var bookId: String = ""
@@ -153,15 +154,15 @@ class EpubReaderViewModel: EPUBNavigatorDelegate {
     }
   }
 
-  func goToChapter(link: Link) {
+  func goToChapter(link: ReadiumShared.Link) {
     guard let navigator = navigatorViewController else { return }
     Task {
       _ = await navigator.go(to: link, options: .animated)
     }
   }
 
-  func applyPreferences(_ stored: EpubReaderPreferences) {
-    preferences = stored.toPreferences()
+  func applyPreferences(_ stored: EpubReaderPreferences, colorScheme: ColorScheme? = nil) {
+    preferences = stored.toPreferences(colorScheme: colorScheme)
     navigatorViewController?.submitPreferences(preferences)
   }
 
@@ -282,7 +283,7 @@ class EpubReaderViewModel: EPUBNavigatorDelegate {
   }
 
   func navigator(
-    _ navigator: Navigator, shouldNavigateToNoteAt link: Link, content: String, referrer: String?
+    _ navigator: Navigator, shouldNavigateToNoteAt link: ReadiumShared.Link, content: String, referrer: String?
   ) -> Bool {
     // Default behavior: navigate to note
     return true
