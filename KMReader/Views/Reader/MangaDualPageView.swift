@@ -74,6 +74,7 @@ struct MangaDualPageView: View {
         .scrollTargetBehavior(.paging)
         .scrollIndicators(.hidden)
         .scrollPosition(id: $scrollPosition)
+        .scrollDisabled(isZoomed)
         .onAppear {
           synchronizeInitialScrollIfNeeded(proxy: proxy)
         }

@@ -73,6 +73,7 @@ struct ComicDualPageView: View {
         .scrollTargetBehavior(.paging)
         .scrollIndicators(.hidden)
         .scrollPosition(id: $scrollPosition)
+        .scrollDisabled(isZoomed)
         .onAppear {
           synchronizeInitialScrollIfNeeded(proxy: proxy)
         }
