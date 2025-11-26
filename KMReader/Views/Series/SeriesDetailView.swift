@@ -51,6 +51,13 @@ struct SeriesDetailView: View {
     return (series.booksReadCount + series.booksInProgressCount) > 0
   }
 
+  private var hasTags: Bool {
+    guard let series else { return false }
+    guard let tags = series.metadata.tags else { return false }
+    guard let genres = series.metadata.genres else { return false }
+    return !tags.isEmpty || !genres.isEmpty
+  }
+
   var body: some View {
     GeometryReader { geometry in
       ScrollView {
@@ -120,7 +127,7 @@ struct SeriesDetailView: View {
                     }
                   }
 
-                  // Additional info: Status, Age Rating, Language, Reading Direction (all in one row)
+                  // Additional info: Status, Reading Direction
                   HStack(spacing: 6) {
                     if let status = series.metadata.status, !status.isEmpty {
                       InfoChip(
@@ -128,14 +135,6 @@ struct SeriesDetailView: View {
                         systemImage: series.statusIcon,
                         backgroundColor: series.statusColor.opacity(0.8),
                         foregroundColor: .white
-                      )
-                    }
-                    if let language = series.metadata.language, !language.isEmpty {
-                      InfoChip(
-                        label: languageDisplayName(language),
-                        systemImage: "globe",
-                        backgroundColor: Color.purple.opacity(0.2),
-                        foregroundColor: .purple
                       )
                     }
                     if let direction = series.metadata.readingDirection, !direction.isEmpty {
@@ -148,57 +147,61 @@ struct SeriesDetailView: View {
                     }
                   }
 
-                  // Created and last modified dates
-                  InfoChip(
-                    label: "Created: \(formatDate(series.created))",
-                    systemImage: "calendar.badge.plus",
-                    backgroundColor: Color.blue.opacity(0.2),
-                    foregroundColor: .blue
-                  )
-                  InfoChip(
-                    label: "Last Modified: \(formatDate(series.lastModified))",
-                    systemImage: "clock",
-                    backgroundColor: Color.purple.opacity(0.2),
-                    foregroundColor: .purple
-                  )
-                }
+                  HStack(spacing: 6) {
+                    // Release date chip
+                    if let releaseDate = series.booksMetadata.releaseDate {
+                      InfoChip(
+                        label: "Release: \(releaseDate)",
+                        systemImage: "calendar",
+                        backgroundColor: Color.orange.opacity(0.2),
+                        foregroundColor: .orange
+                      )
+                    }
 
-                // Publisher
-                if let publisher = series.metadata.publisher, !publisher.isEmpty {
-                  InfoChip(
-                    label: publisher,
-                    systemImage: "building.2",
-                    backgroundColor: Color.teal.opacity(0.2),
-                    foregroundColor: .teal
-                  )
-                }
+                    // Language chip
+                    if let language = series.metadata.language, !language.isEmpty {
+                      InfoChip(
+                        label: languageDisplayName(language),
+                        systemImage: "globe",
+                        backgroundColor: Color.purple.opacity(0.2),
+                        foregroundColor: .purple
+                      )
+                    }
+                  }
 
-                // Release date chip
-                if let releaseDate = series.booksMetadata.releaseDate {
-                  InfoChip(
-                    label: "Release: \(releaseDate)",
-                    systemImage: "calendar",
-                    backgroundColor: Color.orange.opacity(0.2),
-                    foregroundColor: .orange
-                  )
-                }
+                  // Publisher
+                  if let publisher = series.metadata.publisher, !publisher.isEmpty {
+                    InfoChip(
+                      label: publisher,
+                      systemImage: "building.2",
+                      backgroundColor: Color.teal.opacity(0.2),
+                      foregroundColor: .teal
+                    )
+                  }
 
-                // Authors as chips
-                if let authors = series.booksMetadata.authors, !authors.isEmpty {
-                  ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
-                      ForEach(authors, id: \.name) { author in
-                        InfoChip(
-                          label: author.name,
-                          systemImage: "person",
-                          backgroundColor: Color.indigo.opacity(0.2),
-                          foregroundColor: .indigo
-                        )
+                  // Authors as chips
+                  if let authors = series.booksMetadata.authors, !authors.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                      HStack(spacing: 6) {
+                        ForEach(authors, id: \.name) { author in
+                          InfoChip(
+                            label: author.name,
+                            systemImage: "person",
+                            backgroundColor: Color.indigo.opacity(0.2),
+                            foregroundColor: .indigo
+                          )
+                        }
                       }
                     }
                   }
                 }
+                Spacer()
+              }
+              Spacer(minLength: 0)
+            }.frame(minHeight: 160)
 
+            if hasTags {
+              VStack(alignment: .leading, spacing: 6) {
                 // Genres
                 if let genres = series.metadata.genres, !genres.isEmpty {
                   ScrollView(.horizontal, showsIndicators: false) {
@@ -233,8 +236,23 @@ struct SeriesDetailView: View {
                   }
                 }
               }
+            }
 
-              Spacer()
+            // Created and last modified dates
+            HStack(spacing: 6) {
+              InfoChip(
+                label: "Created: \(formatDate(series.created))",
+                systemImage: "calendar.badge.plus",
+                backgroundColor: Color.blue.opacity(0.2),
+                foregroundColor: .blue
+              )
+              InfoChip(
+                label: "Last Modified: \(formatDate(series.lastModified))",
+                systemImage: "clock",
+                backgroundColor: Color.purple.opacity(0.2),
+                foregroundColor: .purple
+              )
+              Spacer(minLength: 0)
             }
 
             if !isLoadingCollections && !containingCollections.isEmpty {

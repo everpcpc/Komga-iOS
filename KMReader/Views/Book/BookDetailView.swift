@@ -137,9 +137,8 @@ struct BookDetailView: View {
                 }
               }
             }
-
             Spacer()
-          }
+          }.frame(minHeight: 160)
 
           BookActionsSection(
             book: book,
