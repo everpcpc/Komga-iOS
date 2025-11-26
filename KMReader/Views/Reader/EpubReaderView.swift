@@ -23,6 +23,7 @@ struct EpubReaderView: View {
   @State private var showTapZoneOverlay = false
   @State private var overlayTimer: Timer?
   @State private var currentBook: Book?
+  @State private var showingChapterSheet = false
 
   init(bookId: String, incognito: Bool = false) {
     self.bookId = bookId
@@ -155,29 +156,32 @@ struct EpubReaderView: View {
           Spacer()
 
           // Progress indicator
-          if let currentLocator = viewModel.currentLocator {
-            HStack(spacing: 4) {
-              // Total progress
-              if let totalProgression = currentLocator.locations.totalProgression {
-                HStack(spacing: 6) {
-                  Image(systemName: "book.fill")
-                    .font(.caption2)
-                  Text("\(totalProgression * 100, specifier: "%.1f")%")
-                    .monospacedDigit()
-                    .font(.caption)
+          if let currentLocator = viewModel.currentLocator, !viewModel.tableOfContents.isEmpty {
+            Button {
+              showingChapterSheet = true
+            } label: {
+              HStack(spacing: 4) {
+                // Total progress
+                if let totalProgression = currentLocator.locations.totalProgression {
+                  HStack(spacing: 6) {
+                    Image(systemName: "book.fill")
+                      .font(.footnote)
+                    Text("\(totalProgression * 100, specifier: "%.1f")%")
+                      .monospacedDigit()
+                  }
                 }
               }
+              .foregroundColor(.white)
+              .padding(.horizontal, 16)
+              .padding(.vertical, 8)
+              .background(themeColor.color.opacity(0.9))
+              .cornerRadius(20)
+              .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                  .stroke(Color.white.opacity(0.3), lineWidth: 1)
+              )
+              .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
             }
-            .foregroundColor(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(themeColor.color.opacity(0.9))
-            .cornerRadius(20)
-            .overlay(
-              RoundedRectangle(cornerRadius: 20)
-                .stroke(Color.white.opacity(0.3), lineWidth: 1)
-            )
-            .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
           }
 
           Spacer()
@@ -223,6 +227,16 @@ struct EpubReaderView: View {
     .opacity(shouldShowControls ? 1.0 : 0.0)
     .allowsHitTesting(shouldShowControls)
     .transition(.opacity)
+    .sheet(isPresented: $showingChapterSheet) {
+      ChapterListSheetView(
+        chapters: viewModel.tableOfContents,
+        currentLink: currentChapterLink,
+        goToChapter: { link in
+          showingChapterSheet = false
+          viewModel.goToChapter(link: link)
+        }
+      )
+    }
   }
 
   private func toggleControls() {
@@ -290,6 +304,15 @@ struct EpubReaderView: View {
     }
     .ignoresSafeArea()
     .allowsHitTesting(false)
+  }
+
+  private var currentChapterLink: ReadiumShared.Link? {
+    guard let currentLocator = viewModel.currentLocator else {
+      return nil
+    }
+    return viewModel.tableOfContents.first { link in
+      link.url().isEquivalentTo(currentLocator.href)
+    }
   }
 
   private var tapZonesLayer: some View {

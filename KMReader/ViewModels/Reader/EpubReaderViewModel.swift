@@ -29,6 +29,7 @@ class EpubReaderViewModel: EPUBNavigatorDelegate {
   var publication: Publication?
   var navigatorViewController: EPUBNavigatorViewController?
   var currentLocator: Locator?
+  var tableOfContents: [Link] = []
 
   private var bookId: String = ""
   private var epubFileURL: URL?
@@ -103,6 +104,7 @@ class EpubReaderViewModel: EPUBNavigatorDelegate {
       ).get()
 
       self.publication = publication
+      await loadTableOfContents(from: publication)
 
       // Get progression if not in incognito mode
       var initialLocation: Locator? = nil
@@ -146,6 +148,13 @@ class EpubReaderViewModel: EPUBNavigatorDelegate {
     guard let navigator = navigatorViewController else { return }
     Task {
       _ = await navigator.goBackward(options: .animated)
+    }
+  }
+
+  func goToChapter(link: Link) {
+    guard let navigator = navigatorViewController else { return }
+    Task {
+      _ = await navigator.go(to: link, options: .animated)
     }
   }
 
@@ -329,5 +338,13 @@ class EpubReaderViewModel: EPUBNavigatorDelegate {
       text: text,
       koboSpan: nil
     )
+  }
+
+  private func loadTableOfContents(from publication: Publication) async {
+    if let toc = try? await publication.tableOfContents().get() {
+      self.tableOfContents = toc
+    } else {
+      self.tableOfContents = publication.readingOrder
+    }
   }
 }

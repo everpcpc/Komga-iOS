@@ -79,7 +79,7 @@ struct ReaderControlsView: View {
           } label: {
             HStack(spacing: 6) {
               Image(systemName: "arrow.up.arrow.down")
-                .font(.caption)
+                .font(.footnote)
               Text("\(displayedCurrentPage) / \(viewModel.pages.count)")
                 .monospacedDigit()
             }
