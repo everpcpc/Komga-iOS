@@ -139,12 +139,30 @@ struct BookDetailView: View {
             }
           }
 
+          // Created and last modified dates
+          HStack(spacing: 6) {
+            InfoChip(
+              label: "Created: \(formatDate(book.created))",
+              systemImage: "calendar.badge.plus",
+              backgroundColor: Color.blue.opacity(0.2),
+              foregroundColor: .blue
+            )
+            InfoChip(
+              label: "Modified: \(formatDate(book.lastModified))",
+              systemImage: "clock",
+              backgroundColor: Color.purple.opacity(0.2),
+              foregroundColor: .purple
+            )
+          }
+
+          Divider()
           BookActionsSection(
             book: book,
             onRead: { incognito in
               readerState = BookReaderState(book: book, incognito: incognito)
             }
           )
+          Divider()
 
           if !isLoadingRelations && !bookReadLists.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
@@ -162,14 +180,16 @@ struct BookDetailView: View {
                     ReadListDetailView(readListId: readList.id)
                   } label: {
                     HStack {
-                      Text(readList.name)
+                      Label(readList.name, systemImage: "list.bullet")
                         .foregroundColor(.primary)
                       Spacer()
                       Image(systemName: "chevron.right")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     }
-                    .padding(.vertical, 4)
+                    .padding()
+                    .background(Color.secondary.opacity(0.1))
+                    .cornerRadius(16)
                   }
                 }
               }
@@ -177,52 +197,35 @@ struct BookDetailView: View {
             .padding(.vertical, 8)
           }
 
-          Divider()
-
-          VStack(alignment: .leading, spacing: 12) {
-            // Short info chips
-            VStack(alignment: .leading, spacing: 6) {
-              HStack(spacing: 6) {
-                InfoChip(
-                  label: book.media.mediaType.uppercased(),
-                  systemImage: "doc.text",
-                  backgroundColor: Color.blue.opacity(0.2),
-                  foregroundColor: .blue
-                )
-              }
-              if let isbn = book.metadata.isbn, !isbn.isEmpty {
-                InfoChip(
-                  label: isbn,
-                  systemImage: "barcode",
-                  backgroundColor: Color.cyan.opacity(0.2),
-                  foregroundColor: .cyan
-                )
-              }
+          VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+              InfoChip(
+                label: book.media.mediaType.uppercased(),
+                systemImage: "doc.text",
+                backgroundColor: Color.blue.opacity(0.2),
+                foregroundColor: .blue
+              )
+              InfoChip(
+                label: book.size,
+                systemImage: "internaldrive",
+                backgroundColor: Color.teal.opacity(0.2),
+                foregroundColor: .teal
+              )
             }
-
-            InfoRow(
-              label: "SIZE",
-              value: book.size,
-              icon: "internaldrive"
+            InfoChip(
+              label: book.url,
+              systemImage: "document",
+              backgroundColor: Color.gray.opacity(0.2),
+              foregroundColor: .gray
             )
-
-            InfoRow(
-              label: "FILE",
-              value: book.url,
-              icon: "document"
-            )
-
-            InfoRow(
-              label: "CREATED",
-              value: formatDate(book.created),
-              icon: "calendar.badge.plus"
-            )
-
-            InfoRow(
-              label: "LAST MODIFIED",
-              value: formatDate(book.lastModified),
-              icon: "calendar.badge.clock"
-            )
+            if let isbn = book.metadata.isbn, !isbn.isEmpty {
+              InfoChip(
+                label: isbn,
+                systemImage: "barcode",
+                backgroundColor: Color.cyan.opacity(0.2),
+                foregroundColor: .cyan
+              )
+            }
           }
 
           if let summary = book.metadata.summary, !summary.isEmpty {
@@ -528,7 +531,7 @@ struct BookDetailView: View {
   private func formatDate(_ date: Date) -> String {
     let formatter = DateFormatter()
     formatter.dateStyle = .medium
-    formatter.timeStyle = .short
+    formatter.timeStyle = .none
     return formatter.string(from: date)
   }
 

@@ -51,12 +51,24 @@ struct SeriesDetailView: View {
     return (series.booksReadCount + series.booksInProgressCount) > 0
   }
 
-  private var hasAdditionalInfo: Bool {
+  private var hasReleaseInfo: Bool {
     guard let series else { return false }
+    if let releaseDate = series.booksMetadata.releaseDate, !releaseDate.isEmpty {
+      return true
+    }
     if let status = series.metadata.status, !status.isEmpty {
       return true
     }
-    if let readDirection = series.metadata.readingDirection, !readDirection.isEmpty {
+
+    return false
+  }
+
+  private var hasReadInfo: Bool {
+    guard let series else { return false }
+    if let language = series.metadata.language, !language.isEmpty {
+      return true
+    }
+    if let direction = series.metadata.readingDirection, !direction.isEmpty {
       return true
     }
     return false
@@ -74,8 +86,8 @@ struct SeriesDetailView: View {
               VStack(alignment: .leading) {
                 HStack {
                   Text(series.metadata.title)
-                  Spacer()
                     .font(.title3)
+                  Spacer()
                   if let ageRating = series.metadata.ageRating, ageRating > 0 {
                     InfoChip(
                       label: "\(ageRating)+",
@@ -131,9 +143,18 @@ struct SeriesDetailView: View {
                     }
                   }
 
-                  // Additional info: Status, Reading Direction
-                  if hasAdditionalInfo {
+                  if hasReleaseInfo {
                     HStack(spacing: 6) {
+                      // Release date chip
+                      if let releaseDate = series.booksMetadata.releaseDate {
+                        InfoChip(
+                          label: releaseDate,
+                          systemImage: "calendar",
+                          backgroundColor: Color.orange.opacity(0.2),
+                          foregroundColor: .orange
+                        )
+                      }
+                      // Status chip
                       if let status = series.metadata.status, !status.isEmpty {
                         InfoChip(
                           label: series.statusDisplayName,
@@ -142,6 +163,22 @@ struct SeriesDetailView: View {
                           foregroundColor: .white
                         )
                       }
+                    }
+                  }
+
+                  if hasReadInfo {
+                    HStack(spacing: 6) {
+                      // Language chip
+                      if let language = series.metadata.language, !language.isEmpty {
+                        InfoChip(
+                          label: languageDisplayName(language),
+                          systemImage: "globe",
+                          backgroundColor: Color.purple.opacity(0.2),
+                          foregroundColor: .purple
+                        )
+                      }
+
+                      // Reading direction chip
                       if let direction = series.metadata.readingDirection, !direction.isEmpty {
                         InfoChip(
                           label: ReadingDirection.fromString(direction).displayName,
@@ -150,28 +187,6 @@ struct SeriesDetailView: View {
                           foregroundColor: .cyan
                         )
                       }
-                    }
-                  }
-
-                  HStack(spacing: 6) {
-                    // Release date chip
-                    if let releaseDate = series.booksMetadata.releaseDate {
-                      InfoChip(
-                        label: releaseDate,
-                        systemImage: "calendar",
-                        backgroundColor: Color.orange.opacity(0.2),
-                        foregroundColor: .orange
-                      )
-                    }
-
-                    // Language chip
-                    if let language = series.metadata.language, !language.isEmpty {
-                      InfoChip(
-                        label: languageDisplayName(language),
-                        systemImage: "globe",
-                        backgroundColor: Color.purple.opacity(0.2),
-                        foregroundColor: .purple
-                      )
                     }
                   }
 
@@ -257,8 +272,6 @@ struct SeriesDetailView: View {
             if !isLoadingCollections && !containingCollections.isEmpty {
               VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 4) {
-                  Image(systemName: "square.grid.2x2")
-                    .font(.caption)
                   Text("Collections")
                     .font(.headline)
                 }
@@ -270,14 +283,16 @@ struct SeriesDetailView: View {
                       CollectionDetailView(collectionId: collection.id)
                     } label: {
                       HStack {
-                        Text(collection.name)
+                        Label(collection.name, systemImage: "square.grid.2x2")
                           .foregroundColor(.primary)
                         Spacer()
                         Image(systemName: "chevron.right")
                           .font(.caption)
                           .foregroundColor(.secondary)
                       }
-                      .padding(.vertical, 4)
+                      .padding()
+                      .background(Color.secondary.opacity(0.1))
+                      .cornerRadius(16)
                     }
                   }
                 }
