@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KMReader · Native Komga Reader for iOS & macOS</title>
+    <meta
+      name="description"
+      content="KMReader is a modern, native Komga client for iOS and macOS with powerful browsing, reading, and admin tools."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header class="hero">
+        <img src="assets/icon.svg" alt="KMReader logo" class="logo" />
+        <p class="eyebrow">Native client for Komga</p>
+        <h1>KMReader</h1>
+        <p class="tagline">
+          A beautiful SwiftUI app that lets you browse, organize, and read all
+          of your Komga libraries on iPhone, iPad, and macOS with the fidelity
+          you expect from a first‑party experience.
+        </p>
+        <div class="cta">
+          <a
+            class="button primary"
+            href="https://github.com/everpcpc/KMReader"
+            target="_blank"
+            rel="noreferrer"
+            >View on GitHub</a
+          >
+          <a class="button secondary" href="#faq">Read the FAQ</a>
+        </div>
+        <div class="meta">
+          <div class="meta-card">
+            <span>Platforms</span>
+            <strong>iOS 17+ · iPadOS · macOS 14+</strong>
+          </div>
+          <div class="meta-card">
+            <span>Tech Stack</span>
+            <strong>SwiftUI · MVVM · Komga API v1/v2</strong>
+          </div>
+          <div class="meta-card">
+            <span>Reader Types</span>
+            <strong>DIVINA comics · EPUB</strong>
+          </div>
+        </div>
+      </header>
+
+      <section id="features">
+        <h2 class="section-title">Everything you need to stay immersed</h2>
+        <p class="section-subtitle">
+          Browse every series, collection, and read list with advanced
+          filtering, pick up right where you left off, and manage your server
+          without leaving the couch.
+        </p>
+        <div class="feature-grid">
+          <article class="card">
+            <span class="pill">Browse</span>
+            <h3>Unified Library Views</h3>
+            <ul>
+              <li>Series, books, collections, and read lists in one place</li>
+              <li>Grid or list layouts with customizable columns</li>
+              <li>Advanced filtering by library, read status, and more</li>
+            </ul>
+          </article>
+          <article class="card">
+            <span class="pill">Reader</span>
+            <h3>Optimized Reading Modes</h3>
+            <ul>
+              <li>DIVINA reader with LTR, RTL, vertical, and Webtoon modes</li>
+              <li>Full-featured EPUB reader with themes, fonts, and layouts</li>
+              <li>
+                Per-device cache so pages, EPUBs, and thumbnails stay local
+              </li>
+            </ul>
+          </article>
+          <article class="card">
+            <span class="pill">Dashboard</span>
+            <h3>Stay on Track</h3>
+            <ul>
+              <li>Keep Reading, On Deck, and Recently Added sections</li>
+              <li>Full reading history with quick resume</li>
+              <li>
+                Progress sync plus incognito reading when you want privacy
+              </li>
+            </ul>
+          </article>
+          <article class="card">
+            <span class="pill">Admin</span>
+            <h3>Server Controls</h3>
+            <ul>
+              <li>Edit metadata, manage collections, and trigger scans</li>
+              <li>Monitor libraries, refresh series, and empty trash</li>
+              <li>Three-tier caching controls with live usage indicators</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="experience">
+        <h2 class="section-title">Built for marathon reading sessions</h2>
+        <p class="section-subtitle">
+          KMReader tunes every interaction—from tap zones to zoom gestures—so
+          comics, manga, and novels feel instantly responsive on every Apple
+          device.
+        </p>
+        <div class="feature-grid">
+          <article class="card">
+            <h3>Adaptable Interface</h3>
+            <p>
+              Choose system, light, sepia, or dark themes, adjust tap zones, and
+              switch layouts on the fly. macOS gets a dedicated reader window
+              for distraction-free immersion.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Performance First</h3>
+            <p>
+              WebP support, intelligent preloading, and smart caching keep every
+              panel crisp while minimizing bandwidth. Offline access lets you
+              finish that book even without a connection.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Safe & Secure</h3>
+            <p>
+              Session-based authentication, role-aware features, and detailed
+              activity tracking ensure administrators stay in control while
+              readers stay signed in.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="faq">
+        <h2 class="section-title">FAQ</h2>
+        <div class="faq-grid">
+          <article class="faq-item">
+            <h4>Is KMReader an official Komga app?</h4>
+            <p>
+              No. KMReader is a community-built open-source client that talks to
+              the public Komga APIs. It is designed to feel as polished as a
+              first-party experience, but it is not affiliated with the Komga
+              project.
+            </p>
+          </article>
+          <article class="faq-item">
+            <h4>What formats can I read?</h4>
+            <p>
+              DIVINA (comic/manga/BD) archives plus EPUB are fully supported.
+              DIVINA gets multiple reading directions, dual-page layouts, zoom,
+              and tap zones. EPUB offers theme, font, and pagination controls.
+            </p>
+          </article>
+          <article class="faq-item">
+            <h4>Do I have to re-download books to read offline?</h4>
+            <p>
+              No. KMReader caches recently opened pages and downloads EPUB files
+              for offline or incognito reading automatically. You can monitor
+              and clear cache levels inside Settings when needed.
+            </p>
+          </article>
+          <article class="faq-item">
+            <h4>Can administrators manage the Komga server?</h4>
+            <p>
+              Yes. If your Komga account has admin permissions, KMReader exposes
+              metadata editing, scans, library operations, progress resets, and
+              other server tools directly on device.
+            </p>
+          </article>
+          <article class="faq-item">
+            <h4>How do updates ship?</h4>
+            <p>
+              KMReader is an open-source Swift project. Pull the latest changes
+              from GitHub, rebuild in Xcode, and you&rsquo;re ready to go. You
+              can also contribute features or translations via pull request.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <p>
+          Crafted with ❤️ for the Komga community ·
+          <a href="https://github.com/everpcpc/KMReader" target="_blank" rel="noreferrer"
+            >Star KMReader on GitHub</a
+          >
+        </p>
+        <p>
+          <a href="mailto:everpcpc+kmreader@icloud.com">Support</a>
+        </p>
+        <p>
+          <a href="privacy/">Privacy Policy</a>
+          ·
+          <a href="https://kmreader.userjot.com/" target="_blank" rel="noreferrer">Feedback</a>
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>
