@@ -12,15 +12,20 @@ struct BookReaderView: View {
   let incognito: Bool
 
   @Environment(\.dismiss) private var dismiss
+  @AppStorage("respectCompatibleEpub") private var respectCompatibleEpub: Bool = true
 
-  private var shouldUseEPUBReader: Bool {
+  private var shouldUseDivinaReader: Bool {
     guard let profile = book.media.mediaProfile else { return false }
     switch profile {
     case .epub:
       let compatible = book.media.epubDivinaCompatible ?? false
-      return !compatible
+      if compatible && respectCompatibleEpub {
+        return true
+      } else {
+        return false
+      }
     case .divina, .pdf, .unknown:
-      return false
+      return true
     }
   }
 
@@ -52,10 +57,10 @@ struct BookReaderView: View {
       } else {
         switch book.media.status {
         case .ready:
-          if shouldUseEPUBReader {
-            EpubReaderView(bookId: book.id, incognito: incognito)
-          } else {
+          if shouldUseDivinaReader {
             DivinaReaderView(bookId: book.id, incognito: incognito)
+          } else {
+            EpubReaderView(bookId: book.id, incognito: incognito)
           }
         default:
           VStack(spacing: 24) {
