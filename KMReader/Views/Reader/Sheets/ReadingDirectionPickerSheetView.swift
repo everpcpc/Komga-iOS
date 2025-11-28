@@ -10,23 +10,21 @@ import SwiftUI
 struct ReadingDirectionPickerSheetView: View {
   @Binding var readingDirection: ReadingDirection
 
-  @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
-
   var body: some View {
     NavigationStack {
-      Form {
-        Picker("Reading Direction", selection: $readingDirection) {
+      List {
+        Picker("", selection: $readingDirection) {
           ForEach(ReadingDirection.availableCases, id: \.self) { direction in
-            HStack(spacing: 12) {
+            HStack {
               Image(systemName: direction.icon)
-                .foregroundStyle(themeColor.color)
               Text(direction.displayName)
-            }
-            .tag(direction)
+            }.tag(direction)
           }
-        }.pickerStyle(.inline)
+        }
+        .pickerStyle(.inline)
+        .buttonStyle(.plain)
       }
-      .navigationTitle("Reading Mode")
+      .navigationTitle("Reading Direction")
       #if canImport(UIKit)
         .navigationBarTitleDisplayMode(.inline)
       #endif

@@ -77,8 +77,6 @@ struct ReaderManifestService {
     pageIndex: Int,
     resourceURL: URL
   ) throws -> PageBuildResult {
-    var width = resource.width
-    var height = resource.height
     var mediaType = ReaderMediaHelper.normalizedMimeType(resource.type)
     let isXHTML = isXHTMLResource(type: mediaType, url: resourceURL)
 
@@ -111,8 +109,8 @@ struct ReaderManifestService {
       number: pageIndex + 1,
       fileName: resolvedFileName,
       mediaType: mediaType,
-      width: width,
-      height: height,
+      width: resource.width,
+      height: resource.height,
       sizeBytes: nil,
       size: "",
       downloadURL: downloadURL

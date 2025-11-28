@@ -39,7 +39,6 @@ private struct PagePreviewItem: View {
   let imageURL: URL?
   let availableHeight: CGFloat
   let sliderWidth: CGFloat
-  let themeColor: ThemeColor
   let maxPage: Int
   let readingDirection: ReadingDirection
 
@@ -138,7 +137,7 @@ private struct PagePreviewItem: View {
             .padding(.vertical, 3)
             .background {
               RoundedRectangle(cornerRadius: 4)
-                .fill(themeColor.color)
+                .fill(.tint)
             }
         }
       }
@@ -161,8 +160,6 @@ struct PageJumpSheetView: View {
   let currentPage: Int
   let readingDirection: ReadingDirection
   let onJump: (Int) -> Void
-
-  @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
 
   @Environment(\.dismiss) private var dismiss
   @State private var pageValue: Int
@@ -263,7 +260,6 @@ struct PageJumpSheetView: View {
                       imageURL: getPreviewImageURL(page: page),
                       availableHeight: geometry.size.height,
                       sliderWidth: sliderWidth,
-                      themeColor: themeColor,
                       maxPage: maxPage,
                       readingDirection: readingDirection
                     )
@@ -277,7 +273,6 @@ struct PageJumpSheetView: View {
                 in: 1...Double(maxPage),
                 step: 1
               )
-              .tint(themeColor.color)
               .scaleEffect(x: sliderScaleX, y: 1)
 
               HStack {
@@ -300,13 +295,6 @@ struct PageJumpSheetView: View {
         .navigationBarTitleDisplayMode(.inline)
       #endif
       .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button(role: .cancel) {
-            dismiss()
-          } label: {
-            Label("Close", systemImage: "xmark")
-          }
-        }
         ToolbarItem(placement: .confirmationAction) {
           Button {
             jumpToPage()
@@ -317,5 +305,6 @@ struct PageJumpSheetView: View {
         }
       }
     }
+    .presentationDragIndicator(.visible)
   }
 }
