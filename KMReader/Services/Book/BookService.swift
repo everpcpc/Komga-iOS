@@ -56,6 +56,13 @@ class BookService {
     return try await apiClient.request(path: "/api/v1/books/\(id)/pages")
   }
 
+  func getBookManifest(id: String) async throws -> DivinaManifest {
+    return try await apiClient.request(
+      path: "/api/v1/books/\(id)/manifest",
+      headers: ["Accept": "application/divina+json"]
+    )
+  }
+
   func getWebPubProgression(bookId: String) async throws -> R2Progression? {
     return try await apiClient.requestOptional(path: "/api/v1/books/\(bookId)/progression")
   }
@@ -146,6 +153,11 @@ class BookService {
 
   func getBookPage(bookId: String, page: Int) async throws -> (data: Data, contentType: String?) {
     let result = try await apiClient.requestData(path: "/api/v1/books/\(bookId)/pages/\(page)")
+    return (data: result.data, contentType: result.contentType)
+  }
+
+  func downloadResource(at url: URL) async throws -> (data: Data, contentType: String?) {
+    let result = try await apiClient.requestData(url: url)
     return (data: result.data, contentType: result.contentType)
   }
 

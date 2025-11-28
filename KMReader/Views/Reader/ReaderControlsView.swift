@@ -24,6 +24,7 @@ struct ReaderControlsView: View {
   @State private var showDocumentPicker = false
   @State private var fileToSave: URL?
   @State private var showingPageJumpSheet = false
+  @State private var showingTOCSheet = false
 
   enum SaveImageResult: Equatable {
     case success
@@ -52,6 +53,10 @@ struct ReaderControlsView: View {
     }
   }
 
+  private func jumpToTOCEntry(_ entry: ReaderTOCEntry) {
+    jumpToPage(page: entry.pageIndex + 1)
+  }
+
   var body: some View {
     VStack {
       // Top bar
@@ -72,30 +77,52 @@ struct ReaderControlsView: View {
 
           Spacer()
 
-          // Page count
-          Button {
-            guard !viewModel.pages.isEmpty else { return }
-            showingPageJumpSheet = true
-          } label: {
-            HStack(spacing: 6) {
-              Image(systemName: "arrow.up.arrow.down")
-                .font(.footnote)
-              Text("\(displayedCurrentPage) / \(viewModel.pages.count)")
-                .monospacedDigit()
+          // Page count and TOC
+          HStack(spacing: 12) {
+            Button {
+              guard !viewModel.pages.isEmpty else { return }
+              showingPageJumpSheet = true
+            } label: {
+              HStack(spacing: 6) {
+                Image(systemName: "arrow.up.arrow.down")
+                  .font(.footnote)
+                Text("\(displayedCurrentPage) / \(viewModel.pages.count)")
+                  .monospacedDigit()
+              }
+              .foregroundColor(.white)
+              .padding(.horizontal, 16)
+              .padding(.vertical, 8)
+              .background(themeColor.color.opacity(0.9))
+              .cornerRadius(20)
+              .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                  .stroke(Color.white.opacity(0.3), lineWidth: 1)
+              )
+              .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
             }
-            .foregroundColor(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(themeColor.color.opacity(0.9))
-            .cornerRadius(20)
-            .overlay(
-              RoundedRectangle(cornerRadius: 20)
-                .stroke(Color.white.opacity(0.3), lineWidth: 1)
-            )
-            .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+            .buttonStyle(.plain)
+            .disabled(viewModel.pages.isEmpty)
+
+            if !viewModel.tableOfContents.isEmpty {
+              Button {
+                showingTOCSheet = true
+              } label: {
+                Image(systemName: "list.bullet.rectangle")
+                  .font(.footnote)
+                  .foregroundColor(.white)
+                  .padding(.horizontal, 14)
+                  .padding(.vertical, 8)
+                  .background(themeColor.color.opacity(0.9))
+                  .cornerRadius(20)
+                  .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                      .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                  )
+                  .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+              }
+              .buttonStyle(.plain)
+            }
           }
-          .buttonStyle(.plain)
-          .disabled(viewModel.pages.isEmpty)
 
           Spacer()
 
@@ -164,6 +191,16 @@ struct ReaderControlsView: View {
       ReadingDirectionPickerSheetView(readingDirection: $readingDirection)
         .presentationDetents([.height(400)])
         .presentationDragIndicator(.visible)
+    }
+    .sheet(isPresented: $showingTOCSheet) {
+      ReaderTOCSheetView(
+        entries: viewModel.tableOfContents,
+        currentPageIndex: viewModel.currentPageIndex,
+        onSelect: { entry in
+          showingTOCSheet = false
+          jumpToTOCEntry(entry)
+        }
+      )
     }
   }
 }

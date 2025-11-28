@@ -8,7 +8,7 @@
 import Foundation
 import UniformTypeIdentifiers
 
-struct BookPage: Codable, Identifiable {
+struct BookPage: Codable, Identifiable, Sendable {
   let number: Int
   let fileName: String
   let mediaType: String
@@ -16,6 +16,7 @@ struct BookPage: Codable, Identifiable {
   let height: Int?
   let sizeBytes: Int64?
   let size: String
+  let downloadURL: URL?
 
   var id: Int { number }
 

@@ -61,7 +61,8 @@ class APIClient {
     path: String,
     method: String,
     body: Data? = nil,
-    queryItems: [URLQueryItem]? = nil
+    queryItems: [URLQueryItem]? = nil,
+    headers: [String: String]? = nil
   ) throws -> URLRequest {
     guard var urlComponents = URLComponents(string: AppConfig.serverURL + path) else {
       throw APIError.invalidURL
@@ -79,18 +80,41 @@ class APIClient {
     request.httpMethod = method
     request.httpBody = body
 
-    // Set User-Agent
+    configureDefaultHeaders(&request, body: body, headers: headers)
+    return request
+  }
+
+  private func buildRequest(
+    url: URL,
+    method: String,
+    body: Data? = nil,
+    headers: [String: String]? = nil
+  ) -> URLRequest {
+    var request = URLRequest(url: url)
+    request.httpMethod = method
+    request.httpBody = body
+    configureDefaultHeaders(&request, body: body, headers: headers)
+    return request
+  }
+
+  private func configureDefaultHeaders(
+    _ request: inout URLRequest,
+    body: Data?,
+    headers: [String: String]?
+  ) {
     request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
 
     if !AppConfig.authToken.isEmpty {
       request.addValue("Basic \(AppConfig.authToken)", forHTTPHeaderField: "Authorization")
     }
 
-    if body != nil {
+    if body != nil && request.value(forHTTPHeaderField: "Content-Type") == nil {
       request.addValue("application/json", forHTTPHeaderField: "Content-Type")
     }
 
-    return request
+    headers?.forEach { key, value in
+      request.setValue(value, forHTTPHeaderField: key)
+    }
   }
 
   private func executeRequest(_ request: URLRequest) async throws -> (
@@ -167,10 +191,11 @@ class APIClient {
     path: String,
     method: String = "GET",
     body: Data? = nil,
-    queryItems: [URLQueryItem]? = nil
+    queryItems: [URLQueryItem]? = nil,
+    headers: [String: String]? = nil
   ) async throws -> T {
     let urlRequest = try buildRequest(
-      path: path, method: method, body: body, queryItems: queryItems)
+      path: path, method: method, body: body, queryItems: queryItems, headers: headers)
     let (data, httpResponse) = try await executeRequest(urlRequest)
 
     // Handle 204 No Content responses - skip JSON decoding
@@ -248,10 +273,11 @@ class APIClient {
     path: String,
     method: String = "GET",
     body: Data? = nil,
-    queryItems: [URLQueryItem]? = nil
+    queryItems: [URLQueryItem]? = nil,
+    headers: [String: String]? = nil
   ) async throws -> T? {
     let urlRequest = try buildRequest(
-      path: path, method: method, body: body, queryItems: queryItems)
+      path: path, method: method, body: body, queryItems: queryItems, headers: headers)
     let (data, httpResponse) = try await executeRequest(urlRequest)
 
     if httpResponse.statusCode == 204 || data.isEmpty {
@@ -271,22 +297,40 @@ class APIClient {
 
   func requestData(
     path: String,
-    method: String = "GET"
+    method: String = "GET",
+    headers: [String: String]? = nil
   ) async throws -> (data: Data, contentType: String?, suggestedFilename: String?) {
-    let urlRequest = try buildRequest(path: path, method: method)
+    let urlRequest = try buildRequest(path: path, method: method, headers: headers)
     let (data, httpResponse) = try await executeRequest(urlRequest)
 
-    // Get content type from response
-    let contentType = httpResponse.value(forHTTPHeaderField: "Content-Type")
-    let suggestedFilename = filenameFromContentDisposition(
-      httpResponse.value(forHTTPHeaderField: "Content-Disposition"))
+    return logAndExtractDataResponse(data: data, response: httpResponse, request: urlRequest)
+  }
 
-    // Log response with data size
+  func requestData(
+    url: URL,
+    method: String = "GET",
+    headers: [String: String]? = nil
+  ) async throws -> (data: Data, contentType: String?, suggestedFilename: String?) {
+    let urlRequest = buildRequest(url: url, method: method, headers: headers)
+    let (data, httpResponse) = try await executeRequest(urlRequest)
+    return logAndExtractDataResponse(data: data, response: httpResponse, request: urlRequest)
+  }
+
+
+  private func logAndExtractDataResponse(
+    data: Data,
+    response: HTTPURLResponse,
+    request: URLRequest
+  ) -> (data: Data, contentType: String?, suggestedFilename: String?) {
+    let contentType = response.value(forHTTPHeaderField: "Content-Type")
+    let suggestedFilename = filenameFromContentDisposition(
+      response.value(forHTTPHeaderField: "Content-Disposition"))
+
     let dataSize = ByteCountFormatter.string(
       fromByteCount: Int64(data.count), countStyle: .binary)
-    let method = urlRequest.httpMethod ?? "GET"
-    let urlString = urlRequest.url?.absoluteString ?? ""
-    logger.info("\(httpResponse.statusCode) \(method) \(urlString) [\(dataSize)]")
+    let method = request.httpMethod ?? "GET"
+    let urlString = request.url?.absoluteString ?? ""
+    logger.info("\(response.statusCode) \(method) \(urlString) [\(dataSize)]")
 
     return (data, contentType, suggestedFilename)
   }
