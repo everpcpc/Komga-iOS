@@ -99,6 +99,7 @@ class AuthViewModel {
     APIClient.shared.setAuthToken(instance.authToken)
     AppConfig.username = instance.username
     AppConfig.isAdmin = instance.isAdmin
+    AppConfig.serverDisplayName = instance.displayName
     isLoggedIn = true
     AppConfig.currentInstanceId = instance.id.uuidString
     credentialsVersion = UUID()
@@ -124,6 +125,7 @@ class AuthViewModel {
         displayName: displayName
       )
       AppConfig.currentInstanceId = instance.id.uuidString
+      AppConfig.serverDisplayName = instance.displayName
     } catch {
       ErrorManager.shared
         .notify(message: "Failed to remember server: \(error.localizedDescription)")

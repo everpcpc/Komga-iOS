@@ -41,19 +41,29 @@ struct SettingsView: View {
 
         Section(header: Text("Account")) {
           NavigationLink(value: NavDestination.settingsServers) {
-            Label("Servers", systemImage: "list.bullet.rectangle")
+            HStack {
+              Label("Servers", systemImage: "list.bullet.rectangle")
+              if let displayName = AppConfig.serverDisplayName, !displayName.isEmpty {
+                Spacer()
+                Text(displayName)
+                  .lineLimit(1)
+                  .foregroundColor(.secondary)
+              }
+            }
           }
           if let user = authViewModel.user {
             HStack {
-              Label("Email", systemImage: "envelope")
+              Label("User", systemImage: "person")
               Spacer()
               Text(user.email)
+                .lineLimit(1)
                 .foregroundColor(.secondary)
             }
             HStack {
-              Label("Admin", systemImage: "person.2")
+              Label("Role", systemImage: "shield")
               Spacer()
-              Text(AppConfig.isAdmin ? "Yes" : "No")
+              Text(AppConfig.isAdmin ? "Admin" : "User")
+                .lineLimit(1)
                 .foregroundColor(.secondary)
             }
           }

@@ -17,6 +17,17 @@ enum AppConfig {
     set { defaults.set(newValue, forKey: "serverURL") }
   }
 
+  static var serverDisplayName: String? {
+    get { defaults.string(forKey: "serverDisplayName") }
+    set {
+      if let value = newValue, !value.isEmpty {
+        defaults.set(value, forKey: "serverDisplayName")
+      } else {
+        defaults.removeObject(forKey: "serverDisplayName")
+      }
+    }
+  }
+
   static var authToken: String? {
     get { defaults.string(forKey: "authToken") }
     set {
@@ -105,6 +116,7 @@ enum AppConfig {
   static func clearAuthData() {
     authToken = nil
     username = nil
+    serverDisplayName = nil
     isAdmin = false
     selectedLibraryId = ""
     currentInstanceId = nil
