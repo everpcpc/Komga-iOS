@@ -105,7 +105,8 @@ struct BooksListViewForSeries: View {
 extension BooksListViewForSeries {
   fileprivate func refreshBooks() {
     Task {
-      await bookViewModel.loadBooks(seriesId: seriesId, browseOpts: browseOpts)
+      // Use refresh: false to preserve existing books during refresh for smoother UI
+      await bookViewModel.loadBooks(seriesId: seriesId, browseOpts: browseOpts, refresh: false)
     }
   }
 }

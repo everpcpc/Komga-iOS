@@ -553,6 +553,8 @@ extension SeriesDetailView {
   private func refreshAfterReading() {
     Task {
       await refreshSeriesData()
+      // Refresh book list smoothly without clearing existing data
+      await bookViewModel.refreshCurrentBooks()
     }
   }
 
@@ -565,7 +567,9 @@ extension SeriesDetailView {
   private func loadSeriesDetails() async {
     do {
       let fetchedSeries = try await SeriesService.shared.getOneSeries(id: seriesId)
-      series = fetchedSeries
+      withAnimation {
+        series = fetchedSeries
+      }
       await loadSeriesCollections(seriesId: fetchedSeries.id)
     } catch {
       ErrorManager.shared.alert(error: error)

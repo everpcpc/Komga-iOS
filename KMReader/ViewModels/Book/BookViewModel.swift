@@ -24,12 +24,22 @@ class BookViewModel {
   private var currentBrowseSort: String?
   private var currentBrowseSearch: String = ""
 
-  func loadBooks(seriesId: String, browseOpts: BookBrowseOptions) async {
+  func loadBooks(seriesId: String, browseOpts: BookBrowseOptions, refresh: Bool = true) async {
+    // Check if we're loading the same series with same options
+    let isSameSeries = currentSeriesId == seriesId && currentSeriesBrowseOpts == browseOpts
+
+    // Only clear books if it's a different series or forced refresh
+    let shouldClear = refresh || !isSameSeries
+
     currentSeriesId = seriesId
     currentSeriesBrowseOpts = browseOpts
     currentPage = 0
-    books = []
     hasMorePages = true
+
+    // Preserve existing books if refreshing the same series to avoid UI flicker
+    if shouldClear {
+      books = []
+    }
     isLoading = true
 
     do {
@@ -42,6 +52,8 @@ class BookViewModel {
       currentPage = 1
     } catch {
       ErrorManager.shared.alert(error: error)
+      // If error occurred and we preserved old data, keep it
+      // If we cleared data and error occurred, books will remain empty
     }
 
     isLoading = false
@@ -67,6 +79,14 @@ class BookViewModel {
     }
 
     isLoading = false
+  }
+
+  // Refresh current books list smoothly without clearing existing data
+  func refreshCurrentBooks() async {
+    guard let seriesId = currentSeriesId,
+      let browseOpts = currentSeriesBrowseOpts
+    else { return }
+    await loadBooks(seriesId: seriesId, browseOpts: browseOpts, refresh: false)
   }
 
   func loadBook(id: String) async {
