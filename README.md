@@ -6,7 +6,7 @@
   <img src="icon.svg" alt="KMReader Icon" width="128" height="128">
 </div>
 
-**A beautiful, native iOS and macOS client for [Komga](https://github.com/gotson/komga) with comic and EPUB readers**
+**A beautiful, multi-server native iOS and macOS client for [Komga](https://github.com/gotson/komga) with comic and EPUB readers**
 
 _A media server for comics, mangas, BDs, and magazines_
 
@@ -21,16 +21,20 @@ _A media server for comics, mangas, BDs, and magazines_
 
 ## ✨ Features
 
-### 🔐 Authentication
+### 🔐 Authentication & Servers
 
-- Secure login with session management
-- Authentication activity tracking
-- Role-based access control (Admin and User roles)
+- Guided onboarding flow with a dedicated landing screen that walks new installs straight into server setup
+- Secure login with session management and device-scoped configuration
+- Multi-server vault that lets you rename instances, see URLs and roles at a glance, swipe to edit/delete, and clear caches when removing a server
+- Quick session insight in Settings with email and admin indicators for the active account
+- Detailed authentication activity log with infinite scroll, IP/User-Agent/API key metadata, and pull-to-refresh
+- Role-based access control automatically unlocks admin-only tools and hides them for regular users
 
 ### 📚 Browsing & Organization
 
 - **Unified Browse View**: Series, Books, Collections, and Read Lists in one place
-- **Layout Modes**: Grid and List views with customizable columns (1-8)
+- **Layout Modes**: Grid and List views with customizable columns
+- **Orientation-Aware Layout**: Separate portrait and landscape column counts plus toggles for card titles and thumbnail aspect ratios
 - **Advanced Search**: Full-text search across your entire library
 - **Powerful Filtering**: Filter by library, read status, series status, and more
 - **Flexible Sorting**: Multiple sort options (title, date, file size, page count, etc.) with persistent preferences
@@ -46,13 +50,13 @@ _A media server for comics, mangas, BDs, and magazines_
   - Left-to-Right (LTR) for Western comics
   - Right-to-Left (RTL) for manga
   - Vertical scrolling for traditional manga
-  - Webtoon mode with adjustable width (50%-100%) (iOS only)
+  - Webtoon mode with adjustable width (iOS only)
 - **Page Layouts** (DIVINA):
   - Single page mode
   - Dual page mode (landscape orientation) for two-page spreads
   - Skip cover option in dual page mode
 - **Comic Reader Features** (DIVINA):
-  - Pinch to zoom (1x-4x magnification)
+  - Pinch to zoom for fine detail
   - Swipe navigation with customizable tap zones
   - Auto-hide controls for immersive reading
   - Page jump functionality with visual page counter
@@ -65,6 +69,7 @@ _A media server for comics, mangas, BDs, and magazines_
   - Auto, single, or dual-column layouts tuned for iPad and macOS
   - System, light, sepia, or dark themes with automatic switching
   - Table of contents browser with real-time progress indicator
+  - Optional "image view" mode for compatible EPUBs when you prefer comic-style rendering
 - **Progress Tracking**:
   - Automatic synchronization across all devices
   - Resume from last page
@@ -106,37 +111,39 @@ _A media server for comics, mangas, BDs, and magazines_
   - Empty trash
   - Delete libraries
   - Global operations for all libraries
+  - One-tap sheets for individual libraries plus toolbar actions to scan or empty trash across every library
+
+### 📡 Server Insights & Monitoring
+
+- **Server Info**: View Komga build metadata, git SHA, Java runtime, and OS details directly from the actuator endpoint
+- **Metrics Dashboard**: Inspect all-library disk usage, counts for series/books/collections/read lists/sidecars, and drill down per library
+- **Task Analytics**: Track executed tasks, duration per task type, and surface API errors inline for fast troubleshooting
 
 ### ⚙️ Settings & Customization
 
 - **Appearance**:
-  - Multiple theme colors
-  - Customizable browse columns
-  - Card display options
+  - Pick a favorite accent color to theme the app
+  - Adjust portrait and landscape column counts independently
+  - Toggle card details like series titles and thumbnail aspect ratios
 - **Reader Settings**:
   - Tap zone hints toggle
   - Reader background colors (system, black, white, gray)
   - Page layout selection (single/dual page)
   - Skip cover in dual page mode
-  - Webtoon page width adjustment (50%-100%)
-  - EPUB preferences: fonts, font size, pagination, layout, and theme presets (system/light/sepia/dark)
+  - Webtoon page width adjustment
+  - EPUB preferences: fonts, font size, pagination, layout, theme presets (system/light/sepia/dark), and optional image-view fallback
 - **Cache Management**:
   - **Three-tier caching system**:
-    - Page cache: Configurable disk cache size (512MB-8GB, adjustable in 256MB steps)
+    - Page cache: Adjustable disk cache for reading pages
     - Book file cache: Stores complete EPUB files for offline access
     - Thumbnail cache: Fast thumbnail loading for browse views
   - Real-time cache size and file count display for each cache type
   - Individual manual cache clearing for each cache type
   - Automatic cache cleanup when page cache limit is exceeded
-- **Server Management (Admin)**:
-  - View server information
-  - Monitor server metrics
-  - Library management interface
-- **Account**:
-  - View user information
-  - Check admin status
-  - Authentication activity log
-  - Logout functionality
+- **Servers & Accounts**:
+  - Add/edit/delete Komga instances, rename them, and switch instantly between saved sessions
+  - Stored credentials remain on-device and can be cleared by deleting a server entry
+  - View user information, admin status, and authentication activity logs before logging out
 
 ### 💾 Performance & Optimization
 
@@ -146,20 +153,17 @@ _A media server for comics, mangas, BDs, and magazines_
 - **Offline Capability**: Access recently viewed content when offline (pages and EPUB files)
 - **Efficient Image Loading**: Smart image loading with progressive enhancement
 - **EPUB Cache**: Whole-book EPUB downloads stored securely for instant reopen and offline support
-- **Separate Cache Management**: Independent control over page cache, book file cache, and thumbnail cache
+- **Separate Cache Management**: Independent control over page, book file, and thumbnail caches with adjustable limits and live size/file counters
+- **Server-Aware Cleanup**: Removing a saved server clears its cached pages, thumbnails, and EPUB data automatically
 
 ---
 
-## 🏗️ Architecture
+## 🧭 Design Overview
 
-Built following **MVVM** pattern:
-
-- **Models**: Library, Series, Book, Collection, ReadList, etc.
-- **Services**: APIClient, AuthService, LibraryService, SeriesService, BookService, ImageCache, ErrorManager
-- **ViewModels**: AuthViewModel, LibraryViewModel, SeriesViewModel, BookViewModel, ReaderViewModel, etc.
-- **Views**: Login, Dashboard, Browse, History, Settings, Reader (multiple modes), Detail views
-
----
+- Clear separation between browsing, reading, settings, and admin areas keeps navigation intuitive
+- Local storage remembers every Komga server profile so you can switch sessions instantly
+- Reusable services centralize networking, caching, and error handling for predictable behavior
+- Dedicated views for authentication, dashboards, and readers ensure consistent experiences across iPhone, iPad, and Mac
 
 ## 🚀 Getting Started
 

@@ -6,7 +6,7 @@
     <title>KMReader · Native Komga Reader for iOS & macOS</title>
     <meta
       name="description"
-      content="KMReader is a modern, native Komga client for iOS and macOS with powerful browsing, reading, and admin tools."
+      content="KMReader is a native Komga client for iOS and macOS with multi-server onboarding, advanced readers, admin tools, and smart caching."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -23,9 +23,9 @@
         <p class="eyebrow">Native client for Komga</p>
         <h1>KMReader</h1>
         <p class="tagline">
-          A beautiful SwiftUI app that lets you browse, organize, and read all
-          of your Komga libraries on iPhone, iPad, and macOS with the fidelity
-          you expect from a first‑party experience.
+          A SwiftUI experience that remembers every Komga server you connect,
+          surfaces adaptive library browsing, and delivers powerful DIVINA and
+          EPUB readers on iPhone, iPad, and macOS.
         </p>
         <div class="cta">
           <a
@@ -56,49 +56,49 @@
       <section id="features">
         <h2 class="section-title">Everything you need to stay immersed</h2>
         <p class="section-subtitle">
-          Browse every series, collection, and read list with advanced
-          filtering, pick up right where you left off, and manage your server
-          without leaving the couch.
+          Keep every Komga server at your fingertips, browse curated dashboards,
+          jump back into reading from anywhere, and handle admin jobs without
+          leaving the couch.
         </p>
         <div class="feature-grid">
           <article class="card">
-            <span class="pill">Browse</span>
-            <h3>Unified Library Views</h3>
+            <span class="pill">Servers</span>
+            <h3>Guided Onboarding</h3>
             <ul>
-              <li>Series, books, collections, and read lists in one place</li>
-              <li>Grid or list layouts with customizable columns</li>
-              <li>Advanced filtering by library, read status, and more</li>
+              <li>Landing flow walks you through connecting to Komga</li>
+              <li>Save multiple servers with custom names and instant switching</li>
+              <li>Audit authentication activity with IP/User-Agent history</li>
+            </ul>
+          </article>
+          <article class="card">
+            <span class="pill">Browse</span>
+            <h3>Adaptive Library Views</h3>
+            <ul>
+              <li>Series, books, collections, read lists, and dashboards (Keep Reading, On Deck, Recently Added)</li>
+              <li>
+                Grid/list layouts with portrait &amp; landscape column controls plus card title/aspect toggles
+              </li>
+              <li>Advanced search, filtering, persistent sorts, and infinite-scroll history</li>
             </ul>
           </article>
           <article class="card">
             <span class="pill">Reader</span>
             <h3>Optimized Reading Modes</h3>
             <ul>
-              <li>DIVINA reader with LTR, RTL, vertical, and Webtoon modes</li>
-              <li>Full-featured EPUB reader with themes, fonts, and layouts</li>
+              <li>DIVINA reader with LTR/RTL/vertical/Webtoon modes, dual-page spreads, pinch zoom, and tap zones</li>
               <li>
-                Per-device cache so pages, EPUBs, and thumbnails stay local
+                EPUB reader with font, theme, pagination, and optional comic-style image rendering plus incognito progress
               </li>
-            </ul>
-          </article>
-          <article class="card">
-            <span class="pill">Dashboard</span>
-            <h3>Stay on Track</h3>
-            <ul>
-              <li>Keep Reading, On Deck, and Recently Added sections</li>
-              <li>Full reading history with quick resume</li>
-              <li>
-                Progress sync plus incognito reading when you want privacy
-              </li>
+              <li>Save and export favorite pages, and enjoy a dedicated reader window on macOS</li>
             </ul>
           </article>
           <article class="card">
             <span class="pill">Admin</span>
-            <h3>Server Controls</h3>
+            <h3>Controls &amp; Metrics</h3>
             <ul>
-              <li>Edit metadata, manage collections, and trigger scans</li>
-              <li>Monitor libraries, refresh series, and empty trash</li>
-              <li>Three-tier caching controls with live usage indicators</li>
+              <li>Edit metadata, manage collections/read lists, and trigger scans or analyses</li>
+              <li>Run per-library or global scans, deep scans, metadata refreshes, and trash cleanup</li>
+              <li>View server info, Komga metrics, task analytics, and three-tier cache controls with live stats</li>
             </ul>
           </article>
         </div>
@@ -107,33 +107,34 @@
       <section id="experience">
         <h2 class="section-title">Built for marathon reading sessions</h2>
         <p class="section-subtitle">
-          KMReader tunes every interaction—from tap zones to zoom gestures—so
-          comics, manga, and novels feel instantly responsive on every Apple
-          device.
+          KMReader tunes everything from tap zones to cache budgets so comics,
+          manga, and novels feel instantly responsive on every Apple device.
         </p>
         <div class="feature-grid">
           <article class="card">
             <h3>Adaptable Interface</h3>
             <p>
-              Choose system, light, sepia, or dark themes, adjust tap zones, and
-              switch layouts on the fly. macOS gets a dedicated reader window
+              Pick a theme color, choose system/light/sepia/dark reader styles,
+              set portrait &amp; landscape column counts, toggle tap-zone hints,
+              and dial in Webtoon width. macOS gets a dedicated reader window
               for distraction-free immersion.
             </p>
           </article>
           <article class="card">
             <h3>Performance First</h3>
             <p>
-              WebP support, intelligent preloading, and smart caching keep every
-              panel crisp while minimizing bandwidth. Offline access lets you
-              finish that book even without a connection.
+              WebP support, intelligent preloading, and three-tier caching
+              (512&nbsp;MB–8&nbsp;GB slider with live stats) keep every panel
+              crisp while minimizing bandwidth. Offline EPUB and page caches
+              stick around until you clear them or remove the server.
             </p>
           </article>
           <article class="card">
             <h3>Safe & Secure</h3>
             <p>
-              Session-based authentication, role-aware features, and detailed
-              activity tracking ensure administrators stay in control while
-              readers stay signed in.
+              Credentials stay on-device inside the multi-server vault, admin
+              controls remain role-gated, and a detailed authentication log
+              surfaces IP, User-Agent, and API key history for every session.
             </p>
           </article>
         </div>
@@ -152,27 +153,39 @@
             </p>
           </article>
           <article class="faq-item">
+            <h4>Can I connect to multiple Komga servers?</h4>
+            <p>
+              Yes. The server switcher stores as many instances as you like with
+              custom names, last-used timestamps, and admin/user roles. Switch
+              between them instantly, edit credentials, or delete an entry to
+              clear its cached pages, thumbnails, and EPUB files.
+            </p>
+          </article>
+          <article class="faq-item">
             <h4>What formats can I read?</h4>
             <p>
               DIVINA (comic/manga/BD) archives plus EPUB are fully supported.
               DIVINA gets multiple reading directions, dual-page layouts, zoom,
-              and tap zones. EPUB offers theme, font, and pagination controls.
+              and tap zones. EPUB offers theme, font, pagination, and optional
+              comic-style image rendering for compatible books.
             </p>
           </article>
           <article class="faq-item">
             <h4>Do I have to re-download books to read offline?</h4>
             <p>
               No. KMReader caches recently opened pages and downloads EPUB files
-              for offline or incognito reading automatically. You can monitor
-              and clear cache levels inside Settings when needed.
+              for offline or incognito reading automatically. Tune the 512&nbsp;MB–8&nbsp;GB
+              page cache slider, check live size/file counters, and clear page,
+              book, or thumbnail caches individually inside Settings.
             </p>
           </article>
           <article class="faq-item">
             <h4>Can administrators manage the Komga server?</h4>
             <p>
               Yes. If your Komga account has admin permissions, KMReader exposes
-              metadata editing, scans, library operations, progress resets, and
-              other server tools directly on device.
+              metadata editing, scans, library operations, progress resets,
+              server info, and Komga metrics (disk usage, counts, task
+              analytics) directly on device.
             </p>
           </article>
           <article class="faq-item">
