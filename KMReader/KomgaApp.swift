@@ -17,11 +17,12 @@ struct KomgaApp: App {
 
   init() {
     do {
-      modelContainer = try ModelContainer(for: KomgaInstance.self)
+      modelContainer = try ModelContainer(for: KomgaInstance.self, KomgaLibrary.self)
     } catch {
       fatalError("Failed to create ModelContainer: \(error.localizedDescription)")
     }
     KomgaInstanceStore.shared.configure(with: modelContainer)
+    KomgaLibraryStore.shared.configure(with: modelContainer)
     _authViewModel = State(initialValue: AuthViewModel())
     configureSDWebImage()
   }

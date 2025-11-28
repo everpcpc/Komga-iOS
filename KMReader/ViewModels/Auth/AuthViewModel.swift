@@ -45,6 +45,8 @@ class AuthViewModel {
       user = try await authService.login(
         username: username, password: password, serverURL: serverURL)
       isLoggedIn = true
+      LibraryManager.shared.clearAllLibraries()
+      AppConfig.selectedLibraryId = ""
       persistInstance(serverURL: serverURL, username: username, displayName: displayName)
       credentialsVersion = UUID()
     } catch {
@@ -66,6 +68,8 @@ class AuthViewModel {
     isLoggedIn = false
     user = nil
     credentialsVersion = UUID()
+    LibraryManager.shared.clearAllLibraries()
+    AppConfig.selectedLibraryId = ""
   }
 
   func loadCurrentUser() async {
@@ -85,6 +89,11 @@ class AuthViewModel {
   }
 
   func switchTo(instance: KomgaInstance) {
+    let previousInstanceId = AppConfig.currentInstanceId
+    if previousInstanceId != instance.id.uuidString {
+      LibraryManager.shared.clearAllLibraries()
+      AppConfig.selectedLibraryId = ""
+    }
     APIClient.shared.setServer(url: instance.serverURL)
     APIClient.shared.setAuthToken(instance.authToken)
     AppConfig.username = instance.username

@@ -250,6 +250,7 @@ struct SettingsServersView: View {
     Task {
       await CacheManager.clearCaches(instanceId: instance.id.uuidString)
     }
+    LibraryManager.shared.removeLibraries(for: instance.id.uuidString)
   }
 
   private func saveChanges() {

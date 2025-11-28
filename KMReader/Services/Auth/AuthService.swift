@@ -54,7 +54,7 @@ class AuthService {
     AppConfig.clearAuthData()
 
     // Clear library data
-    LibraryManager.shared.clearLibraries()
+    LibraryManager.shared.clearAllLibraries()
   }
 
   func isLoggedIn() -> Bool {

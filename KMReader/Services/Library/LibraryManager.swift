@@ -17,12 +17,26 @@ class LibraryManager {
   private(set) var isLoading = false
 
   private let libraryService = LibraryService.shared
+  private let libraryStore = KomgaLibraryStore.shared
   private var hasLoaded = false
+  private var loadedInstanceId: String?
 
   private init() {}
 
   func loadLibraries() async {
-    // Only load once
+    guard let instanceId = AppConfig.currentInstanceId else {
+      libraries = []
+      hasLoaded = false
+      loadedInstanceId = nil
+      return
+    }
+
+    if loadedInstanceId != instanceId {
+      loadPersistedLibraries(for: instanceId)
+      loadedInstanceId = instanceId
+      hasLoaded = false
+    }
+
     guard !hasLoaded else { return }
 
     isLoading = true
@@ -30,7 +44,9 @@ class LibraryManager {
     do {
       let fullLibraries = try await libraryService.getLibraries()
       // Extract only id and name
-      libraries = fullLibraries.map { LibraryInfo(id: $0.id, name: $0.name) }
+      let infos = fullLibraries.map { LibraryInfo(id: $0.id, name: $0.name) }
+      libraries = infos
+      try libraryStore.replaceLibraries(infos, for: instanceId)
       hasLoaded = true
     } catch {
       ErrorManager.shared.alert(error: error)
@@ -48,8 +64,31 @@ class LibraryManager {
     await loadLibraries()
   }
 
-  func clearLibraries() {
+  func clearAllLibraries() {
     libraries = []
     hasLoaded = false
+    loadedInstanceId = nil
+    do {
+      try libraryStore.deleteLibraries(instanceId: nil)
+    } catch {
+      ErrorManager.shared.alert(error: error)
+    }
+  }
+
+  func removeLibraries(for instanceId: String) {
+    do {
+      try libraryStore.deleteLibraries(instanceId: instanceId)
+      if loadedInstanceId == instanceId {
+        libraries = []
+        hasLoaded = false
+        loadedInstanceId = nil
+      }
+    } catch {
+      ErrorManager.shared.alert(error: error)
+    }
+  }
+
+  private func loadPersistedLibraries(for instanceId: String) {
+    libraries = libraryStore.fetchLibraries(instanceId: instanceId)
   }
 }
