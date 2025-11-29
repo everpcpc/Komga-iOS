@@ -10,6 +10,7 @@ import SwiftUI
 struct SettingsTasksView: View {
   @State private var isLoading = false
   @State private var isCancelling = false
+  @State private var showCancelAllConfirmation = false
 
   // Tasks metrics
   @State private var tasks: Metric?
@@ -100,7 +101,7 @@ struct SettingsTasksView: View {
       if AppConfig.isAdmin {
         ToolbarItem(placement: .confirmationAction) {
           Button {
-            cancelAllTasks()
+            showCancelAllConfirmation = true
           } label: {
             if isCancelling {
               ProgressView()
@@ -111,6 +112,14 @@ struct SettingsTasksView: View {
           .disabled(isCancelling)
         }
       }
+    }
+    .alert("Cancel All Tasks", isPresented: $showCancelAllConfirmation) {
+      Button("Cancel", role: .cancel) {}
+      Button("Confirm", role: .destructive) {
+        cancelAllTasks()
+      }
+    } message: {
+      Text("Are you sure you want to cancel all tasks? This action cannot be undone.")
     }
     .task {
       await loadMetrics()
