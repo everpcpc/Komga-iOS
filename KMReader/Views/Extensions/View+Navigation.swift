@@ -85,7 +85,7 @@ extension View {
   }
 }
 
-#if canImport(AppKit)
+#if os(macOS)
   private struct ReaderWindowHandler: View {
     @Binding var readerState: BookReaderState?
     @Environment(\.openWindow) private var openWindow

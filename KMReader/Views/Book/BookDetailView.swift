@@ -11,7 +11,7 @@ struct BookDetailView: View {
   let bookId: String
 
   @Environment(\.dismiss) private var dismiss
-  #if canImport(AppKit)
+  #if os(macOS)
     @Environment(\.openWindow) private var openWindow
   #endif
   @State private var book: Book?

@@ -9,8 +9,8 @@ import Foundation
 import OSLog
 import Photos
 import SDWebImage
-import UniformTypeIdentifiers
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct PagePair: Hashable {
   let first: Int
@@ -111,8 +111,7 @@ class ReaderViewModel {
       pagePairs = generatePagePairs(pages: pages)
       dualPageIndices = generateDualPageIndices(pairs: pagePairs)
 
-      if
-        let initialPageNumber = initialPageNumber,
+      if let initialPageNumber = initialPageNumber,
         let pageIndex = pages.firstIndex(where: { $0.number == initialPageNumber })
       {
         currentPageIndex = pageIndex
@@ -155,7 +154,8 @@ class ReaderViewModel {
 
       do {
         guard let remoteURL = await self.resolvedDownloadURL(for: page) else {
-          self.logger.error("❌ Unable to resolve download URL for page \(page.number) in book \(self.bookId)")
+          self.logger.error(
+            "❌ Unable to resolve download URL for page \(page.number) in book \(self.bookId)")
           return nil
         }
 
@@ -301,7 +301,9 @@ class ReaderViewModel {
       pageResources[pageNumber] = .direct(resolvedURL)
       return resolvedURL
     } catch {
-      logger.error("❌ Failed to resolve XHTML for page \(pageNumber) in book \(self.bookId): \(error.localizedDescription)")
+      logger.error(
+        "❌ Failed to resolve XHTML for page \(pageNumber) in book \(self.bookId): \(error.localizedDescription)"
+      )
       return nil
     }
   }
@@ -394,7 +396,7 @@ class ReaderViewModel {
   /// - Parameter fileURL: Local file URL
   /// - Returns: PlatformImage if successfully loaded, nil otherwise
   private func loadImageWithSDWebImage(from fileURL: URL) async -> PlatformImage? {
-    #if canImport(UIKit)
+    #if os(iOS)
       return await withCheckedContinuation { continuation in
         SDImageCacheProvider.pageImageCache.queryImage(
           forKey: fileURL.absoluteString,
@@ -414,7 +416,7 @@ class ReaderViewModel {
           }
         }
       }
-    #elseif canImport(AppKit)
+    #elseif os(macOS)
       return await withCheckedContinuation { continuation in
         SDImageCacheProvider.pageImageCache.queryImage(
           forKey: fileURL.absoluteString,

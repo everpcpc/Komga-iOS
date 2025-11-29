@@ -44,7 +44,7 @@ struct ReaderTOCSheetView: View {
       .padding(PlatformHelper.sheetPadding)
     }
     .presentationDragIndicator(.visible)
-    #if canImport(UIKit)
+    #if os(iOS)
       .presentationDetents([.medium, .large])
     #else
       .frame(minWidth: 400, minHeight: 500)

@@ -166,7 +166,7 @@ struct DivinaReaderView: View {
               }
 
             case .webtoon:
-              #if canImport(UIKit) && !os(watchOS) && !os(tvOS)
+              #if os(iOS)
                 WebtoonPageView(
                   viewModel: viewModel,
                   isAtBottom: $isAtBottom,
@@ -267,7 +267,7 @@ struct DivinaReaderView: View {
         .opacity(shouldShowControls ? 1.0 : 0.0)
         .allowsHitTesting(shouldShowControls)
 
-        #if canImport(AppKit)
+        #if os(macOS)
           // Keyboard shortcuts help overlay (independent of controls visibility)
           KeyboardHelpOverlay(
             readingDirection: readingDirection,
@@ -342,14 +342,14 @@ struct DivinaReaderView: View {
         }
       #endif
     }
-    #if canImport(AppKit)
+    #if os(macOS)
       .background(
         // Window-level keyboard event handler for keyboard help
         KeyboardEventHandler(
           onKeyPress: { keyCode, flags in
             // Handle ? key for keyboard help
             if keyCode == 44 {  // ? key (Shift + /)
-              showingKeyboardHelp.toggle()
+              showHelperOverlay.toggle()
             }
           }
         )
@@ -359,7 +359,7 @@ struct DivinaReaderView: View {
     #if os(iOS)
       .statusBar(hidden: !shouldShowControls)
     #endif
-    #if canImport(AppKit)
+    #if os(macOS)
       .onAppear {
         // Optionally show helper overlay briefly on macOS when enabled in settings
         triggerHelperOverlay()
@@ -598,7 +598,7 @@ struct DivinaReaderView: View {
 
 }
 
-#if canImport(AppKit)
+#if os(macOS)
   import AppKit
 
   // Window-level keyboard event handler

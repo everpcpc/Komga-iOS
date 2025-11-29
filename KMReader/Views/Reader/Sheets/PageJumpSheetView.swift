@@ -323,7 +323,7 @@ struct PageJumpSheetView: View {
       }
     }
     .presentationDragIndicator(.visible)
-    #if canImport(UIKit)
+    #if os(iOS)
       .presentationDetents([.large])
     #else
       .frame(minWidth: 500, minHeight: 400)

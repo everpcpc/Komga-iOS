@@ -43,7 +43,7 @@ struct KomgaApp: App {
         .environment(authViewModel)
         .modelContainer(modelContainer)
     }
-    #if canImport(AppKit)
+    #if os(macOS)
       WindowGroup(id: "reader") {
         ReaderWindowView()
           .environment(authViewModel)

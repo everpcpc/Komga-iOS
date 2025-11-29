@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-#if canImport(AppKit)
+#if os(macOS)
   import AppKit
 
   // Keyboard shortcuts help overlay

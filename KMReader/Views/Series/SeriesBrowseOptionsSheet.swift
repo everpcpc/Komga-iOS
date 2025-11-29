@@ -55,7 +55,7 @@ struct SeriesBrowseOptionsSheet: View {
         }
       }
     }
-    #if canImport(UIKit)
+    #if os(iOS)
       .presentationDetents([.medium])
     #else
       .frame(minWidth: 400, minHeight: 400)

@@ -5,7 +5,7 @@
 //  Created by Komga iOS Client
 //
 
-#if canImport(AppKit)
+#if os(macOS)
   import SwiftUI
 
   // Manager to pass reader state to window

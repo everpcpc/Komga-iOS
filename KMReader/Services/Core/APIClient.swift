@@ -36,10 +36,12 @@ class APIClient {
 
     let device = PlatformHelper.deviceModel
     let osVersion = PlatformHelper.osVersion
-    #if canImport(UIKit)
+    #if os(iOS)
       let platform = "iOS"
-    #elseif canImport(AppKit)
+    #elseif os(macOS)
       let platform = "macOS"
+    #elseif os(tvOS)
+      let platform = "tvOS"
     #else
       let platform = "Unknown"
     #endif

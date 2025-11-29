@@ -13,7 +13,7 @@ struct ReadHistorySection: View {
   var onLoadMore: (() -> Void)?
   var onBookUpdated: (() -> Void)? = nil
 
-  #if canImport(AppKit)
+  #if os(macOS)
     @Environment(\.openWindow) private var openWindow
   #endif
   @State private var readerState: BookReaderState?
@@ -22,7 +22,6 @@ struct ReadHistorySection: View {
   @State private var showDeleteConfirmation = false
   @State private var bookToDelete: Book?
   @State private var downloadSheetBook: Book?
-
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {

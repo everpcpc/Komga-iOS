@@ -37,7 +37,7 @@ struct ZoomableImageContainer<Content: View>: View {
   }
 
   var body: some View {
-    #if canImport(UIKit)
+    #if os(iOS)
       ZoomableScrollViewRepresentable(
         resetID: resetID,
         minScale: minScale,
@@ -47,7 +47,7 @@ struct ZoomableImageContainer<Content: View>: View {
         content: content
       )
       .frame(width: screenSize.width, height: screenSize.height)
-    #elseif canImport(AppKit)
+    #elseif os(macOS)
       ZoomableScrollViewRepresentable(
         resetID: resetID,
         minScale: minScale,
@@ -61,7 +61,7 @@ struct ZoomableImageContainer<Content: View>: View {
   }
 }
 
-#if canImport(UIKit)
+#if os(iOS)
   import UIKit
 
   private struct ZoomableScrollViewRepresentable<Content: View>: UIViewRepresentable {
@@ -229,7 +229,7 @@ struct ZoomableImageContainer<Content: View>: View {
     }
   }
 
-#elseif canImport(AppKit)
+#elseif os(macOS)
   import AppKit
 
   private struct ZoomableScrollViewRepresentable<Content: View>: NSViewRepresentable {

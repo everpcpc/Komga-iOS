@@ -5,7 +5,7 @@
 //  Created by Komga iOS Client
 //
 
-#if canImport(UIKit) && !os(watchOS) && !os(tvOS)
+#if os(iOS)
   import SwiftUI
 
   struct WebtoonPageView: View {
@@ -41,11 +41,12 @@
         VStack {
           Spacer()
           EndPageView(
+            viewModel: viewModel,
             nextBook: nextBook,
             onDismiss: onDismiss,
             onNextBook: onNextBook,
             isRTL: false,
-            goToPreviousPage: nil
+            onFocusChange: nil
           )
           .padding(.bottom, 160)
         }

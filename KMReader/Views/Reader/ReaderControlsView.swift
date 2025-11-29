@@ -8,11 +8,9 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-#if canImport(AppKit)
+#if os(macOS)
   import AppKit
-#endif
 
-#if canImport(AppKit)
   // Window-level keyboard event handler
   private struct KeyboardEventHandler: NSViewRepresentable {
     let onKeyPress: (UInt16, NSEvent.ModifierFlags) -> Void
@@ -290,7 +288,7 @@ struct ReaderControlsView: View {
       }
       .focusSection()
     #endif
-    #if canImport(AppKit)
+    #if os(macOS)
       .background(
         // Window-level keyboard event handler
         KeyboardEventHandler(
@@ -324,7 +322,7 @@ struct ReaderControlsView: View {
     }
   }
 
-  #if canImport(AppKit)
+  #if os(macOS)
     func handleKeyCode(_ keyCode: UInt16, flags: NSEvent.ModifierFlags) {
       // Handle ESC key to close window
       if keyCode == 53 {  // ESC key

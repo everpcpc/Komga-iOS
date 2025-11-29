@@ -62,7 +62,7 @@ struct SeriesEditSheet: View {
             .lineLimit(3...10)
           TextField("Publisher", text: $publisher)
           TextField("Age Rating", text: $ageRating)
-            #if canImport(UIKit)
+            #if os(iOS) || os(tvOS)
               .keyboardType(.numberPad)
             #endif
           TextField("Language", text: $language)
@@ -151,7 +151,7 @@ struct SeriesEditSheet: View {
           VStack {
             TextField("Label", text: $newLinkLabel)
             TextField("URL", text: $newLinkURL)
-              #if canImport(UIKit)
+              #if os(iOS) || os(tvOS)
                 .keyboardType(.URL)
                 .autocapitalization(.none)
               #endif
@@ -226,7 +226,7 @@ struct SeriesEditSheet: View {
         }
       }
     }
-    #if canImport(UIKit)
+    #if os(iOS)
       .presentationDetents([.large])
     #else
       .frame(minWidth: 500, minHeight: 600)

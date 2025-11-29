@@ -47,11 +47,11 @@ struct BookEditSheet: View {
           TextField("Title", text: $title)
           TextField("Number", text: $number)
           TextField("Release Date", text: $releaseDate)
-            #if canImport(UIKit)
+            #if os(iOS) || os(tvOS)
               .keyboardType(.default)
             #endif
           TextField("ISBN", text: $isbn)
-            #if canImport(UIKit)
+            #if os(iOS) || os(tvOS)
               .keyboardType(.default)
             #endif
           TextField("Summary", text: $summary, axis: .vertical)
@@ -139,7 +139,7 @@ struct BookEditSheet: View {
           VStack {
             TextField("Label", text: $newLinkLabel)
             TextField("URL", text: $newLinkURL)
-              #if canImport(UIKit)
+              #if os(iOS) || os(tvOS)
                 .keyboardType(.URL)
                 .autocapitalization(.none)
               #endif
@@ -179,7 +179,7 @@ struct BookEditSheet: View {
         }
       }
     }
-    #if canImport(UIKit)
+    #if os(iOS)
       .presentationDetents([.large])
     #else
       .frame(minWidth: 500, minHeight: 600)

@@ -16,7 +16,7 @@ enum ReadingDirection: CaseIterable, Hashable {
 
   /// Get available reading directions for current platform
   static var availableCases: [ReadingDirection] {
-    #if canImport(UIKit) && !os(watchOS) && !os(tvOS)
+    #if os(iOS)
       return allCases
     #else
       // Webtoon requires iOS/iPadOS (not watchOS or tvOS)
@@ -26,7 +26,7 @@ enum ReadingDirection: CaseIterable, Hashable {
 
   /// Check if this reading direction is supported on current platform
   var isSupported: Bool {
-    #if canImport(UIKit) && !os(watchOS) && !os(tvOS)
+    #if os(iOS)
       return true
     #else
       // Webtoon requires iOS/iPadOS (not watchOS or tvOS)

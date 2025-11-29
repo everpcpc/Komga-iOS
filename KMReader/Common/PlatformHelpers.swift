@@ -8,14 +8,14 @@
 import Foundation
 import SwiftUI
 
-#if canImport(UIKit)
+#if os(iOS) || os(tvOS)
   import UIKit
   public typealias PlatformImage = UIImage
   #if os(iOS)
     /// Pasteboard type for iOS platforms
     public typealias PlatformPasteboard = UIPasteboard
   #endif
-#elseif canImport(AppKit)
+#elseif os(macOS)
   import AppKit
   public typealias PlatformImage = NSImage
   /// Pasteboard type for macOS platforms
@@ -26,9 +26,9 @@ import SwiftUI
 struct PlatformHelper {
   /// Get device model name
   static var deviceModel: String {
-    #if canImport(UIKit)
+    #if os(iOS)
       return UIDevice.current.model
-    #elseif canImport(AppKit)
+    #elseif os(macOS)
       return "Mac"
     #else
       return "Unknown"
@@ -37,9 +37,9 @@ struct PlatformHelper {
 
   /// Get OS version string
   static var osVersion: String {
-    #if canImport(UIKit)
+    #if os(iOS)
       return UIDevice.current.systemVersion
-    #elseif canImport(AppKit)
+    #elseif os(macOS)
       let version = ProcessInfo.processInfo.operatingSystemVersion
       return "\(version.majorVersion).\(version.minorVersion).\(version.patchVersion)"
     #else
@@ -53,7 +53,7 @@ struct PlatformHelper {
     if let cached = AppConfig.deviceIdentifier, !cached.isEmpty {
       return cached
     }
-    #if canImport(UIKit)
+    #if os(iOS)
       if let vendorId = UIDevice.current.identifierForVendor?.uuidString {
         AppConfig.deviceIdentifier = vendorId
         return vendorId
@@ -66,7 +66,7 @@ struct PlatformHelper {
 
   /// Check if running on iPad
   static var isPad: Bool {
-    #if canImport(UIKit)
+    #if os(iOS)
       return UIDevice.current.userInterfaceIdiom == .pad
     #else
       return false
@@ -113,7 +113,7 @@ struct PlatformHelper {
   static var deviceOrientation: DeviceOrientation {
     #if os(tvOS) || os(macOS)
       return .landscape
-    #elseif canImport(UIKit)
+    #elseif os(iOS)
       let orientation = UIDevice.current.orientation
       if orientation.isLandscape {
         return .landscape
@@ -142,22 +142,22 @@ struct PlatformHelper {
   /// - Parameter color: SwiftUI Color to convert
   /// - Returns: CGColor representation of the color
   static func cgColor(from color: Color) -> CGColor {
-    #if canImport(UIKit)
+    #if os(iOS)
       return UIColor(color).cgColor
-    #elseif canImport(AppKit)
+    #elseif os(macOS)
       return NSColor(color).cgColor
     #else
       // Fallback: use default orange color
-      return CGColor(red: 1, green: 0.58, blue: 0, alpha: 1)!
+      return CGColor(red: 1, green: 0.58, blue: 0, alpha: 1)
     #endif
   }
 
   /// Get system background color
   /// - Returns: System background color appropriate for the platform
   static var systemBackgroundColor: Color {
-    #if canImport(UIKit) && !os(tvOS)
+    #if os(iOS)
       return Color(.systemBackground)
-    #elseif canImport(AppKit)
+    #elseif os(macOS)
       return Color(NSColor.controlBackgroundColor)
     #else
       return .gray
@@ -167,9 +167,9 @@ struct PlatformHelper {
   /// Get secondary system background color
   /// - Returns: Secondary system background color appropriate for the platform
   static var secondarySystemBackgroundColor: Color {
-    #if canImport(UIKit) && !os(tvOS)
+    #if os(iOS)
       return Color(.secondarySystemBackground)
-    #elseif canImport(AppKit)
+    #elseif os(macOS)
       return Color(NSColor.controlBackgroundColor).opacity(0.5)
     #else
       return .gray.opacity(0.5)
@@ -180,9 +180,9 @@ struct PlatformHelper {
   /// - Parameter image: Platform image to convert
   /// - Returns: PNG data if conversion succeeds, nil otherwise
   static func pngData(from image: PlatformImage) -> Data? {
-    #if canImport(UIKit)
+    #if os(iOS)
       return image.pngData()
-    #elseif canImport(AppKit)
+    #elseif os(macOS)
       guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
         return nil
       }
@@ -208,7 +208,7 @@ enum DeviceOrientation {
   }
 }
 
-#if canImport(AppKit)
+#if os(macOS)
   extension NSPasteboard {
     var string: String? {
       get {

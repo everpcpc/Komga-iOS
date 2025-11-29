@@ -31,7 +31,7 @@ struct ReadingDirectionPickerSheetView: View {
       .padding(PlatformHelper.sheetPadding)
     }
     .presentationDragIndicator(.visible)
-    #if canImport(UIKit)
+    #if os(iOS)
       .presentationDetents([.height(400)])
     #else
       .frame(minWidth: 300, minHeight: 400)

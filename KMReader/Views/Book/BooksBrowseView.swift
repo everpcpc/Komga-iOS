@@ -17,7 +17,7 @@ struct BooksBrowseView: View {
   @AppStorage("selectedLibraryId") private var selectedLibraryId: String = ""
   @AppStorage("browseColumns") private var browseColumns: BrowseColumns = BrowseColumns()
   @AppStorage("browseLayout") private var browseLayout: BrowseLayoutMode = .grid
-  #if canImport(AppKit)
+  #if os(macOS)
     @Environment(\.openWindow) private var openWindow
   #endif
 

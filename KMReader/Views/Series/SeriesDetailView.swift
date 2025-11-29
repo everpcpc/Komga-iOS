@@ -15,7 +15,7 @@ struct SeriesDetailView: View {
   @AppStorage("browseColumns") private var browseColumns: BrowseColumns = BrowseColumns()
 
   @Environment(\.dismiss) private var dismiss
-  #if canImport(AppKit)
+  #if os(macOS)
     @Environment(\.openWindow) private var openWindow
   #endif
 

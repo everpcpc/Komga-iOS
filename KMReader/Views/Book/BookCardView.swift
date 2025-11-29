@@ -15,7 +15,7 @@ struct BookCardView: View {
   var showSeriesTitle: Bool = false
 
   @AppStorage("showBookCardSeriesTitle") private var showBookCardSeriesTitle: Bool = true
-  #if canImport(AppKit)
+  #if os(macOS)
     @Environment(\.openWindow) private var openWindow
   #endif
 

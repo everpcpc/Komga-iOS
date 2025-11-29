@@ -100,7 +100,7 @@ struct ReadListPickerSheet: View {
         )
       }
     }
-    #if canImport(UIKit)
+    #if os(iOS)
       .presentationDetents([.large])
     #else
       .frame(minWidth: 500, minHeight: 500)
@@ -162,7 +162,7 @@ struct CreateReadListSheet: View {
         }
       }
     }
-    #if canImport(UIKit)
+    #if os(iOS)
       .presentationDetents([.medium])
     #else
       .frame(minWidth: 400, minHeight: 300)

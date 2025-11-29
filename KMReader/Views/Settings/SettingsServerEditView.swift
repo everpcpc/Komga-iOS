@@ -37,7 +37,7 @@ struct SettingsServerEditView: View {
         Section(header: Text("Server")) {
           TextField("Server URL", text: $serverURL)
             .textContentType(.URL)
-            #if canImport(UIKit)
+            #if os(iOS) || os(tvOS)
               .autocapitalization(.none)
               .keyboardType(.URL)
             #endif
@@ -50,7 +50,7 @@ struct SettingsServerEditView: View {
         ) {
           TextField("Username", text: $username)
             .textContentType(.username)
-            #if canImport(UIKit)
+            #if os(iOS) || os(tvOS)
               .autocapitalization(.none)
             #endif
             .autocorrectionDisabled()

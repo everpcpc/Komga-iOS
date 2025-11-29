@@ -57,7 +57,7 @@ struct LoginView: View {
 
               TextField("Enter your server URL", text: $serverURLText)
                 .textContentType(.URL)
-                #if canImport(UIKit)
+                #if os(iOS) || os(tvOS)
                   .autocapitalization(.none)
                   .keyboardType(.URL)
                 #endif
@@ -100,7 +100,7 @@ struct LoginView: View {
 
               TextField("Enter your username", text: $usernameText)
                 .textContentType(.username)
-                #if canImport(UIKit)
+                #if os(iOS) || os(tvOS)
                   .autocapitalization(.none)
                 #endif
                 .autocorrectionDisabled()

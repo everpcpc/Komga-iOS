@@ -59,7 +59,7 @@ struct BookReaderView: View {
             if shouldUseDivinaReader {
               DivinaReaderView(bookId: book.id, incognito: incognito)
             } else {
-              #if canImport(UIKit) && !os(watchOS) && !os(tvOS)
+              #if os(iOS)
                 EpubReaderView(bookId: book.id, incognito: incognito)
               #else
                 VStack(spacing: 24) {
