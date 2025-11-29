@@ -10,7 +10,7 @@ import SwiftUI
 struct ReadListDetailView: View {
   let readListId: String
 
-  @AppStorage("readListDetailLayout") private var layoutMode: BrowseLayoutMode = .grid
+  @AppStorage("browseLayout") private var layoutMode: BrowseLayoutMode = .grid
   @AppStorage("browseColumns") private var browseColumns: BrowseColumns = BrowseColumns()
 
   @Environment(\.dismiss) private var dismiss

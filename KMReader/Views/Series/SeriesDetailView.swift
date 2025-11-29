@@ -11,7 +11,7 @@ struct SeriesDetailView: View {
   let seriesId: String
 
   @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
-  @AppStorage("seriesDetailLayout") private var layoutMode: BrowseLayoutMode = .grid
+  @AppStorage("browseLayout") private var layoutMode: BrowseLayoutMode = .grid
   @AppStorage("browseColumns") private var browseColumns: BrowseColumns = BrowseColumns()
 
   @Environment(\.dismiss) private var dismiss
