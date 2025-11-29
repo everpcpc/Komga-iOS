@@ -46,7 +46,7 @@ extension View {
         case .settingsServerInfo:
           SettingsServerInfoView()
         case .settingsMetrics:
-          SettingsMetricsView()
+          SettingsTasksView()
         case .settingsAuthenticationActivity:
           AuthenticationActivityView()
         case .settingsServers:

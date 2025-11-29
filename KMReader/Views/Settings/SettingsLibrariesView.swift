@@ -17,6 +17,7 @@ struct SettingsLibrariesView: View {
   @State private var libraryPendingDelete: KomgaLibrary?
   @State private var isPerformingGlobalAction = false
   @State private var isLoading = false
+  @State private var allLibrariesMetrics: AllLibrariesMetricsData?
 
   private let libraryService = LibraryService.shared
 
@@ -79,6 +80,7 @@ struct SettingsLibrariesView: View {
     #elseif os(tvOS)
       .focusSection()
     #endif
+    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: selectedLibraryId)
     .inlineNavigationBarTitle("Libraries")
     .alert("Delete Library?", isPresented: isDeleteAlertPresented) {
       Button("Delete", role: .destructive) {
@@ -103,8 +105,88 @@ struct SettingsLibrariesView: View {
     await LibraryManager.shared.refreshLibraries()
     if AppConfig.isAdmin {
       await loadLibraryMetrics()
+      await loadAllLibrariesMetrics()
     }
     isLoading = false
+  }
+
+  private func loadAllLibrariesMetrics() async {
+    var metrics = AllLibrariesMetricsData()
+
+    await withTaskGroup(of: (String, Double?).self) { group in
+      group.addTask {
+        if let metric = try? await ManagementService.shared.getMetric(
+          MetricName.booksFileSize.rawValue),
+          let value = metric.measurements.first?.value
+        {
+          return ("fileSize", value)
+        }
+        return ("fileSize", nil)
+      }
+      group.addTask {
+        if let metric = try? await ManagementService.shared.getMetric(MetricName.books.rawValue),
+          let value = metric.measurements.first?.value
+        {
+          return ("books", value)
+        }
+        return ("books", nil)
+      }
+      group.addTask {
+        if let metric = try? await ManagementService.shared.getMetric(MetricName.series.rawValue),
+          let value = metric.measurements.first?.value
+        {
+          return ("series", value)
+        }
+        return ("series", nil)
+      }
+      group.addTask {
+        if let metric = try? await ManagementService.shared.getMetric(MetricName.sidecars.rawValue),
+          let value = metric.measurements.first?.value
+        {
+          return ("sidecars", value)
+        }
+        return ("sidecars", nil)
+      }
+      group.addTask {
+        if let metric = try? await ManagementService.shared.getMetric(
+          MetricName.collections.rawValue),
+          let value = metric.measurements.first?.value
+        {
+          return ("collections", value)
+        }
+        return ("collections", nil)
+      }
+      group.addTask {
+        if let metric = try? await ManagementService.shared.getMetric(
+          MetricName.readlists.rawValue),
+          let value = metric.measurements.first?.value
+        {
+          return ("readlists", value)
+        }
+        return ("readlists", nil)
+      }
+
+      for await (key, value) in group {
+        switch key {
+        case "fileSize":
+          metrics.fileSize = value
+        case "books":
+          metrics.booksCount = value
+        case "series":
+          metrics.seriesCount = value
+        case "sidecars":
+          metrics.sidecarsCount = value
+        case "collections":
+          metrics.collectionsCount = value
+        case "readlists":
+          metrics.readlistsCount = value
+        default:
+          break
+        }
+      }
+    }
+
+    allLibrariesMetrics = metrics
   }
 
   private func loadLibraryMetrics() async {
@@ -180,17 +262,37 @@ struct SettingsLibrariesView: View {
     Button {
       AppConfig.selectedLibraryId = ""
     } label: {
-      HStack(spacing: 8) {
-        Image(systemName: "square.grid.2x2")
-        Text("All Libraries")
-        Spacer()
-        if isSelected {
-          Image(systemName: "checkmark")
-            .font(.footnote)
-            .foregroundColor(.accentColor)
+      VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: 8) {
+          VStack(alignment: .leading, spacing: 2) {
+            Text("All Libraries")
+            if let metrics = allLibrariesMetrics, hasAllLibrariesMetrics(metrics) {
+              VStack(alignment: .leading, spacing: 2) {
+                if !formatAllLibrariesMetricsLine1(metrics).isEmpty {
+                  Text(formatAllLibrariesMetricsLine1(metrics))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                }
+                if !formatAllLibrariesMetricsLine2(metrics).isEmpty {
+                  Text(formatAllLibrariesMetricsLine2(metrics))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                }
+              }
+            }
+          }
+
+          Spacer()
+
+          if isSelected {
+            Image(systemName: "checkmark")
+              .font(.footnote)
+              .foregroundColor(.accentColor)
+              .transition(.scale.combined(with: .opacity))
+          }
         }
+        .padding(.vertical, 6)
       }
-      .padding(.vertical, 6)
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
@@ -311,6 +413,7 @@ struct SettingsLibrariesView: View {
           Image(systemName: "checkmark")
             .font(.footnote)
             .foregroundColor(.accentColor)
+            .transition(.scale.combined(with: .opacity))
         }
       }
     }
@@ -350,6 +453,44 @@ struct SettingsLibrariesView: View {
 
   private func formatFileSize(_ bytes: Double) -> String {
     return ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .binary)
+  }
+
+  private func hasAllLibrariesMetrics(_ metrics: AllLibrariesMetricsData) -> Bool {
+    metrics.seriesCount != nil || metrics.booksCount != nil || metrics.fileSize != nil
+      || metrics.sidecarsCount != nil || metrics.collectionsCount != nil
+      || metrics.readlistsCount != nil
+  }
+
+  private func formatAllLibrariesMetricsLine1(_ metrics: AllLibrariesMetricsData) -> String {
+    var parts: [String] = []
+
+    if let seriesCount = metrics.seriesCount {
+      parts.append("\(formatNumber(seriesCount)) series")
+    }
+    if let booksCount = metrics.booksCount {
+      parts.append("\(formatNumber(booksCount)) books")
+    }
+    if let sidecarsCount = metrics.sidecarsCount {
+      parts.append("\(formatNumber(sidecarsCount)) sidecars")
+    }
+    if let fileSize = metrics.fileSize {
+      parts.append(formatFileSize(fileSize))
+    }
+
+    return parts.joined(separator: " · ")
+  }
+
+  private func formatAllLibrariesMetricsLine2(_ metrics: AllLibrariesMetricsData) -> String {
+    var parts: [String] = []
+
+    if let collectionsCount = metrics.collectionsCount {
+      parts.append("\(formatNumber(collectionsCount)) collections")
+    }
+    if let readlistsCount = metrics.readlistsCount {
+      parts.append("\(formatNumber(readlistsCount)) readlists")
+    }
+
+    return parts.joined(separator: " · ")
   }
 
   private func scanLibrary(_ library: KomgaLibrary) {
@@ -503,4 +644,15 @@ struct SettingsLibrariesView: View {
       }
     }
   }
+}
+
+// MARK: - Data Structures
+
+struct AllLibrariesMetricsData {
+  var fileSize: Double?
+  var seriesCount: Double?
+  var booksCount: Double?
+  var sidecarsCount: Double?
+  var collectionsCount: Double?
+  var readlistsCount: Double?
 }

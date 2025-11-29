@@ -27,4 +27,11 @@ class ManagementService {
 
     return try await apiClient.request(path: path, queryItems: queryItems)
   }
+
+  func cancelAllTasks() async throws {
+    let _: EmptyResponse = try await apiClient.request(
+      path: "/api/v1/tasks",
+      method: "DELETE"
+    )
+  }
 }

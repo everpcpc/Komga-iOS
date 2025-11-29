@@ -36,7 +36,7 @@ struct SettingsView: View {
           }
           .disabled(!isAdmin)
           NavigationLink(value: NavDestination.settingsMetrics) {
-            Label("Metrics", systemImage: "chart.bar")
+            Label("Tasks", systemImage: "list.bullet.clipboard")
           }
           .disabled(!isAdmin)
         }
