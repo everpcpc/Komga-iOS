@@ -12,7 +12,6 @@ struct HistoryView: View {
 
   @AppStorage("selectedLibraryId") private var selectedLibraryId: String = ""
   @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
-  @State private var showLibraryPickerSheet = false
 
   private func refreshRecentlyReadBooks() {
     Task {
@@ -71,13 +70,6 @@ struct HistoryView: View {
         .toolbar {
           ToolbarItem(placement: .automatic) {
             Button {
-              showLibraryPickerSheet = true
-            } label: {
-              Image(systemName: "books.vertical")
-            }
-          }
-          ToolbarItem(placement: .automatic) {
-            Button {
               Task {
                 await bookViewModel.loadRecentlyReadBooks(
                   libraryId: selectedLibraryId, refresh: true)
@@ -88,9 +80,6 @@ struct HistoryView: View {
             .disabled(bookViewModel.isLoading)
           }
         }
-        .sheet(isPresented: $showLibraryPickerSheet) {
-          LibraryPickerSheet()
-        }
       #endif
       .onChange(of: selectedLibraryId) {
         refreshRecentlyReadBooks()
@@ -99,10 +88,5 @@ struct HistoryView: View {
     .task {
       refreshRecentlyReadBooks()
     }
-  }
-
-  private var selectedLibrary: LibraryInfo? {
-    guard !selectedLibraryId.isEmpty else { return nil }
-    return LibraryManager.shared.getLibrary(id: selectedLibraryId)
   }
 }

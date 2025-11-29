@@ -8,10 +8,7 @@
 import SwiftUI
 
 struct BrowseView: View {
-  @AppStorage("selectedLibraryId") private var selectedLibraryId: String = ""
   @AppStorage("browseContent") private var browseContent: BrowseContentType = .series
-  @AppStorage("browseLayout") private var browseLayout: BrowseLayoutMode = .grid
-  @State private var showLibraryPickerSheet = false
   @State private var searchQuery: String = ""
   @State private var activeSearchText: String = ""
 
@@ -33,32 +30,6 @@ struct BrowseView: View {
         }
         .handleNavigation()
         .inlineNavigationBarTitle("Browse")
-        #if !os(tvOS)
-          .toolbar {
-            ToolbarItem(placement: .automatic) {
-              Button {
-                showLibraryPickerSheet = true
-              } label: {
-                Image(systemName: "books.vertical")
-              }
-            }
-            ToolbarItem(placement: .automatic) {
-              Menu {
-                Picker("Layout", selection: $browseLayout) {
-                  ForEach(BrowseLayoutMode.allCases) { mode in
-                    Label(mode.displayName, systemImage: mode.iconName).tag(mode)
-                  }
-                }
-                .pickerStyle(.inline)
-              } label: {
-                Image(systemName: browseLayout.iconName)
-              }
-            }
-          }
-          .sheet(isPresented: $showLibraryPickerSheet) {
-            LibraryPickerSheet()
-          }
-        #endif
         .searchable(text: $searchQuery)
         .onSubmit(of: .search) {
           activeSearchText = searchQuery

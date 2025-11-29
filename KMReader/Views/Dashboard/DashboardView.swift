@@ -21,7 +21,6 @@ struct DashboardView: View {
 
   @AppStorage("selectedLibraryId") private var selectedLibraryId: String = ""
   @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
-  @State private var showLibraryPickerSheet = false
 
   var hasContent: Bool {
     return !keepReadingBooks.isEmpty || !onDeckBooks.isEmpty || !recentlyAddedBooks.isEmpty
@@ -119,13 +118,6 @@ struct DashboardView: View {
         .toolbar {
           ToolbarItem(placement: .automatic) {
             Button {
-              showLibraryPickerSheet = true
-            } label: {
-              Image(systemName: "books.vertical")
-            }
-          }
-          ToolbarItem(placement: .automatic) {
-            Button {
               Task {
                 await loadAll()
               }
@@ -134,9 +126,6 @@ struct DashboardView: View {
             }
             .disabled(isLoading)
           }
-        }
-        .sheet(isPresented: $showLibraryPickerSheet) {
-          LibraryPickerSheet()
         }
       #endif
       .onChange(of: selectedLibraryId) {
@@ -148,11 +137,6 @@ struct DashboardView: View {
     .task {
       await loadAll()
     }
-  }
-
-  private var selectedLibrary: LibraryInfo? {
-    guard !selectedLibraryId.isEmpty else { return nil }
-    return LibraryManager.shared.getLibrary(id: selectedLibraryId)
   }
 
   private func loadAll() async {
