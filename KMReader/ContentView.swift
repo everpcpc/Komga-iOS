@@ -50,7 +50,8 @@ struct ContentView: View {
         Spacer()
         ForEach($errorManager.notifications, id: \.self) { $notification in
           Text(notification)
-            .padding(8)
+            .padding(.vertical, 8)
+            .padding(.horizontal, 16)
             .foregroundStyle(.white)
             .background(themeColor.color)
             .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 10)
