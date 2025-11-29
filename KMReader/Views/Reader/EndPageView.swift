@@ -13,8 +13,6 @@ struct EndPageView: View {
   let onNextBook: (String) -> Void
   let isRTL: Bool
 
-  @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
-
   var body: some View {
     VStack(spacing: 12) {
       HStack(spacing: 16) {
@@ -26,22 +24,10 @@ struct EndPageView: View {
           } label: {
             HStack(spacing: 8) {
               Image(systemName: "arrow.left")
-                .font(.system(size: 16, weight: .semibold))
               Text("Next")
-                .font(.system(size: 16, weight: .medium))
             }
-            .foregroundColor(.white)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-            .background(
-              RoundedRectangle(cornerRadius: 25)
-                .fill(themeColor.color.opacity(0.85))
-                .overlay(
-                  RoundedRectangle(cornerRadius: 25)
-                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                )
-            )
           }
+          .buttonStyle(.borderedProminent)
         }
 
         // Dismiss button
@@ -51,27 +37,14 @@ struct EndPageView: View {
           HStack(spacing: 8) {
             if !isRTL {
               Image(systemName: "xmark")
-                .font(.system(size: 16, weight: .semibold))
             }
             Text("Close")
-              .font(.system(size: 16, weight: .medium))
             if isRTL {
               Image(systemName: "xmark")
-                .font(.system(size: 16, weight: .semibold))
             }
           }
-          .foregroundColor(themeColor.color)
-          .padding(.horizontal, 20)
-          .padding(.vertical, 12)
-          .background(
-            RoundedRectangle(cornerRadius: 25)
-              .fill(Color.clear)
-              .overlay(
-                RoundedRectangle(cornerRadius: 25)
-                  .stroke(themeColor.color.opacity(0.5), lineWidth: 1)
-              )
-          )
         }
+        .buttonStyle(.bordered)
 
         // Next book button
         if !isRTL, let nextBook = nextBook {
@@ -80,22 +53,10 @@ struct EndPageView: View {
           } label: {
             HStack(spacing: 8) {
               Text("Next")
-                .font(.system(size: 16, weight: .medium))
               Image(systemName: "arrow.right")
-                .font(.system(size: 16, weight: .semibold))
             }
-            .foregroundColor(.white)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-            .background(
-              RoundedRectangle(cornerRadius: 25)
-                .fill(themeColor.color.opacity(0.85))
-                .overlay(
-                  RoundedRectangle(cornerRadius: 25)
-                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                )
-            )
           }
+          .buttonStyle(.borderedProminent)
         }
       }
       NextBookInfoView(nextBook: nextBook)
