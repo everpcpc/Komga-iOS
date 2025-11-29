@@ -42,11 +42,53 @@ extension View {
   }
 
   #if canImport(AppKit)
-    /// Open reader in a new window on macOS
-    func openReaderWindow(book: Book, incognito: Bool = false) -> some View {
-      self.onAppear {
-        ReaderWindowManager.shared.openReader(book: book, incognito: incognito)
-      }
+    /// Handle reader window opening/closing based on readerState changes
+    func handleReaderWindow(readerState: Binding<BookReaderState?>, onDismiss: (() -> Void)? = nil)
+      -> some View
+    {
+      self.background(
+        ReaderWindowHandler(readerState: readerState, onDismiss: onDismiss)
+      )
     }
   #endif
 }
+
+#if canImport(AppKit)
+  private struct ReaderWindowHandler: View {
+    @Binding var readerState: BookReaderState?
+    @Environment(\.openWindow) private var openWindow
+    let onDismiss: (() -> Void)?
+
+    var body: some View {
+      Color.clear
+        .onChange(of: readerState) { _, newValue in
+          if let state = newValue, let book = state.book {
+            // Manager will handle closing existing window if needed
+            ReaderWindowManager.shared.openReader(
+              book: book,
+              incognito: state.incognito,
+              openWindow: {
+                openWindow(id: "reader")
+              },
+              onDismiss: onDismiss
+            )
+          } else {
+            // Only close if manager state is not already nil
+            if ReaderWindowManager.shared.currentState != nil {
+              ReaderWindowManager.shared.closeReader()
+            }
+          }
+        }
+        .onChange(of: ReaderWindowManager.shared.currentState) { oldState, newState in
+          // When manager state becomes nil (window closed), clear readerState
+          if newState == nil && oldState != nil {
+            // Also clear the readerState in the calling view
+            if readerState != nil {
+              readerState = nil
+            }
+            // onDismiss is now handled by ReaderWindowManager
+          }
+        }
+    }
+  }
+#endif

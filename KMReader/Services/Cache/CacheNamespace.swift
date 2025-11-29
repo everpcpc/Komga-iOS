@@ -13,7 +13,6 @@ enum CacheNamespace {
   static func identifier() -> String {
     let instanceId = AppConfig.currentInstanceId
     guard !instanceId.isEmpty else {
-      assertionFailure("CacheNamespace requires a current Komga instance id")
       return "default"
     }
     return sanitize(instanceId)

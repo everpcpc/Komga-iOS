@@ -163,6 +163,16 @@ struct DivinaReaderView: View {
             }
           }
           .id(screenKey)
+          #if canImport(AppKit)
+            .background(
+              // Window-level keyboard event handler
+              KeyboardEventHandler(
+                onKeyPress: { [dismiss] keyCode, flags in
+                  handleKeyCode(keyCode, flags: flags, dismiss: dismiss)
+                }
+              )
+            )
+          #endif
           .onChange(of: viewModel.currentPageIndex) {
             // Update progress and preload pages in background without blocking UI
             Task(priority: .userInitiated) {
@@ -307,13 +317,23 @@ struct DivinaReaderView: View {
     guard !viewModel.pages.isEmpty else { return }
     switch readingDirection {
     case .ltr, .rtl, .vertical:
-      let next = max(0, min(viewModel.currentPageIndex + 1, viewModel.pages.count - 1))
-      withAnimation {
-        viewModel.currentPageIndex = next
+      // Check if we're in dual page mode by checking if currentPageIndex has a PagePair
+      let currentPair = viewModel.dualPageIndices[viewModel.currentPageIndex]
+      if let currentPair = currentPair, shouldUseDualPage(screenSize: getCurrentScreenSize()) {
+        // Dual page mode: calculate next page based on current pair
+        if let second = currentPair.second {
+          viewModel.targetPageIndex = min(viewModel.pages.count, second + 1)
+        } else {
+          viewModel.targetPageIndex = min(viewModel.pages.count, currentPair.first + 1)
+        }
+      } else {
+        // Single page mode: simple increment
+        let next = min(viewModel.currentPageIndex + 1, viewModel.pages.count)
+        viewModel.targetPageIndex = next
       }
     case .webtoon:
       // webtoon do not have an end page
-      let next = max(0, min(viewModel.currentPageIndex + 1, viewModel.pages.count - 1))
+      let next = min(viewModel.currentPageIndex + 1, viewModel.pages.count - 1)
       withAnimation {
         viewModel.currentPageIndex = next
       }
@@ -325,9 +345,15 @@ struct DivinaReaderView: View {
     switch readingDirection {
     case .ltr, .rtl, .vertical:
       guard viewModel.currentPageIndex > 0 else { return }
-      let current = min(viewModel.currentPageIndex, viewModel.pages.count)
-      withAnimation {
-        viewModel.currentPageIndex = current - 1
+      // Check if we're in dual page mode by checking if currentPageIndex has a PagePair
+      let currentPair = viewModel.dualPageIndices[viewModel.currentPageIndex]
+      if let currentPair = currentPair, shouldUseDualPage(screenSize: getCurrentScreenSize()) {
+        // Dual page mode: go to previous pair's first page
+        viewModel.targetPageIndex = max(0, currentPair.first - 1)
+      } else {
+        // Single page mode: simple decrement
+        let previous = viewModel.currentPageIndex - 1
+        viewModel.targetPageIndex = previous
       }
     case .webtoon:
       guard viewModel.currentPageIndex > 0 else { return }
@@ -336,6 +362,20 @@ struct DivinaReaderView: View {
       }
     }
   }
+
+  #if canImport(UIKit)
+    private func getCurrentScreenSize() -> CGSize {
+      return UIScreen.main.bounds.size
+    }
+  #elseif canImport(AppKit)
+    private func getCurrentScreenSize() -> CGSize {
+      return NSScreen.main?.frame.size ?? CGSize(width: 1024, height: 768)
+    }
+  #else
+    private func getCurrentScreenSize() -> CGSize {
+      return CGSize(width: 1024, height: 768)
+    }
+  #endif
 
   private func toggleControls() {
     // Don't hide controls when at end page or webtoon at bottom
@@ -393,4 +433,103 @@ struct DivinaReaderView: View {
     // Reset overlay state
     showTapZoneOverlay = false
   }
+
+  #if canImport(AppKit)
+    private func handleKeyCode(
+      _ keyCode: UInt16, flags: NSEvent.ModifierFlags, dismiss: DismissAction
+    ) {
+      // Handle ESC key to close window
+      if keyCode == 53 {  // ESC key
+        dismiss()
+        return
+      }
+
+      guard !viewModel.pages.isEmpty else { return }
+
+      // Ignore if modifier keys are pressed (except for system shortcuts)
+      guard flags.intersection([.command, .option, .control]).isEmpty else { return }
+
+      switch readingDirection {
+      case .ltr:
+        switch keyCode {
+        case 124:  // Right arrow
+          goToNextPage()
+        case 123:  // Left arrow
+          goToPreviousPage()
+        default:
+          break
+        }
+      case .rtl:
+        switch keyCode {
+        case 123:  // Left arrow
+          goToNextPage()
+        case 124:  // Right arrow
+          goToPreviousPage()
+        default:
+          break
+        }
+      case .vertical:
+        switch keyCode {
+        case 125, 124:  // Down arrow, Right arrow
+          goToNextPage()
+        case 126, 123:  // Up arrow, Left arrow
+          goToPreviousPage()
+        default:
+          break
+        }
+      case .webtoon:
+        switch keyCode {
+        case 125, 124:  // Down arrow, Right arrow
+          goToNextPage()
+        case 126, 123:  // Up arrow, Left arrow
+          goToPreviousPage()
+        default:
+          break
+        }
+      }
+    }
+  #endif
 }
+
+#if canImport(AppKit)
+  import AppKit
+
+  // Window-level keyboard event handler
+  private struct KeyboardEventHandler: NSViewRepresentable {
+    let onKeyPress: (UInt16, NSEvent.ModifierFlags) -> Void
+
+    func makeNSView(context: Context) -> KeyboardHandlerView {
+      let view = KeyboardHandlerView()
+      view.onKeyPress = onKeyPress
+      return view
+    }
+
+    func updateNSView(_ nsView: KeyboardHandlerView, context: Context) {
+      nsView.onKeyPress = onKeyPress
+    }
+  }
+
+  private class KeyboardHandlerView: NSView {
+    var onKeyPress: ((UInt16, NSEvent.ModifierFlags) -> Void)?
+
+    override var acceptsFirstResponder: Bool {
+      return true
+    }
+
+    override func becomeFirstResponder() -> Bool {
+      return true
+    }
+
+    override func keyDown(with event: NSEvent) {
+      onKeyPress?(event.keyCode, event.modifierFlags)
+    }
+
+    override func viewDidMoveToWindow() {
+      super.viewDidMoveToWindow()
+      // Make this view the first responder when added to window
+      DispatchQueue.main.async { [weak self] in
+        self?.window?.makeFirstResponder(self)
+      }
+    }
+  }
+#endif

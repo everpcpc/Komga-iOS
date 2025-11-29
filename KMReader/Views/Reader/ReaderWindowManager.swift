@@ -13,15 +13,51 @@
   @Observable
   class ReaderWindowManager {
     static let shared = ReaderWindowManager()
-    var currentState: BookReaderState?
+    var currentState: BookReaderState? {
+      didSet {
+        // When state becomes nil, call onDismiss if it hasn't been called yet
+        if currentState == nil && oldValue != nil && !hasCalledOnDismiss {
+          hasCalledOnDismiss = true
+          onDismissCallback?()
+          onDismissCallback = nil
+        }
+      }
+    }
+
+    // Track if window is currently open
+    var isWindowOpen: Bool = false
+
+    private var onDismissCallback: (() -> Void)?
+    private var hasCalledOnDismiss = false
 
     private init() {}
 
-    func openReader(book: Book, incognito: Bool = false) {
-      currentState = BookReaderState(book: book, incognito: incognito)
+    func openReader(
+      book: Book, incognito: Bool = false,
+      openWindow: @escaping () -> Void,
+      onDismiss: (() -> Void)? = nil
+    ) {
+      // Update onDismiss callback if provided
+      if let onDismiss = onDismiss {
+        onDismissCallback = onDismiss
+      }
+
+      // Reset onDismiss flag when opening a new book
+      hasCalledOnDismiss = false
+
+      // If window is already open, just update the state (replace content)
+      if isWindowOpen {
+        currentState = BookReaderState(book: book, incognito: incognito)
+      } else {
+        // Window not open, open it first
+        currentState = BookReaderState(book: book, incognito: incognito)
+        openWindow()
+        isWindowOpen = true
+      }
     }
 
     func closeReader() {
+      isWindowOpen = false
       currentState = nil
     }
   }

@@ -131,12 +131,9 @@ struct ReadListDetailView: View {
           }
         }
       #else
-        .onChange(of: readerState) { _, newState in
-          if let state = newState, let book = state.book {
-            ReaderWindowManager.shared.openReader(book: book, incognito: state.incognito)
-            openWindow(id: "reader")
-          } else {
-            ReaderWindowManager.shared.closeReader()
+        .handleReaderWindow(readerState: $readerState) {
+          Task {
+            await loadReadListDetails()
           }
         }
       #endif
