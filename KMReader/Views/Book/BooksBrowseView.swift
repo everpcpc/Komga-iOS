@@ -33,13 +33,6 @@ struct BooksBrowseView: View {
     )
   }
 
-  private var isBookReaderPresented: Binding<Bool> {
-    Binding(
-      get: { readerState != nil },
-      set: { if !$0 { readerState = nil } }
-    )
-  }
-
   var body: some View {
     VStack(spacing: 0) {
       BookFilterView(browseOpts: $browseOpts)
@@ -88,19 +81,7 @@ struct BooksBrowseView: View {
     .onAppear {
       browseOpts.libraryId = selectedLibraryId
     }
-    #if canImport(UIKit)
-      .fullScreenCover(isPresented: isBookReaderPresented) {
-        if let state = readerState, let book = state.book {
-          BookReaderView(book: book, incognito: state.incognito)
-        }
-      }
-    #else
-      .sheet(isPresented: isBookReaderPresented) {
-        if let state = readerState, let book = state.book {
-          BookReaderView(book: book, incognito: state.incognito)
-        }
-      }
-    #endif
+    .readerPresentation(readerState: $readerState)
   }
 
   private var gridView: some View {

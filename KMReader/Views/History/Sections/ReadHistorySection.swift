@@ -23,12 +23,6 @@ struct ReadHistorySection: View {
   @State private var bookToDelete: Book?
   @State private var downloadSheetBook: Book?
 
-  private var isBookReaderPresented: Binding<Bool> {
-    Binding(
-      get: { readerState != nil },
-      set: { if !$0 { readerState = nil } }
-    )
-  }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
@@ -92,22 +86,7 @@ struct ReadHistorySection: View {
         )
       }
     }
-    #if canImport(UIKit)
-      .fullScreenCover(
-        isPresented: isBookReaderPresented,
-        onDismiss: {
-          onBookUpdated?()
-        }
-      ) {
-        if let state = readerState, let book = state.book {
-          BookReaderView(book: book, incognito: state.incognito)
-        }
-      }
-    #else
-      .handleReaderWindow(readerState: $readerState) {
-        onBookUpdated?()
-      }
-    #endif
+    .readerPresentation(readerState: $readerState, onDismiss: onBookUpdated)
     .alert("Delete Book", isPresented: $showDeleteConfirmation) {
       Button("Cancel", role: .cancel) {
         bookToDelete = nil

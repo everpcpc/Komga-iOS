@@ -28,13 +28,6 @@ struct ReadListDetailView: View {
     readList.flatMap { ReadListService.shared.getReadListThumbnailURL(id: $0.id) }
   }
 
-  private var isBookReaderPresented: Binding<Bool> {
-    Binding(
-      get: { readerState != nil },
-      set: { if !$0 { readerState = nil } }
-    )
-  }
-
   var body: some View {
     GeometryReader { geometry in
       ScrollView {
@@ -114,26 +107,11 @@ struct ReadListDetailView: View {
         .padding(.horizontal)
       }
       .inlineNavigationBarTitle("Read List")
-      #if canImport(UIKit)
-        .fullScreenCover(
-          isPresented: isBookReaderPresented,
-          onDismiss: {
-            Task {
-              await loadReadListDetails()
-            }
-          }
-        ) {
-          if let state = readerState, let book = state.book {
-            BookReaderView(book: book, incognito: state.incognito)
-          }
+      .readerPresentation(readerState: $readerState) {
+        Task {
+          await loadReadListDetails()
         }
-      #else
-        .handleReaderWindow(readerState: $readerState) {
-          Task {
-            await loadReadListDetails()
-          }
-        }
-      #endif
+      }
       .alert("Delete Read List?", isPresented: $showDeleteConfirmation) {
         Button("Delete", role: .destructive) {
           Task {

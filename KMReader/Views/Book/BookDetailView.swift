@@ -43,13 +43,6 @@ struct BookDetailView: View {
     return !readProgress.completed
   }
 
-  private var isBookReaderPresented: Binding<Bool> {
-    Binding(
-      get: { readerState != nil },
-      set: { if !$0 { readerState = nil } }
-    )
-  }
-
   var body: some View {
     ScrollView {
       VStack(alignment: .leading) {
@@ -265,26 +258,11 @@ struct BookDetailView: View {
       .padding()
     }
     .inlineNavigationBarTitle("Book")
-    #if canImport(UIKit)
-      .fullScreenCover(
-        isPresented: isBookReaderPresented,
-        onDismiss: {
-          Task {
-            await loadBook()
-          }
-        }
-      ) {
-        if let state = readerState, let book = state.book {
-          BookReaderView(book: book, incognito: state.incognito)
-        }
+    .readerPresentation(readerState: $readerState) {
+      Task {
+        await loadBook()
       }
-    #else
-      .handleReaderWindow(readerState: $readerState) {
-        Task {
-          await loadBook()
-        }
-      }
-    #endif
+    }
     .alert("Delete Book?", isPresented: $showDeleteConfirmation) {
       Button("Delete", role: .destructive) {
         deleteBook()

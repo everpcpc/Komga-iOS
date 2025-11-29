@@ -55,16 +55,34 @@ extension View {
       }
   }
 
-  #if canImport(AppKit)
-    /// Handle reader window opening/closing based on readerState changes
-    func handleReaderWindow(readerState: Binding<BookReaderState?>, onDismiss: (() -> Void)? = nil)
-      -> some View
-    {
-      self.background(
+  /// Present reader view based on platform
+  /// - On iOS/tvOS: uses fullScreenCover
+  /// - On macOS: uses handleReaderWindow
+  func readerPresentation(readerState: Binding<BookReaderState?>, onDismiss: (() -> Void)? = nil)
+    -> some View
+  {
+    #if os(iOS) || os(tvOS)
+      let isPresented = Binding(
+        get: { readerState.wrappedValue != nil },
+        set: { if !$0 { readerState.wrappedValue = nil } }
+      )
+      return self.fullScreenCover(
+        isPresented: isPresented,
+        onDismiss: onDismiss
+      ) {
+        if let state = readerState.wrappedValue, let book = state.book {
+          BookReaderView(book: book, incognito: state.incognito)
+            .transition(.scale.animation(.easeInOut))
+        }
+      }
+    #elseif os(macOS)
+      return self.background(
         ReaderWindowHandler(readerState: readerState, onDismiss: onDismiss)
       )
-    }
-  #endif
+    #else
+      return self
+    #endif
+  }
 }
 
 #if canImport(AppKit)

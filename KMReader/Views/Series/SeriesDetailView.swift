@@ -34,13 +34,6 @@ struct SeriesDetailView: View {
     return SeriesService.shared.getSeriesThumbnailURL(id: series.id)
   }
 
-  private var isBookReaderPresented: Binding<Bool> {
-    Binding(
-      get: { readerState != nil },
-      set: { if !$0 { readerState = nil } }
-    )
-  }
-
   private var canMarkSeriesAsRead: Bool {
     guard let series else { return false }
     return series.booksUnreadCount > 0
@@ -405,22 +398,9 @@ struct SeriesDetailView: View {
         .padding(.horizontal)
       }
       .inlineNavigationBarTitle("Series")
-      #if canImport(UIKit)
-        .fullScreenCover(
-          isPresented: isBookReaderPresented,
-          onDismiss: {
-            refreshAfterReading()
-          }
-        ) {
-          if let state = readerState, let book = state.book {
-            BookReaderView(book: book, incognito: state.incognito)
-          }
-        }
-      #else
-        .handleReaderWindow(readerState: $readerState) {
-          refreshAfterReading()
-        }
-      #endif
+      .readerPresentation(readerState: $readerState) {
+        refreshAfterReading()
+      }
       .alert("Delete Series?", isPresented: $showDeleteConfirmation) {
         Button("Delete", role: .destructive) {
           deleteSeries()

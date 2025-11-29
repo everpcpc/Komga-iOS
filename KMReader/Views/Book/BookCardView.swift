@@ -29,13 +29,6 @@ struct BookCardView: View {
     BookService.shared.getBookThumbnailURL(id: book.id)
   }
 
-  private var isBookReaderPresented: Binding<Bool> {
-    Binding(
-      get: { readerState != nil },
-      set: { if !$0 { readerState = nil } }
-    )
-  }
-
   private var progress: Double {
     guard let readProgress = book.readProgress else { return 0 }
     guard book.media.pagesCount > 0 else { return 0 }
@@ -162,23 +155,7 @@ struct BookCardView: View {
     .sheet(isPresented: $showDownloadSheet) {
       BookDownloadSheet(book: book)
     }
-    #if canImport(UIKit)
-      .fullScreenCover(
-        isPresented: isBookReaderPresented,
-        onDismiss: {
-          onBookUpdated?()
-        }
-      ) {
-        if let state = readerState, let book = state.book {
-          BookReaderView(book: book, incognito: state.incognito)
-          .transition(.scale.animation(.easeInOut))
-        }
-      }
-    #else
-      .handleReaderWindow(readerState: $readerState) {
-        onBookUpdated?()
-      }
-    #endif
+    .readerPresentation(readerState: $readerState, onDismiss: onBookUpdated)
   }
 
   private func addToReadList(readListId: String) {
