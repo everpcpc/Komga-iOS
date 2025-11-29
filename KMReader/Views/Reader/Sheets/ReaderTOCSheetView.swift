@@ -46,5 +46,10 @@ struct ReaderTOCSheetView: View {
       #endif
     }
     .presentationDragIndicator(.visible)
+    #if canImport(UIKit)
+      .presentationDetents([.medium, .large])
+    #else
+      .frame(minWidth: 400, minHeight: 500)
+    #endif
   }
 }

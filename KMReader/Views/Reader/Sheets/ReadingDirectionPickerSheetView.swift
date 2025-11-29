@@ -32,5 +32,11 @@ struct ReadingDirectionPickerSheetView: View {
         .navigationBarTitleDisplayMode(.inline)
       #endif
     }
+    .presentationDragIndicator(.visible)
+    #if canImport(UIKit)
+      .presentationDetents([.height(400)])
+    #else
+      .frame(minWidth: 300, minHeight: 400)
+    #endif
   }
 }

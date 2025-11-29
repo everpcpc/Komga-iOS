@@ -8,14 +8,65 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+#if canImport(AppKit)
+  import AppKit
+#endif
+
+#if canImport(AppKit)
+  // Window-level keyboard event handler
+  private struct KeyboardEventHandler: NSViewRepresentable {
+    let onKeyPress: (UInt16, NSEvent.ModifierFlags) -> Void
+
+    func makeNSView(context: Context) -> KeyboardHandlerView {
+      let view = KeyboardHandlerView()
+      view.onKeyPress = onKeyPress
+      return view
+    }
+
+    func updateNSView(_ nsView: KeyboardHandlerView, context: Context) {
+      nsView.onKeyPress = onKeyPress
+    }
+  }
+
+  private class KeyboardHandlerView: NSView {
+    var onKeyPress: ((UInt16, NSEvent.ModifierFlags) -> Void)?
+
+    override var acceptsFirstResponder: Bool {
+      return true
+    }
+
+    override func becomeFirstResponder() -> Bool {
+      return true
+    }
+
+    override func keyDown(with event: NSEvent) {
+      onKeyPress?(event.keyCode, event.modifierFlags)
+    }
+
+    override func viewDidMoveToWindow() {
+      super.viewDidMoveToWindow()
+      // Make this view the first responder when added to window
+      DispatchQueue.main.async { [weak self] in
+        self?.window?.makeFirstResponder(self)
+      }
+    }
+  }
+#endif
+
 struct ReaderControlsView: View {
   @Binding var showingControls: Bool
   @Binding var showingReadingDirectionPicker: Bool
   @Binding var readingDirection: ReadingDirection
   let viewModel: ReaderViewModel
   let currentBook: Book?
+  let bookId: String
   let dualPage: Bool
   let onDismiss: () -> Void
+  let goToNextPage: () -> Void
+  let goToPreviousPage: () -> Void
+  #if canImport(AppKit)
+    @Binding var showingKeyboardHelp: Bool
+  #endif
 
   @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
 
@@ -183,9 +234,19 @@ struct ReaderControlsView: View {
         showingReadingDirectionPicker = false
       }
     }
+    #if canImport(AppKit)
+      .background(
+        // Window-level keyboard event handler
+        KeyboardEventHandler(
+          onKeyPress: { keyCode, flags in
+            handleKeyCode(keyCode, flags: flags)
+          }
+        )
+      )
+    #endif
     .sheet(isPresented: $showingPageJumpSheet) {
       PageJumpSheetView(
-        bookId: viewModel.bookId,
+        bookId: bookId,
         totalPages: viewModel.pages.count,
         currentPage: min(viewModel.currentPageIndex + 1, viewModel.pages.count),
         readingDirection: readingDirection,
@@ -194,8 +255,6 @@ struct ReaderControlsView: View {
     }
     .sheet(isPresented: $showingReadingDirectionPicker) {
       ReadingDirectionPickerSheetView(readingDirection: $readingDirection)
-        .presentationDetents([.height(400)])
-        .presentationDragIndicator(.visible)
     }
     .sheet(isPresented: $showingTOCSheet) {
       ReaderTOCSheetView(
@@ -208,4 +267,94 @@ struct ReaderControlsView: View {
       )
     }
   }
+
+  #if canImport(AppKit)
+    func handleKeyCode(_ keyCode: UInt16, flags: NSEvent.ModifierFlags) {
+      // Handle ESC key to close window
+      if keyCode == 53 {  // ESC key
+        onDismiss()
+        return
+      }
+
+      // Handle ? key for keyboard help
+      if keyCode == 44 {  // ? key (Shift + /)
+        showingKeyboardHelp.toggle()
+        return
+      }
+
+      // Ignore if modifier keys are pressed (except for system shortcuts)
+      guard flags.intersection([.command, .option, .control]).isEmpty else { return }
+
+      // Handle F key for fullscreen toggle
+      if keyCode == 3 {  // F key
+        if let window = NSApplication.shared.keyWindow {
+          window.toggleFullScreen(nil)
+        }
+        return
+      }
+
+      // Handle T key for TOC
+      if keyCode == 17 {  // T key
+        if !viewModel.tableOfContents.isEmpty {
+          showingTOCSheet = true
+        }
+        return
+      }
+
+      // Handle J key for jump to page
+      if keyCode == 38 {  // J key
+        if !viewModel.pages.isEmpty {
+          showingPageJumpSheet = true
+        }
+        return
+      }
+
+      // Handle C key for toggle controls
+      if keyCode == 8 {  // C key
+        showingControls.toggle()
+        return
+      }
+
+      guard !viewModel.pages.isEmpty else { return }
+
+      switch readingDirection {
+      case .ltr:
+        switch keyCode {
+        case 124:  // Right arrow
+          goToNextPage()
+        case 123:  // Left arrow
+          goToPreviousPage()
+        default:
+          break
+        }
+      case .rtl:
+        switch keyCode {
+        case 123:  // Left arrow
+          goToNextPage()
+        case 124:  // Right arrow
+          goToPreviousPage()
+        default:
+          break
+        }
+      case .vertical:
+        switch keyCode {
+        case 125:  // Down arrow
+          goToNextPage()
+        case 126:  // Up arrow
+          goToPreviousPage()
+        default:
+          break
+        }
+      case .webtoon:
+        switch keyCode {
+        case 125, 124:  // Down arrow, Right arrow
+          goToNextPage()
+        case 126, 123:  // Up arrow, Left arrow
+          goToPreviousPage()
+        default:
+          break
+        }
+      }
+    }
+  #endif
 }

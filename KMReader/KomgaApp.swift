@@ -44,7 +44,7 @@ struct KomgaApp: App {
         .modelContainer(modelContainer)
     }
     #if canImport(AppKit)
-      WindowGroup("Reader", id: "reader") {
+      WindowGroup(id: "reader") {
         ReaderWindowView()
           .environment(authViewModel)
           .modelContainer(modelContainer)

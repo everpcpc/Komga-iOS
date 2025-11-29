@@ -27,6 +27,7 @@ struct DivinaReaderView: View {
   @State private var readingDirection: ReadingDirection = .ltr
   @State private var showTapZoneOverlay = false
   @State private var overlayTimer: Timer?
+  @State private var showingKeyboardHelp = false
 
   init(bookId: String, incognito: Bool = false) {
     self.incognito = incognito
@@ -163,16 +164,6 @@ struct DivinaReaderView: View {
             }
           }
           .id(screenKey)
-          #if canImport(AppKit)
-            .background(
-              // Window-level keyboard event handler
-              KeyboardEventHandler(
-                onKeyPress: { [dismiss] keyCode, flags in
-                  handleKeyCode(keyCode, flags: flags, dismiss: dismiss)
-                }
-              )
-            )
-          #endif
           .onChange(of: viewModel.currentPageIndex) {
             // Update progress and preload pages in background without blocking UI
             Task(priority: .userInitiated) {
@@ -237,19 +228,54 @@ struct DivinaReaderView: View {
           readingDirection: $readingDirection,
           viewModel: viewModel,
           currentBook: currentBook,
+          bookId: currentBookId,
           dualPage: useDualPage,
-          onDismiss: { dismiss() }
+          onDismiss: { dismiss() },
+          goToNextPage: goToNextPage,
+          goToPreviousPage: goToPreviousPage,
+          showingKeyboardHelp: $showingKeyboardHelp,
         )
         .padding(.vertical, 24)
         .padding(.horizontal, 8)
         .ignoresSafeArea()
         .opacity(shouldShowControls ? 1.0 : 0.0)
         .allowsHitTesting(shouldShowControls)
+
+        #if canImport(AppKit)
+          // Keyboard shortcuts help overlay (independent of controls visibility)
+          KeyboardHelpOverlay(
+            readingDirection: readingDirection,
+            hasTOC: !viewModel.tableOfContents.isEmpty,
+            onDismiss: {
+              showingKeyboardHelp = false
+            }
+          )
+          .opacity(showingKeyboardHelp ? 1.0 : 0.0)
+          .allowsHitTesting(showingKeyboardHelp)
+        #endif
       }
     }
+    #if canImport(AppKit)
+      .background(
+        // Window-level keyboard event handler for keyboard help
+        KeyboardEventHandler(
+          onKeyPress: { keyCode, flags in
+            // Handle ? key for keyboard help
+            if keyCode == 44 {  // ? key (Shift + /)
+              showingKeyboardHelp.toggle()
+            }
+          }
+        )
+      )
+    #endif
     .ignoresSafeArea()
     #if canImport(UIKit)
       .statusBar(hidden: !shouldShowControls)
+    #endif
+    #if canImport(AppKit)
+      .onAppear {
+        // Make sure keyboard help overlay can be shown even when controls are hidden
+      }
     #endif
     .task(id: currentBookId) {
       await loadBook(bookId: currentBookId)
@@ -434,61 +460,6 @@ struct DivinaReaderView: View {
     showTapZoneOverlay = false
   }
 
-  #if canImport(AppKit)
-    private func handleKeyCode(
-      _ keyCode: UInt16, flags: NSEvent.ModifierFlags, dismiss: DismissAction
-    ) {
-      // Handle ESC key to close window
-      if keyCode == 53 {  // ESC key
-        dismiss()
-        return
-      }
-
-      guard !viewModel.pages.isEmpty else { return }
-
-      // Ignore if modifier keys are pressed (except for system shortcuts)
-      guard flags.intersection([.command, .option, .control]).isEmpty else { return }
-
-      switch readingDirection {
-      case .ltr:
-        switch keyCode {
-        case 124:  // Right arrow
-          goToNextPage()
-        case 123:  // Left arrow
-          goToPreviousPage()
-        default:
-          break
-        }
-      case .rtl:
-        switch keyCode {
-        case 123:  // Left arrow
-          goToNextPage()
-        case 124:  // Right arrow
-          goToPreviousPage()
-        default:
-          break
-        }
-      case .vertical:
-        switch keyCode {
-        case 125, 124:  // Down arrow, Right arrow
-          goToNextPage()
-        case 126, 123:  // Up arrow, Left arrow
-          goToPreviousPage()
-        default:
-          break
-        }
-      case .webtoon:
-        switch keyCode {
-        case 125, 124:  // Down arrow, Right arrow
-          goToNextPage()
-        case 126, 123:  // Up arrow, Left arrow
-          goToPreviousPage()
-        default:
-          break
-        }
-      }
-    }
-  #endif
 }
 
 #if canImport(AppKit)

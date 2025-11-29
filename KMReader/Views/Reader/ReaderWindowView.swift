@@ -18,9 +18,11 @@
         if let state = readerState, let book = state.book {
           BookReaderView(book: book, incognito: state.incognito)
             .id("\(book.id)-\(state.incognito)")
+            .background(WindowTitleUpdater(book: book))
         } else {
           ProgressView()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(WindowTitleUpdater(book: nil))
         }
       }
       .onAppear {
@@ -55,6 +57,43 @@
         // Always clean up state when window disappears
         // This ensures the window can be reopened even if it was manually closed
         ReaderWindowManager.shared.closeReader()
+      }
+    }
+  }
+
+  // Helper view to update window title
+  private struct WindowTitleUpdater: NSViewRepresentable {
+    let book: Book?
+
+    func makeNSView(context: Context) -> NSView {
+      let view = NSView()
+      return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+      // Update title when view is updated
+      updateWindowTitle(nsView: nsView)
+    }
+
+    private func updateWindowTitle(nsView: NSView) {
+      // Wait for window to be available
+      DispatchQueue.main.async {
+        guard let window = nsView.window else {
+          // If window is not available yet, try again after a short delay
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            updateWindowTitle(nsView: nsView)
+          }
+          return
+        }
+
+        if let book = book {
+          let title = "\(book.seriesTitle) - \(book.metadata.title)"
+          window.title = title
+          // Also set representedURL to nil to prevent system from overriding title
+          window.representedURL = nil
+        } else {
+          window.title = "Reader"
+        }
       }
     }
   }
