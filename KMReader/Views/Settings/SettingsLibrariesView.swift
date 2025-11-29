@@ -80,7 +80,6 @@ struct SettingsLibrariesView: View {
     #elseif os(tvOS)
       .focusSection()
     #endif
-    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: selectedLibraryId)
     .inlineNavigationBarTitle("Libraries")
     .alert("Delete Library?", isPresented: isDeleteAlertPresented) {
       Button("Delete", role: .destructive) {
