@@ -103,6 +103,11 @@ struct CollectionPickerSheet: View {
         )
       }
     }
+    #if canImport(UIKit)
+      .presentationDetents([.large])
+    #else
+      .frame(minWidth: 500, minHeight: 500)
+    #endif
   }
 
   private func loadCollections(searchText: String = "") async {
@@ -160,6 +165,11 @@ struct CreateCollectionSheet: View {
         }
       }
     }
+    #if canImport(UIKit)
+      .presentationDetents([.medium])
+    #else
+      .frame(minWidth: 400, minHeight: 300)
+    #endif
   }
 
   private func createCollection() {

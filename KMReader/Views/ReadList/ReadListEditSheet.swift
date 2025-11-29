@@ -59,6 +59,11 @@ struct ReadListEditSheet: View {
         }
       }
     }
+    #if canImport(UIKit)
+      .presentationDetents([.medium])
+    #else
+      .frame(minWidth: 400, minHeight: 350)
+    #endif
   }
 
   private func saveChanges() {

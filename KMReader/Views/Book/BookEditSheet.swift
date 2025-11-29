@@ -182,6 +182,11 @@ struct BookEditSheet: View {
         }
       }
     }
+    #if canImport(UIKit)
+      .presentationDetents([.large])
+    #else
+      .frame(minWidth: 500, minHeight: 600)
+    #endif
   }
 
   private func saveChanges() {

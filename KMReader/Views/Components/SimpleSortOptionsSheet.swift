@@ -42,5 +42,10 @@ struct SimpleSortOptionsSheet: View {
         }
       }
     }
+    #if canImport(UIKit)
+      .presentationDetents([.medium])
+    #else
+      .frame(minWidth: 400, minHeight: 300)
+    #endif
   }
 }

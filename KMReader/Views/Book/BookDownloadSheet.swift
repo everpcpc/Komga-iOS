@@ -53,7 +53,11 @@ struct BookDownloadSheet: View {
     }
     .padding()
     .presentationDragIndicator(.visible)
-    .presentationDetents([.medium])
+    #if canImport(UIKit)
+      .presentationDetents([.medium])
+    #else
+      .frame(minWidth: 400, minHeight: 300)
+    #endif
     .fileExporter(
       isPresented: $showFileExporter,
       document: exportURL.map { CachedFileDocument(url: $0) },
