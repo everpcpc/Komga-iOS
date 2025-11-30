@@ -226,19 +226,6 @@ struct DivinaReaderView: View {
             }
           }
           .ignoresSafeArea()
-          .onChange(of: viewModel.pages.count) { oldCount, newCount in
-            // Show helper overlay when pages are first loaded
-            if oldCount == 0 && newCount > 0 {
-              triggerHelperOverlay()
-            }
-          }
-          .onChange(of: showHelperOverlay) { _, newValue in
-            if newValue {
-              resetHelperOverlayTimer()
-            } else {
-              helperOverlayTimer?.invalidate()
-            }
-          }
           .onChange(of: screenKey) {
             // Show helper overlay when screen orientation changes
             if !viewModel.pages.isEmpty {
@@ -276,7 +263,7 @@ struct DivinaReaderView: View {
             hasTOC: !viewModel.tableOfContents.isEmpty,
             hasNextBook: nextBook != nil,
             onDismiss: {
-              showHelperOverlay = false
+              hideOverlay()
             }
           )
           .opacity(showHelperOverlay ? 1.0 : 0.0)
@@ -352,7 +339,11 @@ struct DivinaReaderView: View {
           onKeyPress: { keyCode, flags in
             // Handle ? key for keyboard help
             if keyCode == 44 {  // ? key (Shift + /)
-              showHelperOverlay.toggle()
+              if showHelperOverlay {
+                hideOverlay()
+              } else {
+                showOverlay()
+              }
             }
           }
         )
@@ -362,14 +353,14 @@ struct DivinaReaderView: View {
     #if os(iOS)
       .statusBar(hidden: !shouldShowControls)
     #endif
-    #if os(macOS)
-      .onAppear {
-        // Optionally show helper overlay briefly on macOS when enabled in settings
-        triggerHelperOverlay()
-      }
-    #endif
     .task(id: currentBookId) {
       await loadBook(bookId: currentBookId)
+    }
+    .onChange(of: viewModel.pages.count) { oldCount, newCount in
+      // Show helper overlay when pages are first loaded (iOS and macOS)
+      if oldCount == 0 && newCount > 0 {
+        triggerHelperOverlay()
+      }
     }
     .onDisappear {
       controlsTimer?.invalidate()
@@ -553,16 +544,25 @@ struct DivinaReaderView: View {
     }
   }
 
+  /// Show helper overlay with animation and auto-hide timer
+  private func showOverlay() {
+    showHelperOverlay = true
+    resetHelperOverlayTimer()
+  }
+
+  /// Hide helper overlay and cancel timer
+  private func hideOverlay() {
+    helperOverlayTimer?.invalidate()
+    showHelperOverlay = false
+  }
+
   /// Show reader helper overlay (Tap zones on iOS, keyboard help on macOS)
   private func triggerHelperOverlay() {
     // Respect user preference and ensure we have content
     guard showReaderHelperOverlay, !viewModel.pages.isEmpty else { return }
 
-    // Restart overlay with a tiny delay so animations look nicer
-    showHelperOverlay = false
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-      showHelperOverlay = true
-      resetHelperOverlayTimer()
+      self.showOverlay()
     }
   }
 
@@ -573,14 +573,16 @@ struct DivinaReaderView: View {
     #if os(iOS)
       timeout = 1.5
     #elseif os(macOS)
-      timeout = 2.0
+      timeout = 1.0
     #else
       timeout = 1.5
     #endif
 
     helperOverlayTimer = Timer.scheduledTimer(withTimeInterval: timeout, repeats: false) { _ in
-      withAnimation {
-        showHelperOverlay = false
+      DispatchQueue.main.async {
+        withAnimation {
+          self.hideOverlay()
+        }
       }
     }
   }
@@ -596,7 +598,7 @@ struct DivinaReaderView: View {
     // Reset isAtBottom so buttons hide until user scrolls to bottom
     isAtBottom = false
     // Reset overlay state
-    showHelperOverlay = false
+    hideOverlay()
   }
 
 }

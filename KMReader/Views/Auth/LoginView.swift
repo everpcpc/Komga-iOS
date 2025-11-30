@@ -17,7 +17,6 @@ struct LoginView: View {
   @State private var usernameText: String = ""
   @State private var password = ""
   @State private var instanceName = ""
-  @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
 
   var body: some View {
     ScrollView {
