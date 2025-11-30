@@ -263,6 +263,7 @@ struct ReaderControlsView: View {
           value: Double(min(viewModel.currentPageIndex + 1, viewModel.pages.count)),
           total: Double(viewModel.pages.count)
         )
+        .tint(themeColor.color)
         .scaleEffect(x: readingDirection == .rtl ? -1 : 1, y: 1)
       }
       .padding()

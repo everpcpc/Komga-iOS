@@ -148,10 +148,12 @@ struct SettingsDashboardView: View {
                 ))
             #endif
           }
+          #if os(tvOS)
           .listRowBackground(
             Capsule()
               .fill(PlatformHelper.secondarySystemBackgroundColor)
               .opacity(movingSection == section ? 0.5 : 0))
+          #endif
         }
         #if os(tvOS)
           .onMoveCommand { direction in
