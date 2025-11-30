@@ -19,6 +19,8 @@ struct CollectionDetailView: View {
   @State private var collection: KomgaCollection?
   @State private var showDeleteConfirmation = false
   @State private var showEditSheet = false
+  @State private var containerWidth: CGFloat = 0
+  @State private var layoutHelper = BrowseLayoutHelper()
 
   private var thumbnailURL: URL? {
     collection.flatMap { CollectionService.shared.getCollectionThumbnailURL(id: $0.id) }
@@ -74,17 +76,14 @@ struct CollectionDetailView: View {
             }
 
             // Series list
-            CollectionSeriesListView(
-              collectionId: collectionId,
-              seriesViewModel: seriesViewModel,
-              layoutMode: layoutMode,
-              layoutHelper: BrowseLayoutHelper(
-                width: geometry.size.width - 32,
-                height: geometry.size.height,
-                spacing: 12,
-                browseColumns: browseColumns
+            if containerWidth > 0 {
+              CollectionSeriesListView(
+                collectionId: collectionId,
+                seriesViewModel: seriesViewModel,
+                layoutMode: layoutMode,
+                layoutHelper: layoutHelper
               )
-            )
+            }
           } else {
             ProgressView()
               .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -151,6 +150,29 @@ struct CollectionDetailView: View {
       }
       .task {
         await loadCollectionDetails()
+      }
+      .onChange(of: geometry.size.width) { _, newWidth in
+        containerWidth = newWidth
+        layoutHelper = BrowseLayoutHelper(
+          width: newWidth - 32,
+          spacing: 12,
+          browseColumns: browseColumns
+        )
+      }
+      .onChange(of: browseColumns) { _, newValue in
+        layoutHelper = BrowseLayoutHelper(
+          width: containerWidth - 32,
+          spacing: 12,
+          browseColumns: newValue
+        )
+      }
+      .onAppear {
+        containerWidth = geometry.size.width
+        layoutHelper = BrowseLayoutHelper(
+          width: geometry.size.width - 32,
+          spacing: 12,
+          browseColumns: browseColumns
+        )
       }
     }
   }

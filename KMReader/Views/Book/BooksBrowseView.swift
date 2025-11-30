@@ -9,7 +9,6 @@ import SwiftUI
 
 struct BooksBrowseView: View {
   let width: CGFloat
-  let height: CGFloat
   let searchText: String
   private let spacing: CGFloat = 12
 
@@ -23,15 +22,8 @@ struct BooksBrowseView: View {
 
   @State private var viewModel = BookViewModel()
   @State private var readerState: BookReaderState?
-
-  private var layoutHelper: BrowseLayoutHelper {
-    BrowseLayoutHelper(
-      width: width,
-      height: height,
-      spacing: spacing,
-      browseColumns: browseColumns
-    )
-  }
+  @State private var hasInitialized = false
+  @State private var layoutHelper = BrowseLayoutHelper()
 
   var body: some View {
     VStack(spacing: 0) {
@@ -60,10 +52,31 @@ struct BooksBrowseView: View {
       }
     }
     .task {
+      // Initialize layout helper
+      layoutHelper = BrowseLayoutHelper(
+        width: width,
+        spacing: spacing,
+        browseColumns: browseColumns
+      )
+
       if viewModel.books.isEmpty {
         await viewModel.loadBrowseBooks(
           browseOpts: browseOpts, searchText: searchText, refresh: true)
       }
+    }
+    .onChange(of: width) { _, newWidth in
+      layoutHelper = BrowseLayoutHelper(
+        width: newWidth,
+        spacing: spacing,
+        browseColumns: browseColumns
+      )
+    }
+    .onChange(of: browseColumns) { _, newValue in
+      layoutHelper = BrowseLayoutHelper(
+        width: width,
+        spacing: spacing,
+        browseColumns: newValue
+      )
     }
     .onChange(of: browseOpts) { _, newValue in
       Task {
@@ -75,11 +88,11 @@ struct BooksBrowseView: View {
         await viewModel.loadBrowseBooks(browseOpts: browseOpts, searchText: newValue, refresh: true)
       }
     }
-    .onChange(of: selectedLibraryId) { _, newValue in
-      browseOpts.libraryId = newValue
-    }
-    .onAppear {
-      browseOpts.libraryId = selectedLibraryId
+    .onChange(of: selectedLibraryId) { _, _ in
+      Task {
+        await viewModel.loadBrowseBooks(
+          browseOpts: browseOpts, searchText: searchText, refresh: true)
+      }
     }
     .readerPresentation(readerState: $readerState)
   }

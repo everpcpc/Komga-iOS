@@ -9,7 +9,6 @@ import SwiftUI
 
 struct CollectionsBrowseView: View {
   let width: CGFloat
-  let height: CGFloat
   let searchText: String
 
   private let spacing: CGFloat = 12
@@ -20,15 +19,7 @@ struct CollectionsBrowseView: View {
   @AppStorage("browseColumns") private var browseColumns: BrowseColumns = BrowseColumns()
   @AppStorage("browseLayout") private var browseLayout: BrowseLayoutMode = .grid
   @State private var viewModel = CollectionViewModel()
-
-  private var layoutHelper: BrowseLayoutHelper {
-    BrowseLayoutHelper(
-      width: width,
-      height: height,
-      spacing: spacing,
-      browseColumns: browseColumns
-    )
-  }
+  @State private var layoutHelper = BrowseLayoutHelper()
 
   var body: some View {
     VStack(spacing: 0) {
@@ -98,9 +89,30 @@ struct CollectionsBrowseView: View {
       }
     }
     .task {
+      // Initialize layout helper
+      layoutHelper = BrowseLayoutHelper(
+        width: width,
+        spacing: spacing,
+        browseColumns: browseColumns
+      )
+
       if viewModel.collections.isEmpty {
         await loadCollections(refresh: true)
       }
+    }
+    .onChange(of: width) { _, newWidth in
+      layoutHelper = BrowseLayoutHelper(
+        width: newWidth,
+        spacing: spacing,
+        browseColumns: browseColumns
+      )
+    }
+    .onChange(of: browseColumns) { _, newValue in
+      layoutHelper = BrowseLayoutHelper(
+        width: width,
+        spacing: spacing,
+        browseColumns: newValue
+      )
     }
     .onChange(of: sortOpts) { _, _ in
       Task {
@@ -108,6 +120,11 @@ struct CollectionsBrowseView: View {
       }
     }
     .onChange(of: searchText) { _, _ in
+      Task {
+        await loadCollections(refresh: true)
+      }
+    }
+    .onChange(of: selectedLibraryId) { _, _ in
       Task {
         await loadCollections(refresh: true)
       }

@@ -11,6 +11,7 @@ struct BrowseView: View {
   @AppStorage("browseContent") private var browseContent: BrowseContentType = .series
   @State private var searchQuery: String = ""
   @State private var activeSearchText: String = ""
+  @State private var containerWidth: CGFloat = 0
 
   var body: some View {
     NavigationStack {
@@ -25,7 +26,9 @@ struct BrowseView: View {
             .pickerStyle(.segmented)
             .padding(.horizontal)
 
-            contentView(for: geometry.size)
+            if containerWidth > 0 {
+              contentView(width: containerWidth)
+            }
           }
         }
         .handleNavigation()
@@ -39,35 +42,37 @@ struct BrowseView: View {
             activeSearchText = ""
           }
         }
+        .onChange(of: geometry.size.width) { _, newWidth in
+          containerWidth = newWidth
+        }
+        .onAppear {
+          containerWidth = geometry.size.width
+        }
       }
     }
   }
 
   @ViewBuilder
-  private func contentView(for size: CGSize) -> some View {
+  private func contentView(width: CGFloat) -> some View {
     switch browseContent {
     case .series:
       SeriesBrowseView(
-        width: size.width,
-        height: size.height,
+        width: width,
         searchText: activeSearchText
       )
     case .books:
       BooksBrowseView(
-        width: size.width,
-        height: size.height,
+        width: width,
         searchText: activeSearchText
       )
     case .collections:
       CollectionsBrowseView(
-        width: size.width,
-        height: size.height,
+        width: width,
         searchText: activeSearchText
       )
     case .readlists:
       ReadListsBrowseView(
-        width: size.width,
-        height: size.height,
+        width: width,
         searchText: activeSearchText
       )
     }

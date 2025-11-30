@@ -10,17 +10,21 @@ import SwiftUI
 /// Helper for calculating browse layout dimensions
 struct BrowseLayoutHelper {
   let width: CGFloat
-  let height: CGFloat
   let spacing: CGFloat
   let browseColumns: BrowseColumns
 
+  init(width: CGFloat = 0, spacing: CGFloat = 12, browseColumns: BrowseColumns = BrowseColumns()) {
+    self.width = width
+    self.spacing = spacing
+    self.browseColumns = browseColumns
+  }
+
   var availableWidth: CGFloat {
-    width - spacing * 2
+    max(0, width - spacing * 2)
   }
 
   var isLandscape: Bool {
-    let orientation = PlatformHelper.deviceOrientation
-    return orientation.isLandscape || (orientation == .unknown && width > height)
+    PlatformHelper.deviceOrientation.isLandscape
   }
 
   var columnsCount: Int {
@@ -30,7 +34,7 @@ struct BrowseLayoutHelper {
   var cardWidth: CGFloat {
     guard columnsCount > 0 else { return availableWidth }
     let totalSpacing = CGFloat(columnsCount - 1) * spacing
-    return (availableWidth - totalSpacing) / CGFloat(columnsCount)
+    return max(0, (availableWidth - totalSpacing) / CGFloat(columnsCount))
   }
 
   var columns: [GridItem] {

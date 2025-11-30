@@ -28,6 +28,8 @@ struct SeriesDetailView: View {
   @State private var showEditSheet = false
   @State private var containingCollections: [KomgaCollection] = []
   @State private var isLoadingCollections = false
+  @State private var containerWidth: CGFloat = 0
+  @State private var layoutHelper = BrowseLayoutHelper()
 
   private var thumbnailURL: URL? {
     guard let series = series else { return nil }
@@ -376,20 +378,17 @@ struct SeriesDetailView: View {
             }
 
             // Books list
-            BooksListViewForSeries(
-              seriesId: seriesId,
-              bookViewModel: bookViewModel,
-              onReadBook: { book, incognito in
-                readerState = BookReaderState(book: book, incognito: incognito)
-              },
-              layoutMode: layoutMode,
-              layoutHelper: BrowseLayoutHelper(
-                width: geometry.size.width - 32,
-                height: geometry.size.height,
-                spacing: 12,
-                browseColumns: browseColumns
+            if containerWidth > 0 {
+              BooksListViewForSeries(
+                seriesId: seriesId,
+                bookViewModel: bookViewModel,
+                onReadBook: { book, incognito in
+                  readerState = BookReaderState(book: book, incognito: incognito)
+                },
+                layoutMode: layoutMode,
+                layoutHelper: layoutHelper
               )
-            )
+            }
           } else {
             ProgressView()
               .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -515,6 +514,29 @@ struct SeriesDetailView: View {
       }
       .task {
         await loadSeriesDetails()
+      }
+      .onChange(of: geometry.size.width) { _, newWidth in
+        containerWidth = newWidth
+        layoutHelper = BrowseLayoutHelper(
+          width: newWidth - 32,
+          spacing: 12,
+          browseColumns: browseColumns
+        )
+      }
+      .onChange(of: browseColumns) { _, newValue in
+        layoutHelper = BrowseLayoutHelper(
+          width: containerWidth - 32,
+          spacing: 12,
+          browseColumns: newValue
+        )
+      }
+      .onAppear {
+        containerWidth = geometry.size.width
+        layoutHelper = BrowseLayoutHelper(
+          width: geometry.size.width - 32,
+          spacing: 12,
+          browseColumns: browseColumns
+        )
       }
     }
   }

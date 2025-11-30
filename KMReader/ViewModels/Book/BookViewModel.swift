@@ -204,10 +204,10 @@ class BookViewModel {
   )
     async
   {
+    let libraryId = AppConfig.selectedLibraryId
     let sort = browseOpts.sortString
     let paramsChanged =
-      currentBrowseState?.libraryId != browseOpts.libraryId
-      || currentBrowseState?.readStatusFilter != browseOpts.readStatusFilter
+      currentBrowseState?.readStatusFilter != browseOpts.readStatusFilter
       || currentBrowseSort != sort
       || currentBrowseSearch != searchText
 
@@ -227,7 +227,7 @@ class BookViewModel {
 
     do {
       let condition = BookSearch.buildCondition(
-        libraryId: browseOpts.libraryId.isEmpty ? nil : browseOpts.libraryId,
+        libraryId: libraryId.isEmpty ? nil : libraryId,
         readStatus: browseOpts.readStatusFilter.toReadStatus()
       )
 

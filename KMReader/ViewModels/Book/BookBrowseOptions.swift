@@ -11,7 +11,6 @@ import SwiftUI
 struct BookBrowseOptions: Equatable, RawRepresentable {
   typealias RawValue = String
 
-  var libraryId: String = ""
   var readStatusFilter: ReadStatusFilter = .all
   var sortField: BookSortField = .series
   var sortDirection: SortDirection = .ascending
@@ -22,7 +21,6 @@ struct BookBrowseOptions: Equatable, RawRepresentable {
 
   var rawValue: String {
     let dict: [String: String] = [
-      "libraryId": libraryId,
       "readStatusFilter": readStatusFilter.rawValue,
       "sortField": sortField.rawValue,
       "sortDirection": sortDirection.rawValue,
@@ -44,7 +42,6 @@ struct BookBrowseOptions: Equatable, RawRepresentable {
     else {
       return nil
     }
-    self.libraryId = dict["libraryId"] ?? ""
     self.readStatusFilter = ReadStatusFilter(rawValue: dict["readStatusFilter"] ?? "") ?? .all
     self.sortField = BookSortField(rawValue: dict["sortField"] ?? "") ?? .series
     self.sortDirection = SortDirection(rawValue: dict["sortDirection"] ?? "") ?? .ascending

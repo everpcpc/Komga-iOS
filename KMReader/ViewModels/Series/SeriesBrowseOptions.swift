@@ -11,7 +11,6 @@ import SwiftUI
 struct SeriesBrowseOptions: Equatable, RawRepresentable {
   typealias RawValue = String
 
-  var libraryId: String = ""
   var readStatusFilter: ReadStatusFilter = .all
   var seriesStatusFilter: SeriesStatusFilter = .all
   var sortField: SeriesSortField = .name
@@ -26,7 +25,6 @@ struct SeriesBrowseOptions: Equatable, RawRepresentable {
 
   var rawValue: String {
     let dict: [String: String] = [
-      "libraryId": libraryId,
       "readStatusFilter": readStatusFilter.rawValue,
       "seriesStatusFilter": seriesStatusFilter.rawValue,
       "sortField": sortField.rawValue,
@@ -49,7 +47,6 @@ struct SeriesBrowseOptions: Equatable, RawRepresentable {
     else {
       return nil
     }
-    self.libraryId = dict["libraryId"] ?? ""
     self.readStatusFilter = ReadStatusFilter(rawValue: dict["readStatusFilter"] ?? "") ?? .all
     self.seriesStatusFilter = SeriesStatusFilter(rawValue: dict["seriesStatusFilter"] ?? "") ?? .all
     self.sortField = SeriesSortField(rawValue: dict["sortField"] ?? "") ?? .name

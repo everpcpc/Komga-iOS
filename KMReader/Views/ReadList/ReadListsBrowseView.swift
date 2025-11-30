@@ -9,7 +9,6 @@ import SwiftUI
 
 struct ReadListsBrowseView: View {
   let width: CGFloat
-  let height: CGFloat
   let searchText: String
 
   private let spacing: CGFloat = 12
@@ -20,15 +19,7 @@ struct ReadListsBrowseView: View {
   @AppStorage("browseColumns") private var browseColumns: BrowseColumns = BrowseColumns()
   @AppStorage("browseLayout") private var browseLayout: BrowseLayoutMode = .grid
   @State private var viewModel = ReadListViewModel()
-
-  private var layoutHelper: BrowseLayoutHelper {
-    BrowseLayoutHelper(
-      width: width,
-      height: height,
-      spacing: spacing,
-      browseColumns: browseColumns
-    )
-  }
+  @State private var layoutHelper = BrowseLayoutHelper()
 
   var body: some View {
     VStack(spacing: 0) {
@@ -96,9 +87,30 @@ struct ReadListsBrowseView: View {
       }
     }
     .task {
+      // Initialize layout helper
+      layoutHelper = BrowseLayoutHelper(
+        width: width,
+        spacing: spacing,
+        browseColumns: browseColumns
+      )
+
       if viewModel.readLists.isEmpty {
         await loadReadLists(refresh: true)
       }
+    }
+    .onChange(of: width) { _, newWidth in
+      layoutHelper = BrowseLayoutHelper(
+        width: newWidth,
+        spacing: spacing,
+        browseColumns: browseColumns
+      )
+    }
+    .onChange(of: browseColumns) { _, newValue in
+      layoutHelper = BrowseLayoutHelper(
+        width: width,
+        spacing: spacing,
+        browseColumns: newValue
+      )
     }
     .onChange(of: sortOpts) { _, _ in
       Task {
@@ -106,6 +118,11 @@ struct ReadListsBrowseView: View {
       }
     }
     .onChange(of: searchText) { _, _ in
+      Task {
+        await loadReadLists(refresh: true)
+      }
+    }
+    .onChange(of: selectedLibraryId) { _, _ in
       Task {
         await loadReadLists(refresh: true)
       }

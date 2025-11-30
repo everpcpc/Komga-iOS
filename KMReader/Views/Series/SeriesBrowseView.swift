@@ -9,7 +9,6 @@ import SwiftUI
 
 struct SeriesBrowseView: View {
   let width: CGFloat
-  let height: CGFloat
   let searchText: String
   let spacing: CGFloat = 12
 
@@ -20,15 +19,7 @@ struct SeriesBrowseView: View {
   @AppStorage("browseLayout") private var browseLayout: BrowseLayoutMode = .grid
 
   @State private var viewModel = SeriesViewModel()
-
-  private var layoutHelper: BrowseLayoutHelper {
-    BrowseLayoutHelper(
-      width: width,
-      height: height,
-      spacing: spacing,
-      browseColumns: browseColumns
-    )
-  }
+  @State private var layoutHelper = BrowseLayoutHelper()
 
   var body: some View {
     VStack(spacing: 0) {
@@ -107,9 +98,30 @@ struct SeriesBrowseView: View {
       }
     }
     .task {
+      // Initialize layout helper
+      layoutHelper = BrowseLayoutHelper(
+        width: width,
+        spacing: spacing,
+        browseColumns: browseColumns
+      )
+
       if viewModel.series.isEmpty {
         await viewModel.loadSeries(browseOpts: browseOpts, searchText: searchText, refresh: true)
       }
+    }
+    .onChange(of: width) { _, newWidth in
+      layoutHelper = BrowseLayoutHelper(
+        width: newWidth,
+        spacing: spacing,
+        browseColumns: browseColumns
+      )
+    }
+    .onChange(of: browseColumns) { _, newValue in
+      layoutHelper = BrowseLayoutHelper(
+        width: width,
+        spacing: spacing,
+        browseColumns: newValue
+      )
     }
     .onChange(of: browseOpts) { _, newValue in
       Task {
@@ -121,11 +133,10 @@ struct SeriesBrowseView: View {
         await viewModel.loadSeries(browseOpts: browseOpts, searchText: newValue, refresh: true)
       }
     }
-    .onChange(of: selectedLibraryId) { _, newValue in
-      browseOpts.libraryId = newValue
-    }
-    .onAppear {
-      browseOpts.libraryId = selectedLibraryId
+    .onChange(of: selectedLibraryId) { _, _ in
+      Task {
+        await viewModel.loadSeries(browseOpts: browseOpts, searchText: searchText, refresh: true)
+      }
     }
   }
 }

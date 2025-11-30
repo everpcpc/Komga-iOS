@@ -23,6 +23,8 @@ struct ReadListDetailView: View {
   @State private var readerState: BookReaderState?
   @State private var showDeleteConfirmation = false
   @State private var showEditSheet = false
+  @State private var containerWidth: CGFloat = 0
+  @State private var layoutHelper = BrowseLayoutHelper()
 
   private var thumbnailURL: URL? {
     readList.flatMap { ReadListService.shared.getReadListThumbnailURL(id: $0.id) }
@@ -85,20 +87,17 @@ struct ReadListDetailView: View {
             }
 
             // Books list
-            BooksListViewForReadList(
-              readListId: readListId,
-              bookViewModel: bookViewModel,
-              onReadBook: { book, incognito in
-                readerState = BookReaderState(book: book, incognito: incognito)
-              },
-              layoutMode: layoutMode,
-              layoutHelper: BrowseLayoutHelper(
-                width: geometry.size.width - 32,
-                height: geometry.size.height,
-                spacing: 12,
-                browseColumns: browseColumns
+            if containerWidth > 0 {
+              BooksListViewForReadList(
+                readListId: readListId,
+                bookViewModel: bookViewModel,
+                onReadBook: { book, incognito in
+                  readerState = BookReaderState(book: book, incognito: incognito)
+                },
+                layoutMode: layoutMode,
+                layoutHelper: layoutHelper
               )
-            )
+            }
           } else {
             ProgressView()
               .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -170,6 +169,29 @@ struct ReadListDetailView: View {
       }
       .task {
         await loadReadListDetails()
+      }
+      .onChange(of: geometry.size.width) { _, newWidth in
+        containerWidth = newWidth
+        layoutHelper = BrowseLayoutHelper(
+          width: newWidth - 32,
+          spacing: 12,
+          browseColumns: browseColumns
+        )
+      }
+      .onChange(of: browseColumns) { _, newValue in
+        layoutHelper = BrowseLayoutHelper(
+          width: containerWidth - 32,
+          spacing: 12,
+          browseColumns: newValue
+        )
+      }
+      .onAppear {
+        containerWidth = geometry.size.width
+        layoutHelper = BrowseLayoutHelper(
+          width: geometry.size.width - 32,
+          spacing: 12,
+          browseColumns: browseColumns
+        )
       }
     }
   }
