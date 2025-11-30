@@ -44,16 +44,34 @@ final class KomgaLibraryStore {
       predicate: #Predicate { $0.instanceId == instanceId }
     )
     let existing = try context.fetch(descriptor)
-    existing.forEach { context.delete($0) }
 
+    // Create a map of existing libraries by libraryId for quick lookup
+    var existingMap = Dictionary(
+      uniqueKeysWithValues: existing.map { ($0.libraryId, $0) }
+    )
+
+    // Update existing libraries or insert new ones
     for library in libraries {
-      context.insert(
-        KomgaLibrary(
-          instanceId: instanceId,
-          libraryId: library.id,
-          name: library.name
-        ))
+      if let existingLibrary = existingMap[library.id] {
+        // Update existing library (preserves metrics)
+        existingLibrary.name = library.name
+        existingMap.removeValue(forKey: library.id)
+      } else {
+        // Insert new library
+        context.insert(
+          KomgaLibrary(
+            instanceId: instanceId,
+            libraryId: library.id,
+            name: library.name
+          ))
+      }
     }
+
+    // Delete libraries that no longer exist
+    for (_, library) in existingMap {
+      context.delete(library)
+    }
+
     try context.save()
   }
 

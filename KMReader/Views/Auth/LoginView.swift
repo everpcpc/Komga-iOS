@@ -27,6 +27,7 @@ struct LoginView: View {
             .resizable()
             .aspectRatio(contentMode: .fit)
             .frame(height: 72)
+            .drawingGroup()
 
           Text("Sign in to Komga")
             .font(.system(size: 32, weight: .bold))
@@ -63,7 +64,6 @@ struct LoginView: View {
                 .autocorrectionDisabled()
             }
             .padding()
-            .background(PlatformHelper.secondarySystemBackgroundColor)
             .clipShape(RoundedRectangle(cornerRadius: 12))
           }
 
@@ -82,7 +82,6 @@ struct LoginView: View {
                 .autocorrectionDisabled()
             }
             .padding()
-            .background(PlatformHelper.secondarySystemBackgroundColor)
             .clipShape(RoundedRectangle(cornerRadius: 12))
           }
 
@@ -105,7 +104,6 @@ struct LoginView: View {
                 .autocorrectionDisabled()
             }
             .padding()
-            .background(PlatformHelper.secondarySystemBackgroundColor)
             .clipShape(RoundedRectangle(cornerRadius: 12))
           }
 
@@ -124,7 +122,6 @@ struct LoginView: View {
                 .textContentType(.password)
             }
             .padding()
-            .background(PlatformHelper.secondarySystemBackgroundColor)
             .clipShape(RoundedRectangle(cornerRadius: 12))
           }
 

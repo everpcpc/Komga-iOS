@@ -45,6 +45,7 @@ struct SettingsLibrariesView: View {
             Spacer()
           }
         }
+        .listRowBackground(Color.clear)
       } else if libraries.isEmpty {
         Section {
           VStack(spacing: 12) {
@@ -66,14 +67,19 @@ struct SettingsLibrariesView: View {
           .frame(maxWidth: .infinity)
           .padding(.vertical, 16)
         }
+        .listRowBackground(Color.clear)
       } else {
-        allLibrariesRowView()
-        ForEach(libraries) { library in
-          libraryRowView(library)
+        Section {
+          allLibrariesRowView()
+          ForEach(libraries, id: \.libraryId) { library in
+            libraryRowView(library)
+          }
         }
+        .listRowBackground(Color.clear)
       }
     }
     .optimizedListStyle()
+    .scrollContentBackground(.hidden)
     .inlineNavigationBarTitle("Libraries")
     .alert("Delete Library?", isPresented: isDeleteAlertPresented) {
       Button("Delete", role: .destructive) {
@@ -255,44 +261,54 @@ struct SettingsLibrariesView: View {
     Button {
       AppConfig.selectedLibraryId = ""
     } label: {
-      VStack(alignment: .leading, spacing: 4) {
-        HStack(spacing: 8) {
-          VStack(alignment: .leading, spacing: 2) {
-            Text("All Libraries")
-            if let metrics = allLibrariesMetrics, hasAllLibrariesMetrics(metrics) {
-              VStack(alignment: .leading, spacing: 2) {
-                if !formatAllLibrariesMetricsLine1(metrics).isEmpty {
-                  Text(formatAllLibrariesMetricsLine1(metrics))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                }
-                if !formatAllLibrariesMetricsLine2(metrics).isEmpty {
-                  Text(formatAllLibrariesMetricsLine2(metrics))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                }
+      HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 2) {
+          Text("All Libraries")
+            .font(.headline)
+          if let metrics = allLibrariesMetrics, hasAllLibrariesMetrics(metrics) {
+            VStack(alignment: .leading, spacing: 2) {
+              if !formatAllLibrariesMetricsLine1(metrics).isEmpty {
+                Text(formatAllLibrariesMetricsLine1(metrics))
+                  .font(.caption)
+                  .foregroundColor(.secondary)
+              }
+              if !formatAllLibrariesMetricsLine2(metrics).isEmpty {
+                Text(formatAllLibrariesMetricsLine2(metrics))
+                  .font(.caption)
+                  .foregroundColor(.secondary)
               }
             }
           }
-
-          Spacer()
-
-          if isSelected {
-            Image(systemName: "checkmark")
-              .font(.footnote)
-              .foregroundColor(.accentColor)
-              .transition(.scale.combined(with: .opacity))
-          }
         }
-        #if os(macOS)
-          .padding(.vertical, 10)
-        #else
-          .padding(.vertical, 6)
-        #endif
+
+        Spacer()
+
+        if isSelected {
+          Image(systemName: "checkmark.circle.fill")
+            .font(.title3)
+            .foregroundColor(.accentColor)
+            .transition(.scale.combined(with: .opacity))
+        }
       }
+      .padding(.horizontal, 16)
+      .padding(.vertical, 14)
+      .background(
+        RoundedRectangle(cornerRadius: 12)
+          .fill(isSelected ? Color.accentColor.opacity(0.08) : Color.secondary.opacity(0.06))
+      )
+      .overlay(
+        RoundedRectangle(cornerRadius: 12)
+          .strokeBorder(
+            isSelected ? Color.accentColor.opacity(0.3) : Color.clear,
+            lineWidth: 1.5
+          )
+      )
+      .animation(.easeInOut(duration: 0.2), value: isSelected)
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
+    .listRowSeparator(.hidden)
+    .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
     .contextMenu {
       if AppConfig.isAdmin {
         Button {
@@ -337,6 +353,8 @@ struct SettingsLibrariesView: View {
         .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
+    .listRowSeparator(.hidden)
+    .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
     .contextMenu {
       if AppConfig.isAdmin {
         Button {
@@ -390,35 +408,43 @@ struct SettingsLibrariesView: View {
   private func librarySummary(_ library: KomgaLibrary, isPerforming: Bool, isSelected: Bool)
     -> some View
   {
-    VStack(alignment: .leading, spacing: 4) {
-      HStack(spacing: 8) {
-        VStack(alignment: .leading, spacing: 2) {
-          Text(library.name)
-          if hasMetrics(library) {
-            Text(formatMetrics(library))
-              .font(.caption)
-              .foregroundColor(.secondary)
-          }
-        }
-
-        Spacer()
-
-        if isPerforming {
-          ProgressView()
-            .progressViewStyle(.circular)
-        } else if isSelected {
-          Image(systemName: "checkmark")
-            .font(.footnote)
-            .foregroundColor(.accentColor)
-            .transition(.scale.combined(with: .opacity))
+    HStack(spacing: 8) {
+      VStack(alignment: .leading, spacing: 2) {
+        Text(library.name)
+          .font(.headline)
+        if hasMetrics(library) {
+          Text(formatMetrics(library))
+            .font(.caption)
+            .foregroundColor(.secondary)
         }
       }
+
+      Spacer()
+
+      if isPerforming {
+        ProgressView()
+          .progressViewStyle(.circular)
+      } else if isSelected {
+        Image(systemName: "checkmark.circle.fill")
+          .font(.title3)
+          .foregroundColor(.accentColor)
+          .transition(.scale.combined(with: .opacity))
+      }
     }
-    #if os(macOS)
-      .padding(.vertical, 10)
-    #else
-      .padding(.vertical, 6)
-    #endif
+    .padding(.horizontal, 16)
+    .padding(.vertical, 14)
+    .background(
+      RoundedRectangle(cornerRadius: 12)
+        .fill(isSelected ? Color.accentColor.opacity(0.08) : Color.secondary.opacity(0.06))
+    )
+    .overlay(
+      RoundedRectangle(cornerRadius: 12)
+        .strokeBorder(
+          isSelected ? Color.accentColor.opacity(0.3) : Color.clear,
+          lineWidth: 1.5
+        )
+    )
+    .animation(.easeInOut(duration: 0.2), value: isSelected)
   }
 
   private func hasMetrics(_ library: KomgaLibrary) -> Bool {
