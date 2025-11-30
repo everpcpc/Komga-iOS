@@ -535,8 +535,18 @@ struct DivinaReaderView: View {
         return
       }
     #endif
+
+    let timeout: TimeInterval
+    #if os(iOS)
+      timeout = 1.5
+    #elseif os(macOS)
+      timeout = 1.0
+    #else
+      timeout = 1.5
+    #endif
+
     controlsTimer?.invalidate()
-    controlsTimer = Timer.scheduledTimer(withTimeInterval: 2.5, repeats: false) { _ in
+    controlsTimer = Timer.scheduledTimer(withTimeInterval: timeout, repeats: false) { _ in
       withAnimation {
         showingControls = false
       }
