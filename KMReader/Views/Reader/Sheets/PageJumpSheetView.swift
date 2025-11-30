@@ -34,6 +34,8 @@ private struct PageTransform {
 
 // Single page preview item view
 private struct PagePreviewItem: View {
+  @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
+
   let page: Int
   let pageValue: Int
   let imageURL: URL?
@@ -108,7 +110,7 @@ private struct PagePreviewItem: View {
     if let imageURL = imageURL {
       let isCenter = page == pageValue
 
-      VStack(spacing: 4) {
+      VStack {
         WebImage(
           url: imageURL,
           options: [.retryFailed, .scaleDownLargeImages],
@@ -137,6 +139,7 @@ private struct PagePreviewItem: View {
             .padding(.vertical, 3)
             .background {
               RoundedRectangle(cornerRadius: 4)
+                .fill(themeColor.color)
             }
         }
       }
@@ -161,6 +164,7 @@ struct PageJumpSheetView: View {
   let onJump: (Int) -> Void
 
   @Environment(\.dismiss) private var dismiss
+
   @State private var pageValue: Int
 
   private var maxPage: Int {

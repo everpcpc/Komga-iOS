@@ -63,6 +63,10 @@ struct ContentView: View {
       .padding(.horizontal, 8)
       .padding(.bottom, 64)
     }
+    #if os(iOS)
+      // only set tint color on iOS
+      .tint(themeColor.color)
+    #endif
     .alert("Error", isPresented: $errorManager.hasAlert) {
       Button("OK") {
         ErrorManager.shared.vanishError()

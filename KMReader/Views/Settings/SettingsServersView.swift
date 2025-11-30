@@ -185,7 +185,7 @@ struct SettingsServersView: View {
               .padding(.vertical, 4)
               .background(
                 Capsule()
-                  .fill(themeColor.color.opacity(0.15))
+                  .fill(themeColor.color.opacity(0.2))
               )
           }
         }
@@ -203,7 +203,7 @@ struct SettingsServersView: View {
         RoundedRectangle(cornerRadius: 18)
           .fill(
             isActive(instance)
-              ? themeColor.color.opacity(0.08)
+              ? themeColor.color.opacity(0.1)
               : PlatformHelper.secondarySystemBackgroundColor
           )
       )
@@ -211,8 +211,8 @@ struct SettingsServersView: View {
         RoundedRectangle(cornerRadius: 18)
           .stroke(
             isActive(instance)
-              ? themeColor.color.opacity(0.6)
-              : Color.primary.opacity(0.1),
+              ? themeColor.color.opacity(0.8)
+              : Color.primary.opacity(0.2),
             lineWidth: 1.5
           )
       )

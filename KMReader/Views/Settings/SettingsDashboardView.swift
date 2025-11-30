@@ -75,6 +75,32 @@ struct SettingsDashboardView: View {
     DashboardSection.allCases.filter { !isSectionVisible($0) }
   }
 
+  private func sectionToggleBinding(for section: DashboardSection) -> Binding<Bool> {
+    Binding(
+      get: { isSectionVisible(section) },
+      set: { _ in
+        withAnimation {
+          if isSectionVisible(section) {
+            hideSection(section)
+          } else {
+            showSection(section)
+          }
+        }
+      }
+    )
+  }
+
+  private func hiddenSectionToggleBinding(for section: DashboardSection) -> Binding<Bool> {
+    Binding(
+      get: { isSectionVisible(section) },
+      set: { _ in
+        withAnimation {
+          showSection(section)
+        }
+      }
+    )
+  }
+
   var body: some View {
     List {
       #if os(tvOS)
@@ -125,7 +151,9 @@ struct SettingsDashboardView: View {
                       movingSection = nil
                       focusedHandle = nil
                     }
-                    hideSection(section)
+                    withAnimation {
+                      hideSection(section)
+                    }
                   } label: {
                     Image(systemName: "minus.circle.fill")
                   }
@@ -134,25 +162,14 @@ struct SettingsDashboardView: View {
               }
               .padding(.horizontal, 18)
             #else
-              Toggle(
-                "",
-                isOn: Binding(
-                  get: { isSectionVisible(section) },
-                  set: { _ in
-                    if isSectionVisible(section) {
-                      hideSection(section)
-                    } else {
-                      showSection(section)
-                    }
-                  }
-                ))
+              Toggle("", isOn: sectionToggleBinding(for: section))
             #endif
           }
           #if os(tvOS)
-          .listRowBackground(
-            Capsule()
-              .fill(PlatformHelper.secondarySystemBackgroundColor)
-              .opacity(movingSection == section ? 0.5 : 0))
+            .listRowBackground(
+              Capsule()
+                .fill(PlatformHelper.secondarySystemBackgroundColor)
+                .opacity(movingSection == section ? 0.5 : 0))
           #endif
         }
         #if os(tvOS)
@@ -187,7 +204,9 @@ struct SettingsDashboardView: View {
                   .font(.headline)
                 Spacer()
                 Button {
-                  showSection(section)
+                  withAnimation {
+                    showSection(section)
+                  }
                 } label: {
                   Image(systemName: "plus.circle")
                 }
@@ -208,12 +227,7 @@ struct SettingsDashboardView: View {
                   Image(systemName: section.icon)
                 }
                 Spacer()
-                Toggle(
-                  "",
-                  isOn: Binding(
-                    get: { isSectionVisible(section) },
-                    set: { _ in showSection(section) }
-                  ))
+                Toggle("", isOn: hiddenSectionToggleBinding(for: section))
               }
             }
           }
