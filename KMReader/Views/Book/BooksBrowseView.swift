@@ -8,13 +8,12 @@
 import SwiftUI
 
 struct BooksBrowseView: View {
-  let width: CGFloat
+  let layoutHelper: BrowseLayoutHelper
   let searchText: String
   private let spacing: CGFloat = 12
 
   @AppStorage("bookBrowseOptions") private var browseOpts: BookBrowseOptions = BookBrowseOptions()
   @AppStorage("selectedLibraryId") private var selectedLibraryId: String = ""
-  @AppStorage("browseColumns") private var browseColumns: BrowseColumns = BrowseColumns()
   @AppStorage("browseLayout") private var browseLayout: BrowseLayoutMode = .grid
   #if os(macOS)
     @Environment(\.openWindow) private var openWindow
@@ -23,7 +22,6 @@ struct BooksBrowseView: View {
   @State private var viewModel = BookViewModel()
   @State private var readerState: BookReaderState?
   @State private var hasInitialized = false
-  @State private var layoutHelper = BrowseLayoutHelper()
 
   var body: some View {
     VStack(spacing: 0) {
@@ -52,31 +50,10 @@ struct BooksBrowseView: View {
       }
     }
     .task {
-      // Initialize layout helper
-      layoutHelper = BrowseLayoutHelper(
-        width: width,
-        spacing: spacing,
-        browseColumns: browseColumns
-      )
-
       if viewModel.books.isEmpty {
         await viewModel.loadBrowseBooks(
           browseOpts: browseOpts, searchText: searchText, refresh: true)
       }
-    }
-    .onChange(of: width) { _, newWidth in
-      layoutHelper = BrowseLayoutHelper(
-        width: newWidth,
-        spacing: spacing,
-        browseColumns: browseColumns
-      )
-    }
-    .onChange(of: browseColumns) { _, newValue in
-      layoutHelper = BrowseLayoutHelper(
-        width: width,
-        spacing: spacing,
-        browseColumns: newValue
-      )
     }
     .onChange(of: browseOpts) { _, newValue in
       Task {
@@ -123,7 +100,6 @@ struct BooksBrowseView: View {
         }
       }
     }
-    .padding(spacing)
   }
 
   private var listView: some View {
@@ -153,6 +129,5 @@ struct BooksBrowseView: View {
         }
       }
     }
-    .padding(spacing)
   }
 }

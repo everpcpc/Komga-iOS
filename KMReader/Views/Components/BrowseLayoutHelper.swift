@@ -12,19 +12,17 @@ struct BrowseLayoutHelper {
   let width: CGFloat
   let spacing: CGFloat
   let browseColumns: BrowseColumns
+  let isLandscape: Bool
 
   init(width: CGFloat = 0, spacing: CGFloat = 12, browseColumns: BrowseColumns = BrowseColumns()) {
     self.width = width
     self.spacing = spacing
     self.browseColumns = browseColumns
+    self.isLandscape = PlatformHelper.deviceOrientation.isLandscape
   }
 
   var availableWidth: CGFloat {
     max(0, width - spacing * 2)
-  }
-
-  var isLandscape: Bool {
-    PlatformHelper.deviceOrientation.isLandscape
   }
 
   var columnsCount: Int {

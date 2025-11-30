@@ -8,18 +8,16 @@
 import SwiftUI
 
 struct SeriesBrowseView: View {
-  let width: CGFloat
+  let layoutHelper: BrowseLayoutHelper
   let searchText: String
   let spacing: CGFloat = 12
 
   @AppStorage("seriesBrowseOptions") private var browseOpts: SeriesBrowseOptions =
     SeriesBrowseOptions()
   @AppStorage("selectedLibraryId") private var selectedLibraryId: String = ""
-  @AppStorage("browseColumns") private var browseColumns: BrowseColumns = BrowseColumns()
   @AppStorage("browseLayout") private var browseLayout: BrowseLayoutMode = .grid
 
   @State private var viewModel = SeriesViewModel()
-  @State private var layoutHelper = BrowseLayoutHelper()
 
   var body: some View {
     VStack(spacing: 0) {
@@ -67,7 +65,6 @@ struct SeriesBrowseView: View {
               }
             }
           }
-          .padding(spacing)
         case .list:
           LazyVStack(spacing: spacing) {
             ForEach(Array(viewModel.series.enumerated()), id: \.element.id) { index, series in
@@ -93,35 +90,13 @@ struct SeriesBrowseView: View {
               }
             }
           }
-          .padding(spacing)
         }
       }
     }
     .task {
-      // Initialize layout helper
-      layoutHelper = BrowseLayoutHelper(
-        width: width,
-        spacing: spacing,
-        browseColumns: browseColumns
-      )
-
       if viewModel.series.isEmpty {
         await viewModel.loadSeries(browseOpts: browseOpts, searchText: searchText, refresh: true)
       }
-    }
-    .onChange(of: width) { _, newWidth in
-      layoutHelper = BrowseLayoutHelper(
-        width: newWidth,
-        spacing: spacing,
-        browseColumns: browseColumns
-      )
-    }
-    .onChange(of: browseColumns) { _, newValue in
-      layoutHelper = BrowseLayoutHelper(
-        width: width,
-        spacing: spacing,
-        browseColumns: newValue
-      )
     }
     .onChange(of: browseOpts) { _, newValue in
       Task {

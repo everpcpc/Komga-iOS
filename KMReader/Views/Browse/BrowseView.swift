@@ -9,70 +9,97 @@ import SwiftUI
 
 struct BrowseView: View {
   @AppStorage("browseContent") private var browseContent: BrowseContentType = .series
+  @AppStorage("browseColumns") private var browseColumns: BrowseColumns = BrowseColumns()
   @State private var searchQuery: String = ""
   @State private var activeSearchText: String = ""
-  @State private var containerWidth: CGFloat = 0
+  @State private var contentWidth: CGFloat = 0
+  @State private var layoutHelper = BrowseLayoutHelper()
+
+  private let spacing: CGFloat = 12
+  // SwiftUI's default horizontal padding is 16 on each side (32 total)
+  private let horizontalPadding: CGFloat = 16
 
   var body: some View {
     NavigationStack {
-      GeometryReader { geometry in
-        ScrollView {
-          VStack(spacing: 0) {
-            Picker("Content Type", selection: $browseContent) {
+      ScrollView {
+        VStack(spacing: 0) {
+          HStack {
+            Spacer()
+            Picker("Content", selection: $browseContent) {
               ForEach(BrowseContentType.allCases) { type in
                 Text(type.displayName).tag(type)
               }
             }
             .pickerStyle(.segmented)
-            .padding(.horizontal)
+            Spacer()
+          }
+          .padding(.horizontal, horizontalPadding)
+          .padding(.vertical, spacing)
 
-            if containerWidth > 0 {
-              contentView(width: containerWidth)
-            }
+          if contentWidth > 0 {
+            contentView(layoutHelper: layoutHelper)
+              .padding(.horizontal, horizontalPadding)
+              .padding(.vertical, spacing)
           }
         }
-        .handleNavigation()
-        .inlineNavigationBarTitle("Browse")
-        .searchable(text: $searchQuery)
-        .onSubmit(of: .search) {
-          activeSearchText = searchQuery
+      }
+      .handleNavigation()
+      .inlineNavigationBarTitle("Browse")
+      .searchable(text: $searchQuery)
+      .onSubmit(of: .search) {
+        activeSearchText = searchQuery
+      }
+      .onChange(of: searchQuery) { _, newValue in
+        if newValue.isEmpty {
+          activeSearchText = ""
         }
-        .onChange(of: searchQuery) { _, newValue in
-          if newValue.isEmpty {
-            activeSearchText = ""
-          }
+      }
+      .onGeometryChange(for: CGSize.self) { geometry in
+        geometry.size
+      } action: { newSize in
+        let newContentWidth = max(0, newSize.width - horizontalPadding * 2)
+        if abs(contentWidth - newContentWidth) > 1 {
+          contentWidth = newContentWidth
+          layoutHelper = BrowseLayoutHelper(
+            width: newContentWidth,
+            spacing: spacing,
+            browseColumns: browseColumns
+          )
         }
-        .onChange(of: geometry.size.width) { _, newWidth in
-          containerWidth = newWidth
-        }
-        .onAppear {
-          containerWidth = geometry.size.width
+      }
+      .onChange(of: browseColumns) { _, _ in
+        if contentWidth > 0 {
+          layoutHelper = BrowseLayoutHelper(
+            width: contentWidth,
+            spacing: spacing,
+            browseColumns: browseColumns
+          )
         }
       }
     }
   }
 
   @ViewBuilder
-  private func contentView(width: CGFloat) -> some View {
+  private func contentView(layoutHelper: BrowseLayoutHelper) -> some View {
     switch browseContent {
     case .series:
       SeriesBrowseView(
-        width: width,
+        layoutHelper: layoutHelper,
         searchText: activeSearchText
       )
     case .books:
       BooksBrowseView(
-        width: width,
+        layoutHelper: layoutHelper,
         searchText: activeSearchText
       )
     case .collections:
       CollectionsBrowseView(
-        width: width,
+        layoutHelper: layoutHelper,
         searchText: activeSearchText
       )
     case .readlists:
       ReadListsBrowseView(
-        width: width,
+        layoutHelper: layoutHelper,
         searchText: activeSearchText
       )
     }
