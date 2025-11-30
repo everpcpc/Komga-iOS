@@ -31,7 +31,6 @@
                   currentLink.href == link.href
                 {
                   Image(systemName: "bookmark.fill")
-                    .foregroundStyle(.tint)
                 }
               }
             }

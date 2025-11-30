@@ -43,6 +43,9 @@ struct ReadListDetailView: View {
 
           HStack(alignment: .top) {
             ThumbnailImage(url: thumbnailURL, showPlaceholder: false, width: 120)
+              #if os(tvOS)
+                .focusable()
+              #endif
 
             VStack(alignment: .leading) {
 

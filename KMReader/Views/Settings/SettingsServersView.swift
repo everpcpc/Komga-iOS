@@ -229,7 +229,6 @@ struct SettingsServersView: View {
           } label: {
             Label("Edit", systemImage: "pencil")
           }
-          .tint(.blue)
 
           Button(role: .destructive) {
             instancePendingDeletion = instance

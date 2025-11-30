@@ -58,6 +58,9 @@ struct BookDetailView: View {
 
           HStack(alignment: .top) {
             ThumbnailImage(url: thumbnailURL, width: 120)
+              #if os(tvOS)
+                .focusable()
+              #endif
 
             VStack(alignment: .leading) {
               HStack(spacing: 6) {

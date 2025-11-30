@@ -103,7 +103,6 @@
       if viewModel.isLoading {
         VStack(spacing: 16) {
           ProgressView()
-            .tint(.white)
           if viewModel.downloadProgress > 0 {
             Text("Downloading: \(Int(viewModel.downloadProgress * 100))%")
               .font(.caption)
@@ -304,7 +303,6 @@
 
             if let totalProgression {
               ProgressView(value: totalProgression, total: 1.0)
-                .tint(themeColor.color)
                 .opacity(shouldShowControls ? 1.0 : 0.0)
             }
           }

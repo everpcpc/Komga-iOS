@@ -32,7 +32,6 @@ struct ReaderTOCSheetView: View {
             Spacer()
             if entry.pageIndex == currentPageIndex {
               Image(systemName: "bookmark.fill")
-                .foregroundStyle(.tint)
             }
           }
           .frame(maxWidth: .infinity, alignment: .leading)

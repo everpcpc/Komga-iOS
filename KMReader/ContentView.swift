@@ -9,8 +9,10 @@ import SwiftUI
 
 struct ContentView: View {
   @Environment(AuthViewModel.self) private var authViewModel
+
   @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
   @AppStorage("isLoggedIn") private var isLoggedIn: Bool = false
+
   @State private var errorManager = ErrorManager.shared
 
   var body: some View {
@@ -22,7 +24,6 @@ struct ContentView: View {
           LandingView()
         }
       }
-      .tint(themeColor.color)
       .task {
         if isLoggedIn {
           await authViewModel.loadCurrentUser()
@@ -83,8 +84,6 @@ struct ContentView: View {
 }
 
 struct MainTabView: View {
-  @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
-
   var body: some View {
     TabView {
       DashboardView()
@@ -107,6 +106,5 @@ struct MainTabView: View {
           Label("Settings", systemImage: "gearshape")
         }
     }
-    .tint(themeColor.color)
   }
 }

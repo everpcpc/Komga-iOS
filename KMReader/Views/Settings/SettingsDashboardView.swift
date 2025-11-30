@@ -10,20 +10,28 @@ import SwiftUI
 struct SettingsDashboardView: View {
   @State private var sections: [DashboardSection] = AppConfig.dashboardSections
 
+  #if os(tvOS)
+    @State private var isEditMode = false
+    @State private var movingSection: DashboardSection?
+    @FocusState private var focusedHandle: DashboardSection?
+  #endif
+
   private func isSectionVisible(_ section: DashboardSection) -> Bool {
     return sections.contains(section)
   }
 
-  private func toggleSectionVisibility(_ section: DashboardSection) {
+  private func hideSection(_ section: DashboardSection) {
     if let index = sections.firstIndex(of: section) {
-      // Remove from array (hide)
       sections.remove(at: index)
-    } else {
-      // Add to array (show) - add at the end or find a good position
-      // Try to maintain relative order with allCases
+      AppConfig.dashboardSections = sections
+    }
+  }
+
+  private func showSection(_ section: DashboardSection) {
+    if !sections.contains(section) {
+      // Add at the end or find a good position based on allCases order
       if let referenceIndex = DashboardSection.allCases.firstIndex(of: section) {
         var insertIndex = sections.count
-        // Find position based on allCases order
         for (idx, existingSection) in sections.enumerated() {
           if let existingIndex = DashboardSection.allCases.firstIndex(of: existingSection),
             existingIndex > referenceIndex
@@ -36,8 +44,8 @@ struct SettingsDashboardView: View {
       } else {
         sections.append(section)
       }
+      AppConfig.dashboardSections = sections
     }
-    AppConfig.dashboardSections = sections
   }
 
   private func moveSections(from source: IndexSet, to destination: Int) {
@@ -69,87 +77,158 @@ struct SettingsDashboardView: View {
 
   var body: some View {
     List {
+      #if os(tvOS)
+        HStack {
+          Spacer()
+          Button {
+            isEditMode.toggle()
+            if !isEditMode {
+              movingSection = nil
+              focusedHandle = nil
+            }
+          } label: {
+            Text(isEditMode ? "Done" : "Edit")
+          }
+          .buttonStyle(.plain)
+        }
+      #endif
+
       Section(header: Text("Dashboard Sections")) {
-        #if os(iOS) || os(macOS)
-          ForEach(sections) { section in
-            HStack {
-              Label {
-                Text(section.displayName)
-              } icon: {
-                Image(systemName: section.icon)
+        ForEach(sections) { section in
+          HStack {
+            #if os(tvOS)
+              Text(section.displayName)
+                .font(.headline)
+            #else
+              Label(section.displayName, systemImage: section.icon)
+            #endif
+            Spacer()
+            #if os(tvOS)
+              HStack(spacing: 18) {
+                Button {
+                  if movingSection == section {
+                    movingSection = nil
+                    focusedHandle = nil
+                  } else {
+                    movingSection = section
+                    focusedHandle = section
+                  }
+                } label: {
+                  Image(systemName: "line.3.horizontal")
+                }
+                .buttonStyle(.plain)
+                .focused($focusedHandle, equals: section)
+
+                if isEditMode {
+                  Button {
+                    if movingSection == section {
+                      movingSection = nil
+                      focusedHandle = nil
+                    }
+                    hideSection(section)
+                  } label: {
+                    Image(systemName: "minus.circle.fill")
+                  }
+                  .buttonStyle(.plain)
+                }
               }
-              Spacer()
+              .padding(.horizontal, 18)
+            #else
               Toggle(
                 "",
                 isOn: Binding(
                   get: { isSectionVisible(section) },
-                  set: { _ in toggleSectionVisibility(section) }
+                  set: { _ in
+                    if isSectionVisible(section) {
+                      hideSection(section)
+                    } else {
+                      showSection(section)
+                    }
+                  }
                 ))
+            #endif
+          }
+          .listRowBackground(
+            Capsule()
+              .fill(PlatformHelper.secondarySystemBackgroundColor)
+              .opacity(movingSection == section ? 0.5 : 0))
+        }
+        #if os(tvOS)
+          .onMoveCommand { direction in
+            guard let movingSection = movingSection else { return }
+            // force focus on the moving section
+            if let focus = focusedHandle, focus != movingSection {
+              focusedHandle = movingSection
+            }
+            withAnimation {
+              switch direction {
+              case .up:
+                moveSectionUp(movingSection)
+              case .down:
+                moveSectionDown(movingSection)
+              default:
+                break
+              }
             }
           }
-          .onMove(perform: moveSections)
         #else
-          ForEach(sections) { section in
-            HStack {
-              Label {
-                Text(section.displayName)
-              } icon: {
-                Image(systemName: section.icon)
-              }
-              Spacer()
-              Toggle(
-                "",
-                isOn: Binding(
-                  get: { isSectionVisible(section) },
-                  set: { _ in toggleSectionVisibility(section) }
-                ))
-              HStack(spacing: 16) {
-                Button {
-                  moveSectionUp(section)
-                } label: {
-                  Image(systemName: "arrow.up.circle.fill")
-                    .font(.title3)
-                }
-                .buttonStyle(.plain)
-                Button {
-                  moveSectionDown(section)
-                } label: {
-                  Image(systemName: "arrow.down.circle.fill")
-                    .font(.title3)
-                }
-                .buttonStyle(.plain)
-              }
-            }
-          }
+          .onMove(perform: moveSections)
         #endif
       }
 
-      if !hiddenSections.isEmpty {
-        Section(header: Text("Hidden Sections")) {
-          ForEach(hiddenSections) { section in
-            HStack {
-              Label {
+      #if os(tvOS)
+        if isEditMode && !hiddenSections.isEmpty {
+          Section(header: Text("Hidden Sections")) {
+            ForEach(hiddenSections) { section in
+              HStack {
                 Text(section.displayName)
-              } icon: {
-                Image(systemName: section.icon)
+                  .font(.headline)
+                Spacer()
+                Button {
+                  showSection(section)
+                } label: {
+                  Image(systemName: "plus.circle")
+                }
+                .buttonStyle(.plain)
               }
-              Spacer()
-              Toggle(
-                "",
-                isOn: Binding(
-                  get: { isSectionVisible(section) },
-                  set: { _ in toggleSectionVisibility(section) }
-                ))
+              .padding(.vertical, 8)
             }
           }
         }
-      }
+      #else
+        if !hiddenSections.isEmpty {
+          Section(header: Text("Hidden Sections")) {
+            ForEach(hiddenSections) { section in
+              HStack {
+                Label {
+                  Text(section.displayName)
+                } icon: {
+                  Image(systemName: section.icon)
+                }
+                Spacer()
+                Toggle(
+                  "",
+                  isOn: Binding(
+                    get: { isSectionVisible(section) },
+                    set: { _ in showSection(section) }
+                  ))
+              }
+            }
+          }
+        }
+      #endif
 
       Section {
         Button {
           // Reset to default
-          sections = DashboardSection.allCases
-          AppConfig.dashboardSections = sections
+          #if os(tvOS)
+            movingSection = nil
+            focusedHandle = nil
+          #endif
+          withAnimation {
+            sections = DashboardSection.allCases
+            AppConfig.dashboardSections = sections
+          }
         } label: {
           HStack {
             Spacer()
@@ -163,6 +242,10 @@ struct SettingsDashboardView: View {
     .inlineNavigationBarTitle("Dashboard")
     .onAppear {
       sections = AppConfig.dashboardSections
+      #if os(tvOS)
+        movingSection = nil
+        focusedHandle = nil
+      #endif
     }
   }
 }

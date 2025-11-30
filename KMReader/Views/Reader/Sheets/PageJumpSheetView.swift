@@ -137,7 +137,6 @@ private struct PagePreviewItem: View {
             .padding(.vertical, 3)
             .background {
               RoundedRectangle(cornerRadius: 4)
-                .fill(.tint)
             }
         }
       }
@@ -316,7 +315,7 @@ struct PageJumpSheetView: View {
           Button {
             jumpToPage()
           } label: {
-            Label("Jump", systemImage: "arrow.right.to.line")
+            Image(systemName: "arrow.right.to.line")
           }
           .disabled(!canJump || pageValue == currentPage)
         }

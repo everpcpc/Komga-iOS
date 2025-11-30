@@ -203,7 +203,6 @@ struct DivinaReaderView: View {
         } else if viewModel.isLoading {
           // Show loading indicator when loading
           ProgressView()
-            .tint(.white)
         } else {
           // No pages available
           NoPagesView(

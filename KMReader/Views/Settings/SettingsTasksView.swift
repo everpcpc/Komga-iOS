@@ -34,6 +34,23 @@ struct SettingsTasksView: View {
           }
         }
       } else {
+        #if os(tvOS)
+          HStack {
+            Spacer()
+            Button {
+              showCancelAllConfirmation = true
+            } label: {
+              if isCancelling {
+                ProgressView()
+              } else {
+                Text("Cancel All")
+              }
+            }
+            .buttonStyle(.plain)
+            .disabled(isCancelling)
+          }
+        #endif
+
         // Tasks Section
         if !tasksCountByType.isEmpty || metricErrors[.tasksExecuted] != nil {
           Section(header: Text("Tasks Executed")) {
@@ -98,22 +115,24 @@ struct SettingsTasksView: View {
     }
     .optimizedListStyle(alternatesRowBackgrounds: true)
     .inlineNavigationBarTitle("Tasks")
-    .toolbar {
-      if AppConfig.isAdmin {
-        ToolbarItem(placement: .confirmationAction) {
-          Button {
-            showCancelAllConfirmation = true
-          } label: {
-            if isCancelling {
-              ProgressView()
-            } else {
-              Label("Cancel All", systemImage: "xmark.circle")
+    #if !os(tvOS)
+      .toolbar {
+        if AppConfig.isAdmin {
+          ToolbarItem(placement: .confirmationAction) {
+            Button {
+              showCancelAllConfirmation = true
+            } label: {
+              if isCancelling {
+                ProgressView()
+              } else {
+                Label("Cancel All", systemImage: "xmark.circle")
+              }
             }
+            .disabled(isCancelling)
           }
-          .disabled(isCancelling)
         }
       }
-    }
+    #endif
     .alert("Cancel All Tasks", isPresented: $showCancelAllConfirmation) {
       Button("Cancel", role: .cancel) {}
       Button("Confirm", role: .destructive) {

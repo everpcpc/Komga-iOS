@@ -79,7 +79,9 @@ struct SettingsLibrariesView: View {
       }
     }
     .optimizedListStyle()
-    .scrollContentBackground(.hidden)
+    #if os(iOS) || os(macOS)
+      .scrollContentBackground(.hidden)
+    #endif
     .inlineNavigationBarTitle("Libraries")
     .alert("Delete Library?", isPresented: isDeleteAlertPresented) {
       Button("Delete", role: .destructive) {
@@ -307,7 +309,9 @@ struct SettingsLibrariesView: View {
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
-    .listRowSeparator(.hidden)
+    #if os(iOS) || os(macOS)
+      .listRowSeparator(.hidden)
+    #endif
     .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
     .contextMenu {
       if AppConfig.isAdmin {
@@ -353,7 +357,9 @@ struct SettingsLibrariesView: View {
         .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
-    .listRowSeparator(.hidden)
+    #if os(iOS) || os(macOS)
+      .listRowSeparator(.hidden)
+    #endif
     .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
     .contextMenu {
       if AppConfig.isAdmin {
