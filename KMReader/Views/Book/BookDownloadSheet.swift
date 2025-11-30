@@ -55,11 +55,7 @@ struct BookDownloadSheet: View {
     }
     .padding(PlatformHelper.sheetPadding)
     .presentationDragIndicator(.visible)
-    #if os(iOS)
-      .presentationDetents([.medium])
-    #else
-      .frame(minWidth: 400, minHeight: 300)
-    #endif
+    .platformSheetPresentation(detents: [.medium])
     #if os(iOS) || os(macOS)
       .fileExporter(
         isPresented: $showFileExporter,

@@ -57,11 +57,7 @@ struct ReadListEditSheet: View {
         }
       }
     }
-    #if os(iOS)
-      .presentationDetents([.medium])
-    #else
-      .frame(minWidth: 400, minHeight: 350)
-    #endif
+    .platformSheetPresentation(detents: [.medium])
   }
 
   private func saveChanges() {

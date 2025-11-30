@@ -40,10 +40,6 @@ struct SimpleSortOptionsSheet: View {
         }
       }
     }
-    #if os(iOS)
-      .presentationDetents([.medium])
-    #else
-      .frame(minWidth: 400, minHeight: 300)
-    #endif
+    .platformSheetPresentation(detents: [.medium])
   }
 }

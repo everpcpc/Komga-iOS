@@ -101,11 +101,7 @@ struct ReadListPickerSheet: View {
         )
       }
     }
-    #if os(iOS)
-      .presentationDetents([.large])
-    #else
-      .frame(minWidth: 500, minHeight: 500)
-    #endif
+    .platformSheetPresentation(detents: [.large])
   }
 
   private func loadReadLists(searchText: String = "") async {
@@ -164,11 +160,7 @@ struct CreateReadListSheet: View {
         }
       }
     }
-    #if os(iOS)
-      .presentationDetents([.medium])
-    #else
-      .frame(minWidth: 400, minHeight: 300)
-    #endif
+    .platformSheetPresentation(detents: [.medium], minWidth: 400, minHeight: 300)
   }
 
   private func createReadList() {

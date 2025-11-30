@@ -56,10 +56,6 @@ struct SeriesBrowseOptionsSheet: View {
         }
       }
     }
-    #if os(iOS)
-      .presentationDetents([.medium])
-    #else
-      .frame(minWidth: 400, minHeight: 400)
-    #endif
+    .platformSheetPresentation(detents: [.medium])
   }
 }

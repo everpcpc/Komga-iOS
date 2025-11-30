@@ -101,11 +101,7 @@ struct CollectionPickerSheet: View {
         )
       }
     }
-    #if os(iOS)
-      .presentationDetents([.large])
-    #else
-      .frame(minWidth: 500, minHeight: 500)
-    #endif
+    .platformSheetPresentation(detents: [.large])
   }
 
   private func loadCollections(searchText: String = "") async {
@@ -161,11 +157,7 @@ struct CreateCollectionSheet: View {
         }
       }
     }
-    #if os(iOS)
-      .presentationDetents([.medium])
-    #else
-      .frame(minWidth: 400, minHeight: 300)
-    #endif
+    .platformSheetPresentation(detents: [.medium], minWidth: 400, minHeight: 300)
   }
 
   private func createCollection() {

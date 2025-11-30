@@ -180,11 +180,7 @@ struct BookEditSheet: View {
         }
       }
     }
-    #if os(iOS)
-      .presentationDetents([.large])
-    #else
-      .frame(minWidth: 500, minHeight: 600)
-    #endif
+    .platformSheetPresentation(detents: [.large])
   }
 
   private func saveChanges() {

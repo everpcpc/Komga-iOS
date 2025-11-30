@@ -384,7 +384,7 @@ struct BookDetailView: View {
         BookDownloadSheet(book: book)
       } else {
         ProgressView()
-          .presentationDetents([.medium])
+          .platformSheetPresentation(detents: [.medium])
       }
     }
     .task {
