@@ -39,13 +39,13 @@ import SwiftUI
 
           VStack(alignment: .leading, spacing: 12) {
             HelpRow(key: "ESC", description: "Close reader")
-            HelpRow(key: "?", description: "Show this help")
+            HelpRow(key: "? / H", description: "Show this help")
 
             Divider()
               .background(Color.white.opacity(0.3))
 
-            HelpRow(key: "F", description: "Toggle fullscreen")
-            HelpRow(key: "C", description: "Toggle controls")
+            HelpRow(key: "F / Return", description: "Toggle fullscreen")
+            HelpRow(key: "C / Space", description: "Toggle controls")
             if hasTOC {
               HelpRow(key: "T", description: "Table of Contents")
             }
@@ -115,7 +115,7 @@ import SwiftUI
           .padding(.vertical, 6)
           .background(Color.white.opacity(0.2))
           .cornerRadius(6)
-          .frame(width: 100, alignment: .leading)
+          .frame(width: 130, alignment: .leading)
 
         Text(description)
           .foregroundColor(.white.opacity(0.9))

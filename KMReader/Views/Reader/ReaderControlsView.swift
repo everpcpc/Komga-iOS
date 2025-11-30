@@ -337,9 +337,23 @@ struct ReaderControlsView: View {
         return
       }
 
-      // Handle ? key for keyboard help
+      // Handle ? key and H key for keyboard help
       if keyCode == 44 {  // ? key (Shift + /)
         showingKeyboardHelp.toggle()
+        return
+      }
+
+      // Handle Return/Enter key for fullscreen toggle
+      if keyCode == 36 {  // Return/Enter key
+        if let window = NSApplication.shared.keyWindow {
+          window.toggleFullScreen(nil)
+        }
+        return
+      }
+
+      // Handle Space key for toggle controls
+      if keyCode == 49 {  // Space key
+        showingControls.toggle()
         return
       }
 
@@ -351,6 +365,12 @@ struct ReaderControlsView: View {
         if let window = NSApplication.shared.keyWindow {
           window.toggleFullScreen(nil)
         }
+        return
+      }
+
+      // Handle H key for keyboard help
+      if keyCode == 4 {  // H key
+        showingKeyboardHelp.toggle()
         return
       }
 
