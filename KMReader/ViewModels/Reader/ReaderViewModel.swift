@@ -47,6 +47,7 @@ class ReaderViewModel {
   // map of page index to dual page index
   var dualPageIndices: [Int: PagePair] = [:]
   var tableOfContents: [ReaderTOCEntry] = []
+  private var dualPageNoCoverEnabled: Bool
 
   private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier ?? "Komga", category: "ReaderViewModel")
@@ -65,10 +66,14 @@ class ReaderViewModel {
     return pages[clampedIndex]
   }
 
-  init() {
+  convenience init() {
+    self.init(dualPageNoCover: AppConfig.dualPageNoCover)
+  }
+
+  init(dualPageNoCover: Bool) {
     self.pageImageCache = ImageCache()
-    self.pagePairs = generatePagePairs(pages: pages)
-    self.dualPageIndices = generateDualPageIndices(pairs: pagePairs)
+    self.dualPageNoCoverEnabled = dualPageNoCover
+    regenerateDualPageState()
   }
 
   func loadPages(bookId: String, initialPageNumber: Int? = nil) async {
@@ -97,8 +102,7 @@ class ReaderViewModel {
       pageResources = manifestResolution.pageResources
 
       // Update page pairs and dual page indices after loading pages
-      pagePairs = generatePagePairs(pages: pages)
-      dualPageIndices = generateDualPageIndices(pairs: pagePairs)
+      regenerateDualPageState()
 
       if let initialPageNumber = initialPageNumber,
         let pageIndex = pages.firstIndex(where: { $0.number == initialPageNumber })
@@ -321,11 +325,21 @@ class ReaderViewModel {
 
     if existing.isPortrait != updatedPage.isPortrait {
       pages[index] = updatedPage
-      pagePairs = generatePagePairs(pages: pages)
-      dualPageIndices = generateDualPageIndices(pairs: pagePairs)
+      regenerateDualPageState()
     } else {
       pages[index] = updatedPage
     }
+  }
+
+  func updateDualPageSettings(noCover: Bool) {
+    guard dualPageNoCoverEnabled != noCover else { return }
+    dualPageNoCoverEnabled = noCover
+    regenerateDualPageState()
+  }
+
+  private func regenerateDualPageState() {
+    pagePairs = generatePagePairs(pages: pages, noCover: dualPageNoCoverEnabled)
+    dualPageIndices = generateDualPageIndices(pairs: pagePairs)
   }
 
   /// Save page image to Photos from cache
@@ -432,11 +446,10 @@ class ReaderViewModel {
   }
 }
 
-private func generatePagePairs(pages: [BookPage]) -> [PagePair] {
+private func generatePagePairs(pages: [BookPage], noCover: Bool) -> [PagePair] {
   guard pages.count > 0 else { return [] }
 
   var pairs: [PagePair] = []
-  let noCover = AppConfig.dualPageNoCover
 
   var index = 0
   while index < pages.count {

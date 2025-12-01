@@ -249,6 +249,20 @@ enum AppConfig {
     }
   }
 
+  static var defaultReadingDirection: ReadingDirection {
+    get {
+      if let stored = defaults.string(forKey: "defaultReadingDirection"),
+        let direction = ReadingDirection(rawValue: stored)
+      {
+        return direction
+      }
+      return .ltr
+    }
+    set {
+      defaults.set(newValue.rawValue, forKey: "defaultReadingDirection")
+    }
+  }
+
   static var webtoonPageWidthPercentage: Double {
     get {
       if defaults.object(forKey: "webtoonPageWidthPercentage") != nil {

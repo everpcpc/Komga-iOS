@@ -11,7 +11,9 @@
   import UIKit
 
   class WebtoonFooterCell: UICollectionViewCell {
-    @AppStorage("readerBackground") private var readerBackground: ReaderBackground = .system
+    var readerBackground: ReaderBackground = .system {
+      didSet { applyBackground() }
+    }
 
     override init(frame: CGRect) {
       super.init(frame: frame)
@@ -23,6 +25,10 @@
     }
 
     private func setupUI() {
+      applyBackground()
+    }
+
+    private func applyBackground() {
       contentView.backgroundColor = UIColor(readerBackground.color)
     }
   }

@@ -17,7 +17,9 @@
     private var pageIndex: Int = -1
     private var loadImage: ((Int) async -> Void)?
 
-    @AppStorage("readerBackground") private var readerBackground: ReaderBackground = .system
+    var readerBackground: ReaderBackground = .system {
+      didSet { applyBackground() }
+    }
 
     override init(frame: CGRect) {
       super.init(frame: frame)
@@ -29,10 +31,8 @@
     }
 
     private func setupUI() {
-      contentView.backgroundColor = UIColor(readerBackground.color)
-
+      applyBackground()
       imageView.contentMode = .scaleAspectFit
-      imageView.backgroundColor = UIColor(readerBackground.color)
       imageView.clipsToBounds = false
       imageView.translatesAutoresizingMaskIntoConstraints = false
       contentView.addSubview(imageView)
@@ -50,6 +50,11 @@
         loadingIndicator.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
         loadingIndicator.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
       ])
+    }
+
+    private func applyBackground() {
+      contentView.backgroundColor = UIColor(readerBackground.color)
+      imageView.backgroundColor = UIColor(readerBackground.color)
     }
 
     func configure(

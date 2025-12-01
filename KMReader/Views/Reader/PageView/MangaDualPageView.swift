@@ -18,7 +18,7 @@ struct MangaDualPageView: View {
   let screenSize: CGSize
   let onEndPageFocusChange: ((Bool) -> Void)?
 
-  @AppStorage("readerBackground") private var readerBackground: ReaderBackground = .system
+  @Environment(\.readerBackgroundPreference) private var readerBackground
 
   @State private var hasSyncedInitialScroll = false
   @State private var scrollPosition: Int?

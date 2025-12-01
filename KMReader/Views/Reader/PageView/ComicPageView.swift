@@ -21,7 +21,7 @@ struct ComicPageView: View {
   @State private var hasSyncedInitialScroll = false
   @State private var scrollPosition: Int?
   @State private var isZoomed = false
-  @AppStorage("readerBackground") private var readerBackground: ReaderBackground = .system
+  @Environment(\.readerBackgroundPreference) private var readerBackground
 
   var body: some View {
     ScrollViewReader { proxy in

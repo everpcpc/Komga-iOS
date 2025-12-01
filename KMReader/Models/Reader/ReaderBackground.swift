@@ -32,3 +32,14 @@ enum ReaderBackground: String, CaseIterable, Hashable {
     }
   }
 }
+
+private struct ReaderBackgroundPreferenceKey: EnvironmentKey {
+  static let defaultValue: ReaderBackground = .system
+}
+
+extension EnvironmentValues {
+  var readerBackgroundPreference: ReaderBackground {
+    get { self[ReaderBackgroundPreferenceKey.self] }
+    set { self[ReaderBackgroundPreferenceKey.self] = newValue }
+  }
+}

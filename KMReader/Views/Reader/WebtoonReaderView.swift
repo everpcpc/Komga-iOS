@@ -17,12 +17,12 @@
     let onCenterTap: (() -> Void)?
     let onScrollToBottom: ((Bool) -> Void)?
     let pageWidth: CGFloat
-
-    @AppStorage("readerBackground") private var readerBackground: ReaderBackground = .system
+    let readerBackground: ReaderBackground
 
     init(
       pages: [BookPage], viewModel: ReaderViewModel,
       pageWidth: CGFloat,
+      readerBackground: ReaderBackground,
       onPageChange: ((Int) -> Void)? = nil,
       onCenterTap: (() -> Void)? = nil,
       onScrollToBottom: ((Bool) -> Void)? = nil
@@ -30,6 +30,7 @@
       self.pages = pages
       self.viewModel = viewModel
       self.pageWidth = pageWidth
+      self.readerBackground = readerBackground
       self.onPageChange = onPageChange
       self.onCenterTap = onCenterTap
       self.onScrollToBottom = onScrollToBottom
@@ -67,6 +68,7 @@
     }
 
     func updateUIView(_ collectionView: UICollectionView, context: Context) {
+      collectionView.backgroundColor = UIColor(readerBackground.color)
       context.coordinator.update(
         pages: pages,
         viewModel: viewModel,
@@ -74,7 +76,8 @@
         onCenterTap: onCenterTap,
         onScrollToBottom: onScrollToBottom,
         pageWidth: pageWidth,
-        collectionView: collectionView
+        collectionView: collectionView,
+        readerBackground: readerBackground
       )
     }
 
@@ -103,6 +106,7 @@
       var isAtBottom: Bool = false
       var lastVisibleCellsUpdateTime: Date?
       var lastTargetPageIndex: Int?
+      var readerBackground: ReaderBackground = .system
 
       var pageHeights: [Int: CGFloat] = [:]
       var loadingPages: Set<Int> = []
@@ -119,6 +123,7 @@
         self.hasScrolledToInitialPage = false
         self.pageWidth = parent.pageWidth
         self.lastPageWidth = parent.pageWidth
+        self.readerBackground = parent.readerBackground
       }
 
       // MARK: - Helper Methods
@@ -211,7 +216,8 @@
         onCenterTap: (() -> Void)?,
         onScrollToBottom: ((Bool) -> Void)?,
         pageWidth: CGFloat,
-        collectionView: UICollectionView
+        collectionView: UICollectionView,
+        readerBackground: ReaderBackground
       ) {
         self.pages = pages
         self.viewModel = viewModel
@@ -219,12 +225,21 @@
         self.onCenterTap = onCenterTap
         self.onScrollToBottom = onScrollToBottom
         self.pageWidth = pageWidth
+        self.readerBackground = readerBackground
         applyMetadataHeights()
 
         let currentPage = viewModel.currentPageIndex
 
         if lastPagesCount != pages.count || abs(lastPageWidth - pageWidth) > 0.1 {
           handleDataReload(collectionView: collectionView, currentPage: currentPage)
+        }
+
+        for cell in collectionView.visibleCells {
+          if let pageCell = cell as? WebtoonPageCell {
+            pageCell.readerBackground = readerBackground
+          } else if let footerCell = cell as? WebtoonFooterCell {
+            footerCell.readerBackground = readerBackground
+          }
         }
 
         if !hasScrolledToInitialPage && pages.count > 0 && isValidPageIndex(currentPage) {
@@ -361,12 +376,14 @@
             collectionView.dequeueReusableCell(
               withReuseIdentifier: "WebtoonFooterCell", for: indexPath)
             as! WebtoonFooterCell
+          cell.readerBackground = readerBackground
           return cell
         }
 
         let cell =
           collectionView.dequeueReusableCell(withReuseIdentifier: "WebtoonPageCell", for: indexPath)
           as! WebtoonPageCell
+        cell.readerBackground = readerBackground
 
         let pageIndex = indexPath.item
 

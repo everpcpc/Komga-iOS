@@ -8,11 +8,11 @@
 import Foundation
 import SwiftUI
 
-enum ReadingDirection: CaseIterable, Hashable {
-  case ltr
-  case rtl
-  case vertical
-  case webtoon
+enum ReadingDirection: String, CaseIterable, Hashable {
+  case ltr = "LEFT_TO_RIGHT"
+  case rtl = "RIGHT_TO_LEFT"
+  case vertical = "VERTICAL"
+  case webtoon = "WEBTOON"
 
   /// Get available reading directions for current platform
   static var availableCases: [ReadingDirection] {
@@ -38,18 +38,8 @@ enum ReadingDirection: CaseIterable, Hashable {
     guard let direction = direction else {
       return .ltr
     }
-    switch direction.uppercased() {
-    case "LEFT_TO_RIGHT":
-      return .ltr
-    case "RIGHT_TO_LEFT":
-      return .rtl
-    case "VERTICAL":
-      return .vertical
-    case "WEBTOON":
-      return .webtoon
-    default:
-      return .ltr
-    }
+    let rawValue = direction.uppercased()
+    return ReadingDirection(rawValue: rawValue) ?? .ltr
   }
 
   var displayName: String {
@@ -75,19 +65,6 @@ enum ReadingDirection: CaseIterable, Hashable {
       return "arrow.up.arrow.down.square"
     case .webtoon:
       return "arrow.up.and.down.square"
-    }
-  }
-
-  var apiValue: String {
-    switch self {
-    case .ltr:
-      return "LEFT_TO_RIGHT"
-    case .rtl:
-      return "RIGHT_TO_LEFT"
-    case .vertical:
-      return "VERTICAL"
-    case .webtoon:
-      return "WEBTOON"
     }
   }
 }

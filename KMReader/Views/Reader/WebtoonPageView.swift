@@ -16,17 +16,18 @@
     let onNextBook: (String) -> Void
     let toggleControls: () -> Void
     let screenSize: CGSize
-
-    @AppStorage("webtoonPageWidthPercentage") private var webtoonPageWidthPercentage: Double = 100.0
+    let pageWidthPercentage: Double
+    let readerBackground: ReaderBackground
 
     var body: some View {
-      let pageWidth = screenSize.width * (webtoonPageWidthPercentage / 100.0)
+      let pageWidth = screenSize.width * (pageWidthPercentage / 100.0)
 
       ZStack {
         WebtoonReaderView(
           pages: viewModel.pages,
           viewModel: viewModel,
           pageWidth: pageWidth,
+          readerBackground: readerBackground,
           onPageChange: { pageIndex in
             viewModel.currentPageIndex = pageIndex
           },

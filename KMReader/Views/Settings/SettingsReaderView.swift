@@ -13,6 +13,7 @@ struct SettingsReaderView: View {
   @AppStorage("pageLayout") private var pageLayout: PageLayout = .dual
   @AppStorage("dualPageNoCover") private var dualPageNoCover: Bool = false
   @AppStorage("webtoonPageWidthPercentage") private var webtoonPageWidthPercentage: Double = 100.0
+  @AppStorage("defaultReadingDirection") private var readDirection: ReadingDirection = .ltr
 
   var body: some View {
     List {
@@ -56,6 +57,21 @@ struct SettingsReaderView: View {
         }
       }
 
+      Section(header: Text("Default Read Mode")) {
+        VStack(alignment: .leading, spacing: 8) {
+          Picker("Preferred Direction", selection: $readDirection) {
+            ForEach(ReadingDirection.availableCases, id: \.self) { direction in
+              Label(direction.displayName, systemImage: direction.icon)
+                .tag(direction)
+            }
+          }
+          .optimizedPickerStyle()
+          Text("Used when a book or series doesn't specify a reading direction")
+            .font(.caption)
+            .foregroundColor(.secondary)
+        }
+      }
+
       Section(header: Text("Page Display")) {
         VStack(alignment: .leading, spacing: 8) {
           Picker("Page Layout", selection: $pageLayout) {
@@ -71,8 +87,8 @@ struct SettingsReaderView: View {
         }
         Toggle(isOn: $dualPageNoCover) {
           VStack(alignment: .leading, spacing: 4) {
-            Text("No Cover in Dual Page")
-            Text("Don't show the cover page in dual page mode")
+            Text("Show Cover in Dual Spread")
+            Text("Display the cover alongside the next page when using dual page mode")
               .font(.caption)
               .foregroundColor(.secondary)
           }

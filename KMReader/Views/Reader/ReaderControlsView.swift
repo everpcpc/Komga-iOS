@@ -11,8 +11,11 @@ import UniformTypeIdentifiers
 struct ReaderControlsView: View {
   @Binding var showingControls: Bool
   @Binding var showingKeyboardHelp: Bool
-  @Binding var showingReadingDirectionPicker: Bool
   @Binding var readingDirection: ReadingDirection
+  @Binding var readerBackground: ReaderBackground
+  @Binding var pageLayout: PageLayout
+  @Binding var dualPageNoCover: Bool
+  @Binding var webtoonPageWidthPercentage: Double
   let viewModel: ReaderViewModel
   let currentBook: Book?
   let bookId: String
@@ -31,12 +34,13 @@ struct ReaderControlsView: View {
   @State private var fileToSave: URL?
   @State private var showingPageJumpSheet = false
   @State private var showingTOCSheet = false
+  @State private var showingReaderSettingsSheet = false
   #if os(tvOS)
     private enum ControlFocus: Hashable {
       case close
       case toc
       case jump
-      case readingDirection
+      case settings
     }
     @FocusState private var focusedControl: ControlFocus?
   #endif
@@ -155,11 +159,11 @@ struct ReaderControlsView: View {
             .focused($focusedControl, equals: .jump)
           #endif
 
-          // Reading direction button
+          // Reader settings button
           Button {
-            showingReadingDirectionPicker = true
+            showingReaderSettingsSheet = true
           } label: {
-            Image(systemName: readingDirection.icon)
+            Image(systemName: "gearshape")
               .foregroundColor(.white)
               .frame(width: 40, height: 40)
               .padding(buttonPadding)
@@ -168,7 +172,7 @@ struct ReaderControlsView: View {
               .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
           }
           #if os(tvOS)
-            .focused($focusedControl, equals: .readingDirection)
+            .focused($focusedControl, equals: .settings)
           #endif
         }
 
@@ -224,11 +228,6 @@ struct ReaderControlsView: View {
     }
     .padding(.vertical)
     .transition(.opacity)
-    .onChange(of: readingDirection) { _, _ in
-      if showingReadingDirectionPicker {
-        showingReadingDirectionPicker = false
-      }
-    }
     #if os(tvOS)
       .onAppear {
         if showingControls {
@@ -268,8 +267,14 @@ struct ReaderControlsView: View {
         onJump: jumpToPage
       )
     }
-    .sheet(isPresented: $showingReadingDirectionPicker) {
-      DivinaPreferencesSheet(readingDirection: $readingDirection)
+    .sheet(isPresented: $showingReaderSettingsSheet) {
+      ReaderSettingsSheet(
+        readingDirection: $readingDirection,
+        readerBackground: $readerBackground,
+        pageLayout: $pageLayout,
+        dualPageNoCover: $dualPageNoCover,
+        webtoonPageWidthPercentage: $webtoonPageWidthPercentage
+      )
     }
     .sheet(isPresented: $showingTOCSheet) {
       ReaderTOCSheetView(
@@ -280,6 +285,9 @@ struct ReaderControlsView: View {
           jumpToTOCEntry(entry)
         }
       )
+    }
+    .onChange(of: dualPageNoCover) { _, newValue in
+      viewModel.updateDualPageSettings(noCover: newValue)
     }
   }
 

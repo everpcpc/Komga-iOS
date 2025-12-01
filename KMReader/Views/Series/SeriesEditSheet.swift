@@ -259,7 +259,7 @@ struct SeriesEditSheet: View {
         let currentReadingDirection = ReadingDirection.fromString(
           series.metadata.readingDirection ?? "LEFT_TO_RIGHT")
         if readingDirection != currentReadingDirection {
-          metadata["readingDirection"] = readingDirection.apiValue
+          metadata["readingDirection"] = readingDirection.rawValue
         }
         let currentStatus = SeriesStatus.fromString(series.metadata.status)
         if status != currentStatus {
