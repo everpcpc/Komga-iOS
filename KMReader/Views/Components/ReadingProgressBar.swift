@@ -26,7 +26,6 @@ struct ReadingProgressBar: View {
       }
     }
     .frame(height: 4)
-    .padding(.horizontal, 4)
-    .padding(.bottom, 4)
+    .padding(4)
   }
 }

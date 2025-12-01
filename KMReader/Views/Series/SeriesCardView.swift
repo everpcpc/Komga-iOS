@@ -25,9 +25,11 @@ struct SeriesCardView: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
       ThumbnailImage(url: thumbnailURL, width: cardWidth) {
-        if series.booksUnreadCount > 0 {
-          UnreadCountBadge(count: series.booksUnreadCount)
-            .padding(4)
+        VStack(alignment: .trailing) {
+          if series.booksUnreadCount > 0 {
+            UnreadCountBadge(count: series.booksUnreadCount)
+              .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+          }
         }
       }
 

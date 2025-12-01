@@ -35,10 +35,6 @@ struct BookCardView: View {
     return Double(readProgress.page) / Double(book.media.pagesCount)
   }
 
-  private var isCompleted: Bool {
-    book.readProgress?.completed ?? false
-  }
-
   private var isInProgress: Bool {
     guard let readProgress = book.readProgress else { return false }
     return !readProgress.completed
@@ -58,13 +54,14 @@ struct BookCardView: View {
     } label: {
       VStack(alignment: .leading, spacing: 6) {
         ThumbnailImage(url: thumbnailURL, width: cardWidth) {
-          if book.readProgress == nil {
+          if let readProgress = book.readProgress {
+            if !readProgress.completed {
+              ReadingProgressBar(progress: progress)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            }
+          } else {
             UnreadIndicator()
-          }
-        }
-        .overlay(alignment: .bottom) {
-          if isInProgress {
-            ReadingProgressBar(progress: progress)
+              .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
           }
         }
 

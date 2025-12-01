@@ -62,6 +62,12 @@ struct ReaderControlsView: View {
     #endif
   }
 
+  private var progress: Double {
+    guard viewModel.pages.count > 0 else { return 0 }
+    return Double(min(viewModel.currentPageIndex + 1, viewModel.pages.count))
+      / Double(viewModel.pages.count)
+  }
+
   private var displayedCurrentPage: String {
     guard viewModel.pages.count > 0 else { return "0" }
     if viewModel.currentPageIndex >= viewModel.pages.count {
@@ -211,12 +217,8 @@ struct ReaderControlsView: View {
         .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
 
         // Bottom slider
-        ProgressView(
-          value: Double(min(viewModel.currentPageIndex + 1, viewModel.pages.count)),
-          total: Double(viewModel.pages.count)
-        )
-        .tint(themeColor.color)
-        .scaleEffect(x: readingDirection == .rtl ? -1 : 1, y: 1)
+        ReadingProgressBar(progress: progress)
+          .scaleEffect(x: readingDirection == .rtl ? -1 : 1, y: 1)
       }
       .padding()
     }

@@ -71,7 +71,7 @@ struct ThumbnailImage<Overlay: View>: View {
         .transition(.fade)
         .aspectRatio(contentMode: contentMode)
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
-        .overlay(alignment: .topTrailing) {
+        .overlay {
           if thumbnailPreserveAspectRatio, let overlay = overlay {
             overlay()
           } else {
@@ -93,7 +93,7 @@ struct ThumbnailImage<Overlay: View>: View {
     }
     .frame(width: width, height: width * 1.3)
     .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
-    .overlay(alignment: .topTrailing) {
+    .overlay {
       if !thumbnailPreserveAspectRatio, let overlay = overlay {
         overlay()
       } else {
