@@ -28,8 +28,10 @@ struct ContentView: View {
         if isLoggedIn {
           await authViewModel.loadCurrentUser()
           await LibraryManager.shared.loadLibraries()
-          // Connect to SSE on app startup if already logged in
-          SSEService.shared.connect()
+          // Connect to SSE on app startup if already logged in and enabled
+          if AppConfig.enableSSE {
+            SSEService.shared.connect()
+          }
         }
       }
       .onChange(of: isLoggedIn) { _, isLoggedIn in
@@ -38,8 +40,10 @@ struct ContentView: View {
           Task {
             await authViewModel.loadCurrentUser()
             await LibraryManager.shared.loadLibraries()
-            // Connect to SSE when login state changes to logged in
-            SSEService.shared.connect()
+            // Connect to SSE when login state changes to logged in and enabled
+            if AppConfig.enableSSE {
+              SSEService.shared.connect()
+            }
           }
         } else {
           // Disconnect SSE when logged out

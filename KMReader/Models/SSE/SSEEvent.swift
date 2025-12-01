@@ -111,9 +111,46 @@ struct SessionExpiredSSEDto: Codable {
   let userId: String
 }
 
-struct TaskQueueSSEDto: Codable {
+struct TaskQueueSSEDto: Codable, Equatable, RawRepresentable {
+  typealias RawValue = String
+
   let count: Int
   let countByType: [String: Int]
+
+  var rawValue: String {
+    let dict: [String: Any] = [
+      "count": count,
+      "countByType": countByType,
+    ]
+    if let data = try? JSONSerialization.data(withJSONObject: dict),
+      let json = String(data: data, encoding: .utf8)
+    {
+      return json
+    }
+    return "{}"
+  }
+
+  init?(rawValue: String) {
+    guard !rawValue.isEmpty else {
+      self.count = 0
+      self.countByType = [:]
+      return
+    }
+    guard let data = rawValue.data(using: .utf8),
+      let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+    else {
+      self.count = 0
+      self.countByType = [:]
+      return
+    }
+    self.count = dict["count"] as? Int ?? 0
+    self.countByType = dict["countByType"] as? [String: Int] ?? [:]
+  }
+
+  init(count: Int = 0, countByType: [String: Int] = [:]) {
+    self.count = count
+    self.countByType = countByType
+  }
 }
 
 struct BookImportSSEDto: Codable {

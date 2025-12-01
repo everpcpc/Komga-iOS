@@ -42,8 +42,10 @@ class AuthViewModel {
       credentialsVersion = UUID()
       ErrorManager.shared.notify(message: "Logged in successfully")
 
-      // Connect to SSE after successful login
-      sseService.connect()
+      // Connect to SSE after successful login if enabled
+      if AppConfig.enableSSE {
+        sseService.connect()
+      }
     } catch {
       ErrorManager.shared.alert(error: error)
       AppConfig.isLoggedIn = false
@@ -102,9 +104,11 @@ class AuthViewModel {
       await LibraryManager.shared.loadLibraries()
       ErrorManager.shared.notify(message: "Switched to \(instance.name)")
 
-      // Reconnect SSE with new instance
+      // Reconnect SSE with new instance if enabled
       sseService.disconnect()
-      sseService.connect()
+      if AppConfig.enableSSE {
+        sseService.connect()
+      }
     }
   }
 

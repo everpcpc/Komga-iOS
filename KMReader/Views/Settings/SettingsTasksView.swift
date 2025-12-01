@@ -20,7 +20,7 @@ struct SettingsTasksView: View {
   @State private var tasksTotalTimeByType: [String: Double] = [:]
 
   // Task queue status from SSE
-  @State private var taskQueueStatus: TaskQueueSSEDto?
+  @AppStorage("taskQueueStatus") private var taskQueueStatus: TaskQueueSSEDto = TaskQueueSSEDto()
 
   // Error messages for each metric section
   @State private var metricErrors: [TaskErrorKey: String] = [:]
@@ -56,7 +56,7 @@ struct SettingsTasksView: View {
         #endif
 
         // Task Queue Status Section (from SSE)
-        if let queueStatus = taskQueueStatus {
+        if taskQueueStatus.count > 0 {
           Section {
             VStack(spacing: 12) {
               // Total Tasks with highlight
@@ -64,10 +64,10 @@ struct SettingsTasksView: View {
                 Label("Total Tasks", systemImage: "list.bullet.clipboard")
                   .font(.headline)
                 Spacer()
-                Text("\(queueStatus.count)")
+                Text("\(taskQueueStatus.count)")
                   .font(.title2)
                   .fontWeight(.bold)
-                  .foregroundColor(queueStatus.count > 0 ? themeColor.color : .secondary)
+                  .foregroundColor(taskQueueStatus.count > 0 ? themeColor.color : .secondary)
                   .contentTransition(.numericText())
               }
               .padding(.vertical, 4)
@@ -76,10 +76,10 @@ struct SettingsTasksView: View {
               #endif
 
               // Task types with animation
-              if !queueStatus.countByType.isEmpty {
+              if !taskQueueStatus.countByType.isEmpty {
                 Divider()
-                ForEach(Array(queueStatus.countByType.keys.sorted()), id: \.self) { taskType in
-                  if let count = queueStatus.countByType[taskType] {
+                ForEach(Array(taskQueueStatus.countByType.keys.sorted()), id: \.self) { taskType in
+                  if let count = taskQueueStatus.countByType[taskType] {
                     HStack {
                       Label(taskType, systemImage: "gearshape")
                         .font(.subheadline)
@@ -104,7 +104,7 @@ struct SettingsTasksView: View {
               Text("Task Queue Status")
                 .font(.headline)
               Spacer()
-              if queueStatus.count > 0 {
+              if taskQueueStatus.count > 0 {
                 Circle()
                   .fill(themeColor.color)
                   .frame(width: 8, height: 8)
@@ -113,9 +113,9 @@ struct SettingsTasksView: View {
             }
           }
           .transition(.opacity.combined(with: .move(edge: .top)))
-          .animation(.spring(response: 0.3, dampingFraction: 0.7), value: taskQueueStatus?.count)
+          .animation(.spring(response: 0.3, dampingFraction: 0.7), value: taskQueueStatus.count)
           .animation(
-            .spring(response: 0.3, dampingFraction: 0.7), value: taskQueueStatus?.countByType)
+            .spring(response: 0.3, dampingFraction: 0.7), value: taskQueueStatus.countByType)
         }
 
         // Tasks Section
@@ -211,12 +211,7 @@ struct SettingsTasksView: View {
     .task {
       if isAdmin {
         await loadMetrics()
-        setupSSEListener()
       }
-    }
-    .onDisappear {
-      // Clean up SSE listener when view disappears
-      SSEService.shared.onTaskQueueStatus = nil
     }
     .refreshable {
       if isAdmin {
@@ -326,20 +321,6 @@ struct SettingsTasksView: View {
     formatter.numberStyle = .decimal
     formatter.maximumFractionDigits = 0
     return formatter.string(from: NSNumber(value: value)) ?? String(format: "%.0f", value)
-  }
-
-  private func setupSSEListener() {
-    // Capture the binding to update state from closure
-    let statusBinding = Binding(
-      get: { taskQueueStatus },
-      set: { newValue in taskQueueStatus = newValue }
-    )
-
-    SSEService.shared.onTaskQueueStatus = { status in
-      Task { @MainActor in
-        statusBinding.wrappedValue = status
-      }
-    }
   }
 }
 

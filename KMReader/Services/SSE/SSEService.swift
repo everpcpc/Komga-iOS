@@ -65,6 +65,11 @@ class SSEService {
       return
     }
 
+    guard AppConfig.enableSSE else {
+      logger.info("SSE is disabled by user preference")
+      return
+    }
+
     guard !AppConfig.serverURL.isEmpty, !AppConfig.authToken.isEmpty else {
       logger.warning("Cannot connect SSE: missing server URL or auth token")
       return
@@ -89,6 +94,12 @@ class SSEService {
     streamTask?.cancel()
     streamTask = nil
     isConnected = false
+
+    // Clear task queue status when disconnecting
+    AppConfig.taskQueueStatus = TaskQueueSSEDto()
+
+    // Notify user that SSE disconnected
+    ErrorManager.shared.notify(message: "Real-time updates disconnected")
   }
 
   private func handleSSEStream(url: URL) async {
@@ -129,6 +140,9 @@ class SSEService {
       }
 
       logger.info("✅ SSE connected")
+
+      // Notify user that SSE connected successfully
+      ErrorManager.shared.notify(message: "Real-time updates connected")
 
       var lineBuffer = ""
       var currentEventType: String?
@@ -314,8 +328,22 @@ class SSEService {
       }
 
     case "TaskQueueStatus":
+      logger.info("🔍 Handling TaskQueueStatus event: \(data)")
       if let dto = try? decoder.decode(TaskQueueSSEDto.self, from: jsonData) {
-        onTaskQueueStatus?(dto)
+        // Check if status has changed
+        let previousStatus = AppConfig.taskQueueStatus
+
+        // Only update if status has changed
+        if previousStatus != dto {
+          onTaskQueueStatus?(dto)
+          // Store in AppConfig for AppStorage access
+          AppConfig.taskQueueStatus = dto
+
+          // Notify if tasks completed (went from > 0 to 0)
+          if previousStatus.count > 0 && dto.count == 0 {
+            ErrorManager.shared.notify(message: "All tasks completed")
+          }
+        }
       }
     case "SessionExpired":
       if let dto = try? decoder.decode(SessionExpiredSSEDto.self, from: jsonData) {

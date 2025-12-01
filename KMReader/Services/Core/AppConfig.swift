@@ -73,6 +73,32 @@ enum AppConfig {
     set { defaults.set(newValue, forKey: "maxDiskCacheSizeMB") }
   }
 
+  // MARK: - SSE (Server-Sent Events)
+  static var enableSSE: Bool {
+    get {
+      if defaults.object(forKey: "enableSSE") != nil {
+        return defaults.bool(forKey: "enableSSE")
+      }
+      return true  // Default to enabled
+    }
+    set { defaults.set(newValue, forKey: "enableSSE") }
+  }
+
+  static var taskQueueStatus: TaskQueueSSEDto {
+    get {
+      guard let rawValue = defaults.string(forKey: "taskQueueStatus"),
+        !rawValue.isEmpty,
+        let status = TaskQueueSSEDto(rawValue: rawValue)
+      else {
+        return TaskQueueSSEDto()
+      }
+      return status
+    }
+    set {
+      defaults.set(newValue.rawValue, forKey: "taskQueueStatus")
+    }
+  }
+
   // MARK: - Custom Fonts
   static var customFontNames: [String] {
     get {

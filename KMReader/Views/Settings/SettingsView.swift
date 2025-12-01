@@ -11,6 +11,8 @@ struct SettingsView: View {
   @Environment(AuthViewModel.self) private var authViewModel
   @AppStorage("isAdmin") private var isAdmin: Bool = false
   @AppStorage("serverDisplayName") private var serverDisplayName: String = ""
+  @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
+  @AppStorage("taskQueueStatus") private var taskQueueStatus: TaskQueueSSEDto = TaskQueueSSEDto()
 
   var body: some View {
     NavigationStack {
@@ -28,6 +30,31 @@ struct SettingsView: View {
           NavigationLink(value: NavDestination.settingsReader) {
             Label("Reader", systemImage: "book.pages")
           }
+
+          Toggle(
+            isOn: Binding(
+              get: { AppConfig.enableSSE },
+              set: { newValue in
+                AppConfig.enableSSE = newValue
+                // Always disconnect first to ensure clean state
+                SSEService.shared.disconnect()
+                // Then connect if enabled and logged in
+                if newValue && AppConfig.isLoggedIn {
+                  SSEService.shared.connect()
+                }
+              }
+            )
+          ) {
+            VStack(alignment: .leading, spacing: 4) {
+              HStack(spacing: 6) {
+                Image(systemName: "antenna.radiowaves.left.and.right")
+                Text("Real-time Updates")
+              }
+              Text("Enable Server-Sent Events for real-time updates")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            }
+          }
         }
 
         Section(header: Text("Management")) {
@@ -39,7 +66,21 @@ struct SettingsView: View {
           }
           .disabled(!isAdmin)
           NavigationLink(value: NavDestination.settingsMetrics) {
-            Label("Tasks", systemImage: "list.bullet.clipboard")
+            HStack {
+              Label("Tasks", systemImage: "list.bullet.clipboard")
+              Spacer()
+              if taskQueueStatus.count > 0 {
+                HStack(spacing: 4) {
+                  Circle()
+                    .fill(themeColor.color)
+                    .frame(width: 8, height: 8)
+                  Text("\(taskQueueStatus.count)")
+                    .font(.caption)
+                    .foregroundColor(themeColor.color)
+                    .fontWeight(.semibold)
+                }
+              }
+            }
           }
           .disabled(!isAdmin)
         }
