@@ -22,18 +22,9 @@ struct DashboardSeriesSection: View {
   @State private var lastTriggeredIndex: Int = -1
   @State private var hasLoadedInitial = false
 
-  var shouldShowSection: Bool {
-    return !series.isEmpty || isLoading || !hasLoadedInitial
-  }
-
   // Load data when view appears (if not already loaded or if empty due to cancelled request)
   var shouldInitialLoad: Bool {
     return !hasLoadedInitial || (series.isEmpty && !isLoading)
-  }
-
-  // Show loading overlay during initial load when empty
-  var shouldShowLoadingOverlay: Bool {
-    return isLoading && !hasLoadedInitial && series.isEmpty
   }
 
   // Loading indicator at the end - only show when loading more and has content
@@ -47,8 +38,7 @@ struct DashboardSeriesSection: View {
 
   var body: some View {
     Group {
-      // Don't show section if empty and initial load is complete
-      if shouldShowSection {
+      if !series.isEmpty {
         VStack(alignment: .leading, spacing: 4) {
           Text(section.displayName)
             .font(.title3)
@@ -87,17 +77,14 @@ struct DashboardSeriesSection: View {
             }
             .padding()
           }
-          .overlay {
-            if shouldShowLoadingOverlay {
-              ProgressView()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-          }
           #if os(tvOS)
             .focusSection()
           #endif
         }
         .padding(.bottom, 16)
+      } else {
+        Color.clear
+          .frame(height: 0)
       }
     }
     .onChange(of: dashboard.libraryIds) {

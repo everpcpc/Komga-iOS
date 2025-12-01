@@ -22,18 +22,9 @@ struct DashboardBooksSection: View {
   @State private var lastTriggeredIndex: Int = -1
   @State private var hasLoadedInitial = false
 
-  var shouldShowSection: Bool {
-    return !books.isEmpty || isLoading || !hasLoadedInitial
-  }
-
   // Load data when view appears (if not already loaded or if empty due to cancelled request)
   var shouldInitialLoad: Bool {
     return !hasLoadedInitial || (books.isEmpty && !isLoading)
-  }
-
-  // Show loading overlay during initial load when empty
-  var shouldShowLoadingOverlay: Bool {
-    return isLoading && !hasLoadedInitial && books.isEmpty
   }
 
   // Loading indicator at the end - only show when loading more and has content
@@ -47,8 +38,7 @@ struct DashboardBooksSection: View {
 
   var body: some View {
     Group {
-      // Don't show section if empty and initial load is complete
-      if shouldShowSection {
+      if !books.isEmpty {
         VStack(alignment: .leading, spacing: 4) {
           Text(section.displayName)
             .font(.title3)
@@ -86,14 +76,11 @@ struct DashboardBooksSection: View {
             }
             .padding()
           }
-          .overlay {
-            if shouldShowLoadingOverlay {
-              ProgressView()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-          }
         }
         .padding(.bottom, 16)
+      } else {
+        Color.clear
+          .frame(height: 0)
       }
     }
     .onChange(of: dashboard.libraryIds) {
