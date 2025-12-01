@@ -10,6 +10,8 @@ import SwiftUI
 struct SettingsTasksView: View {
   @AppStorage("isAdmin") private var isAdmin: Bool = false
   @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
+  @AppStorage("taskQueueStatus") private var taskQueueStatus: TaskQueueSSEDto = TaskQueueSSEDto()
+
   @State private var isLoading = false
   @State private var isCancelling = false
   @State private var showCancelAllConfirmation = false
@@ -18,11 +20,6 @@ struct SettingsTasksView: View {
   @State private var tasks: Metric?
   @State private var tasksCountByType: [String: Double] = [:]
   @State private var tasksTotalTimeByType: [String: Double] = [:]
-
-  // Task queue status from SSE
-  @AppStorage("taskQueueStatus") private var taskQueueStatus: TaskQueueSSEDto = TaskQueueSSEDto()
-
-  // Error messages for each metric section
   @State private var metricErrors: [TaskErrorKey: String] = [:]
 
   var body: some View {
@@ -52,6 +49,25 @@ struct SettingsTasksView: View {
             }
             .buttonStyle(.plain)
             .disabled(isCancelling)
+          }
+        #else
+          if AppConfig.isAdmin {
+            Section {
+              Button(role: .destructive) {
+                showCancelAllConfirmation = true
+              } label: {
+                HStack {
+                  Spacer()
+                  if isCancelling {
+                    ProgressView()
+                  } else {
+                    Label("Cancel All Tasks", systemImage: "xmark.circle")
+                  }
+                  Spacer()
+                }
+              }
+              .disabled(isCancelling)
+            }
           }
         #endif
 
@@ -182,24 +198,6 @@ struct SettingsTasksView: View {
     }
     .optimizedListStyle(alternatesRowBackgrounds: true)
     .inlineNavigationBarTitle("Tasks")
-    #if !os(tvOS)
-      .toolbar {
-        if AppConfig.isAdmin {
-          ToolbarItem(placement: .confirmationAction) {
-            Button {
-              showCancelAllConfirmation = true
-            } label: {
-              if isCancelling {
-                ProgressView()
-              } else {
-                Label("Cancel All", systemImage: "xmark.circle")
-              }
-            }
-            .disabled(isCancelling)
-          }
-        }
-      }
-    #endif
     .alert("Cancel All Tasks", isPresented: $showCancelAllConfirmation) {
       Button("Cancel", role: .cancel) {}
       Button("Confirm", role: .destructive) {

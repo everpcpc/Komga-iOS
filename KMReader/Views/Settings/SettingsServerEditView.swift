@@ -58,25 +58,30 @@ struct SettingsServerEditView: View {
           SecureField("Password", text: $password)
             .textContentType(.password)
         }
+
+        Section {
+          HStack(spacing: 12) {
+            Button("Cancel") {
+              dismiss()
+            }
+            .buttonStyle(.bordered)
+
+            Button("Save") {
+              saveChanges()
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(!canSave)
+          }
+          .frame(maxWidth: .infinity)
+        }
       }
       #if os(tvOS)
         .focusSection()
       #endif
       .inlineNavigationBarTitle("Edit Server")
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
-            dismiss()
-          }
-        }
-        ToolbarItem(placement: .confirmationAction) {
-          Button("Save") {
-            saveChanges()
-          }
-          .disabled(!canSave)
-        }
-      }
+      .padding(PlatformHelper.sheetPadding)
     }
+    .platformSheetPresentation(detents: [.large], minWidth: 600, minHeight: 400)
   }
 
   private var trimmedName: String {

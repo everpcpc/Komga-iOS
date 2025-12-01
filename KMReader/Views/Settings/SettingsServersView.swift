@@ -114,9 +114,18 @@ struct SettingsServersView: View {
     } message: {
       Text("Are you sure you want to logout?")
     }
-    .navigationDestination(isPresented: $showLogin) {
-      LoginView()
-    }
+    #if os(macOS)
+      .sheet(isPresented: $showLogin) {
+        NavigationStack {
+          LoginView()
+        }
+        .frame(minWidth: 400, minHeight: 600)
+      }
+    #else
+      .navigationDestination(isPresented: $showLogin) {
+        LoginView()
+      }
+    #endif
     .onChange(of: isLoggedIn) { _, loggedIn in
       if loggedIn && mode == .onboarding {
         dismiss()

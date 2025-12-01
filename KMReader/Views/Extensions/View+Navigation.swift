@@ -35,26 +35,50 @@ extension View {
         case .readListDetail(let readListId):
           ReadListDetailView(readListId: readListId)
 
-        case .settingsLibraries:
-          SettingsLibrariesView()
-        case .settingsAppearance:
-          SettingsAppearanceView()
-        case .settingsCache:
-          SettingsCacheView()
-        case .settingsReader:
-          SettingsReaderView()
-        case .settingsDashboard:
-          SettingsDashboardView()
-        case .settingsSSE:
-          SettingsSSEView()
-        case .settingsServerInfo:
-          SettingsServerInfoView()
-        case .settingsMetrics:
-          SettingsTasksView()
-        case .settingsAuthenticationActivity:
-          AuthenticationActivityView()
-        case .settingsServers:
-          SettingsServersView()
+        #if !os(macOS)
+          case .settingsLibraries:
+            SettingsLibrariesView()
+          case .settingsAppearance:
+            SettingsAppearanceView()
+          case .settingsCache:
+            SettingsCacheView()
+          case .settingsReader:
+            SettingsReaderView()
+          case .settingsDashboard:
+            SettingsDashboardView()
+          case .settingsSSE:
+            SettingsSSEView()
+          case .settingsServerInfo:
+            SettingsServerInfoView()
+          case .settingsMetrics:
+            SettingsTasksView()
+          case .settingsAuthenticationActivity:
+            AuthenticationActivityView()
+          case .settingsServers:
+            SettingsServersView()
+        #else
+          case .settingsLibraries,
+            .settingsAppearance,
+            .settingsCache,
+            .settingsReader,
+            .settingsDashboard,
+            .settingsSSE,
+            .settingsServerInfo,
+            .settingsMetrics,
+            .settingsAuthenticationActivity,
+            .settingsServers:
+            VStack(spacing: 16) {
+              Image(systemName: "gearshape")
+                .font(.system(size: 48))
+                .foregroundColor(.secondary)
+              Text("Settings are available in the Settings window")
+                .font(.headline)
+              Text("Use ⌘, to open Settings")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        #endif
         }
       }
   }

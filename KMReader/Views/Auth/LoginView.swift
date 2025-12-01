@@ -148,7 +148,7 @@ struct LoginView: View {
       }
       .padding(.bottom, 40)
     }
-    .inlineNavigationBarTitle("")
+    .inlineNavigationBarTitle("Connect to a Server")
     .task {
       serverURLText = serverURL
       usernameText = username

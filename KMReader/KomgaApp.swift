@@ -50,6 +50,12 @@ struct KomgaApp: App {
           .modelContainer(modelContainer)
       }
       .defaultSize(width: 1200, height: 800)
+
+      Settings {
+        SettingsView_macOS()
+          .environment(authViewModel)
+          .modelContainer(modelContainer)
+      }
     #endif
   }
 }

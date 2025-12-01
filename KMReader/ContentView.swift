@@ -116,10 +116,12 @@ struct MainTabView: View {
           Label("History", systemImage: "clock")
         }
 
-      SettingsView()
-        .tabItem {
-          Label("Settings", systemImage: "gearshape")
-        }
+      #if !os(macOS)
+        SettingsView()
+          .tabItem {
+            Label("Settings", systemImage: "gearshape")
+          }
+      #endif
     }
   }
 }
