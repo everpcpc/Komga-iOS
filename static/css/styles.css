@@ -19,11 +19,17 @@
 
 body {
   margin: 0;
-  font-family: "Avenir Next", Avenir, "Helvetica Neue", Arial, Helvetica, sans-serif;
+  font-family: "Avenir Next", Avenir, "Helvetica Neue", Arial, Helvetica,
+    sans-serif;
   font-size: 16px;
   line-height: 1.75;
   color: var(--text);
-  background: radial-gradient(circle at top, rgba(0, 94, 209, 0.18), transparent 60%) var(--bg);
+  background: radial-gradient(
+      circle at top,
+      rgba(0, 94, 209, 0.18),
+      transparent 60%
+    )
+    var(--bg);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -115,7 +121,11 @@ h1 {
   margin: 0 auto 2rem;
   padding: 1.2rem 1.5rem;
   border-radius: 22px;
-  background: linear-gradient(135deg, rgba(0, 94, 209, 0.12), rgba(0, 94, 209, 0.04));
+  background: linear-gradient(
+    135deg,
+    rgba(0, 94, 209, 0.12),
+    rgba(0, 94, 209, 0.04)
+  );
   border: 1px solid rgba(0, 94, 209, 0.18);
   box-shadow: var(--shadow);
   text-align: left;
@@ -170,9 +180,26 @@ h1 {
 
 .meta {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
   margin-top: 2rem;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.meta-card:first-child {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 768px) {
+  .meta {
+    grid-template-columns: 1fr;
+  }
+
+  .meta-card:first-child {
+    grid-column: 1;
+  }
 }
 
 .meta-card {
@@ -266,7 +293,11 @@ section {
   border: 1px solid rgba(0, 94, 209, 0.18);
   border-radius: 24px;
   padding: 2rem;
-  background: linear-gradient(135deg, rgba(0, 94, 209, 0.12), rgba(0, 94, 209, 0.04));
+  background: linear-gradient(
+    135deg,
+    rgba(0, 94, 209, 0.12),
+    rgba(0, 94, 209, 0.04)
+  );
   box-shadow: var(--shadow);
   margin-top: 2.5rem;
 }
@@ -284,8 +315,20 @@ section {
 
 .feature-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.25rem;
+}
+
+@media (max-width: 1024px) {
+  .feature-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .card {
