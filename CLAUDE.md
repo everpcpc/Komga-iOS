@@ -7,15 +7,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 KMReader is a native iOS, macOS, and tvOS client for Komga (https://github.com/gotson/komga), a media server for comics, manga, BDs, and magazines. The app supports both DIVINA (comic) and EPUB readers with comprehensive features for browsing, reading, and managing digital comics.
 
 **Platforms:**
-- iOS 17.6+
+- iOS 17.0+
 - macOS 14.0+
-- tvOS 17.6+
+- tvOS 17.0+
 
 **Key Dependencies:**
-- Readium Swift Toolkit (3.5.0+) - EPUB reading functionality
+- Readium Swift Toolkit (3.5.0+) - EPUB reading functionality (iOS/macOS only)
 - SDWebImage & SDWebImageSwiftUI - Image loading and caching with WebP support
 - SwiftData - Persistent storage for server instances, libraries, and custom fonts
 - SwiftSoup - HTML parsing for EPUB content
+
+**SwiftData Schema:**
+- `KomgaInstance` - Server profiles with credentials and settings
+- `KomgaLibrary` - Library configurations and preferences
+- `CustomFont` - User-imported fonts for EPUB reading
 
 ## Build Commands
 
@@ -101,6 +106,18 @@ All services follow the singleton pattern (`ServiceName.shared`):
 - **`ReadListService`** - Read lists CRUD, book management
 - **`LibraryService`** - Library operations, scanning, metadata refresh
 - **`LibraryManager`** - Loads and manages available libraries, exposes `@Published var libraries`
+- **`ManagementService`** - Admin operations (library scans, task queue, metrics, disk usage)
+- **`SSEService`** - Server-Sent Events for real-time updates
+
+**SSE (Server-Sent Events)**
+
+`SSEService.shared` provides real-time synchronization with Komga server:
+- Event handlers for libraries, series, books, collections, read lists
+- Read progress synchronization across devices
+- Thumbnail updates and task queue notifications
+- Opt-in connection with `AppConfig.enableSSE`
+- Connection state notifications controlled by `AppConfig.showSSEStatusNotification`
+- Auto-connects after successful login if enabled
 
 ### ViewModels
 
@@ -122,7 +139,8 @@ Key ViewModels:
 ```
 Views/
 ├── Auth/              # Login, landing, server management
-├── Dashboard/         # Home screen with "Keep Reading", "On Deck", etc.
+├── Dashboard/         # Home screen with personalized sections
+│   └── Sections/      # Keep Reading, On Deck, Recently Added/Read/Released/Updated
 ├── Browse/            # Unified browse view (Series/Books/Collections/ReadLists)
 ├── Series/            # Series detail, context menus, filters
 ├── Book/              # Book detail, context menus, sections
@@ -134,9 +152,18 @@ Views/
 │   ├── ReaderControlsView.swift  # Reader toolbar
 │   └── PageView/      # Page rendering components
 ├── History/           # Reading history
-├── Settings/          # App settings, cache management
+├── Settings/          # App settings, cache management, admin tools
 └── Components/        # Reusable components (ThumbnailImage, InfoRow, etc.)
 ```
+
+**Dashboard Sections:**
+- Keep Reading - Continue reading in-progress books
+- On Deck - Next books to read in started series
+- Recently Added - Newest additions to libraries
+- Recently Read - Books read across devices (via SSE sync)
+- Recently Released - Books by release date
+- Recently Updated - Recently modified series
+- All sections configurable per library
 
 ### Reader Implementation
 
@@ -168,6 +195,20 @@ Views/
 - `@AppStorage` for persistent preferences (theme color, layout modes, cache limits)
 - `NavDestination` enum drives NavigationPath for deep linking
 - Browse views support both Grid and List layouts with orientation-aware column counts
+
+### Admin Features
+
+**Management Operations (Admin-only):**
+- Library scanning and metadata refresh (per library or global)
+- Task queue monitoring and analytics
+- Disk usage inspection across libraries
+- Series, books, collections, and read lists metadata editing
+- Library analysis triggers
+
+**Access Control:**
+- Admin features gated by `AppConfig.isAdmin` flag
+- `AdminRequiredView` component for UI-level gating
+- Server role persisted in `KomgaInstance.isAdmin` per server
 
 ### Error Handling
 
@@ -206,10 +247,14 @@ Views/
 
 ## Coding Standards (from .cursor/rules/default.mdc)
 
-1. **Use UIKit as little as possible** - Prefer pure SwiftUI solutions
+1. **Use SwiftUI over UIKit/AppKit** - Use UIKit/AppKit as little as possible
 2. **Do not use inline Binding** - Extract bindings to separate variables for clarity
 3. **Do not use confirmationDialog** - Use alternative SwiftUI dialogs
-4. **Comment in English** - All comments must be in English
+4. **Comment less, and in English** - All comments must be in English
+5. **One struct/class per file** - Every struct or class should be in a separate file
+6. **Use `@Observable` not `ObservableObject`** - Avoid using ObservableObject
+7. **Avoid reading `AppConfig` in views** - Use `@AppStorage` instead for view state
+8. **Use `AppConfig` over direct UserDefaults** - Centralized configuration management
 
 ## Platform Considerations
 
@@ -217,16 +262,22 @@ Views/
 - Full feature set including Webtoon mode and EPUB reader
 - Supports all reading modes and gestures (pinch-to-zoom)
 - Save pages to Photos or Files
+- Platform: iOS 17.0+
 
 **macOS-specific:**
 - Dedicated reader window (`WindowGroup(id: "reader")`)
-- EPUB reader support
+- EPUB reader support with custom fonts and themes
 - Reader background and controls adapted for desktop
+- Separate Settings window scene
+- Keyboard shortcuts for reader navigation
+- Platform: macOS 14.0+
 
 **tvOS-specific:**
 - DIVINA reader only (NO EPUB, NO Webtoon)
 - Focus-based navigation with remote control
 - Limited to LTR, RTL, Vertical reading modes
+- Simplified UI optimized for TV viewing distance
+- Platform: tvOS 17.0+
 
 ## Common Development Patterns
 
@@ -282,6 +333,26 @@ let count = await ImageCache.getDiskCacheCount()
 private var instances: [KomgaInstance]
 ```
 
+**App Initialization Pattern:**
+```swift
+// KomgaApp.swift - SwiftData setup
+let schema = Schema([
+    KomgaInstance.self,
+    KomgaLibrary.self,
+    CustomFont.self,
+])
+let configuration = ModelConfiguration(schema: schema)
+modelContainer = try ModelContainer(for: schema, configurations: [configuration])
+
+// Configure singleton stores
+KomgaInstanceStore.shared.configure(with: modelContainer)
+KomgaLibraryStore.shared.configure(with: modelContainer)
+CustomFontStore.shared.configure(with: modelContainer)
+
+// Initialize WebP codec support
+SDImageCacheProvider.configureSDWebImage()
+```
+
 ## Debugging & Logging
 
 **Logs use OSLog:**
@@ -298,7 +369,7 @@ private var instances: [KomgaInstance]
 
 ## Important Implementation Notes
 
-1. **Avoid UIKit** unless absolutely necessary for platform features
+1. **Avoid UIKit/AppKit** unless absolutely necessary for platform features
 2. **Use `@Observable` not `ObservableObject`** for ViewModels
 3. **Always scope caches to server instance** via `CacheNamespace`
 4. **Handle platform differences** with `#if os(iOS)` / `#if os(macOS)` / `#if os(tvOS)`
@@ -308,3 +379,7 @@ private var instances: [KomgaInstance]
 8. **Errors go through ErrorManager** for consistent presentation
 9. **Reading progress auto-syncs** unless in incognito mode
 10. **Cache cleanup is automatic** when exceeding limits
+11. **SSE connection is opt-in** - controlled by `AppConfig.enableSSE`
+12. **Admin features require admin role** - Check `AppConfig.isAdmin` or `user.isAdmin`
+13. **Multi-server support** - Each server instance stores its own credentials and cache
+14. **Prefer `@AppStorage` in views** - Avoid reading `AppConfig` directly in view bodies
