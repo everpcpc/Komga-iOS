@@ -63,6 +63,15 @@ import SwiftUI
           }
 
           Section {
+            Link(destination: URL(string: "https://everpcpc.github.io/KMReader/privacy/")!) {
+              Label("Privacy Policy", systemImage: "hand.raised")
+            }
+            Link(destination: URL(string: "https://kmreader.userjot.com/")!) {
+              Label("Feedback", systemImage: "message")
+            }
+            Link(destination: URL(string: "https://github.com/everpcpc/KMReader")!) {
+              Label("Source Code", systemImage: "chevron.left.forwardslash.chevron.right")
+            }
             HStack {
               Spacer()
               Text(Bundle.main.appVersion)
