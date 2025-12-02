@@ -291,6 +291,18 @@ enum AppConfig {
     }
   }
 
+  static var showPageNumber: Bool {
+    get {
+      if defaults.object(forKey: "showPageNumber") != nil {
+        return defaults.bool(forKey: "showPageNumber")
+      }
+      return false
+    }
+    set {
+      defaults.set(newValue, forKey: "showPageNumber")
+    }
+  }
+
   // MARK: - Dashboard
   static var dashboard: DashboardConfiguration {
     get {

@@ -14,6 +14,7 @@ struct SettingsReaderView: View {
   @AppStorage("dualPageNoCover") private var dualPageNoCover: Bool = false
   @AppStorage("webtoonPageWidthPercentage") private var webtoonPageWidthPercentage: Double = 100.0
   @AppStorage("defaultReadingDirection") private var readDirection: ReadingDirection = .ltr
+  @AppStorage("showPageNumber") private var showPageNumber: Bool = false
 
   var body: some View {
     Form {
@@ -85,6 +86,14 @@ struct SettingsReaderView: View {
           VStack(alignment: .leading, spacing: 4) {
             Text("Show Cover in Dual Spread")
             Text("Display the cover alongside the next page when using dual page mode")
+              .font(.caption)
+              .foregroundColor(.secondary)
+          }
+        }
+        Toggle(isOn: $showPageNumber) {
+          VStack(alignment: .leading, spacing: 4) {
+            Text("Always Show Page Number")
+            Text("Display page number overlay on images while reading")
               .font(.caption)
               .foregroundColor(.secondary)
           }

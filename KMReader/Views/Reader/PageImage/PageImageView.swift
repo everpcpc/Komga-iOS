@@ -21,6 +21,7 @@ struct PageImageView: View {
   @State private var isSaving = false
   @State private var showDocumentPicker = false
   @State private var fileToSave: URL?
+  @AppStorage("showPageNumber") private var showPageNumber: Bool = false
 
   private var currentPage: BookPage? {
     guard pageIndex >= 0 && pageIndex < viewModel.pages.count else {
@@ -29,23 +30,43 @@ struct PageImageView: View {
     return viewModel.pages[pageIndex]
   }
 
+  private var pageNumberOverlay: some View {
+    Text("\(pageIndex + 1)")
+      .font(.system(size: 16, weight: .semibold, design: .rounded))
+      .foregroundColor(.white)
+      .padding(.horizontal, 12)
+      .padding(.vertical, 6)
+      .background(
+        RoundedRectangle(cornerRadius: 8)
+          .fill(Color.black.opacity(0.6))
+      )
+      .padding(12)
+      .allowsHitTesting(false)
+  }
+
   var body: some View {
     Group {
       if let imageURL = imageURL {
-        WebImage(
-          url: imageURL,
-          options: [.retryFailed, .scaleDownLargeImages],
-          context: [
-            // Limit single image memory to 50MB (will scale down if larger)
-            .imageScaleDownLimitBytes: 50 * 1024 * 1024,
-            .customManager: SDImageCacheProvider.pageImageManager,
-            .storeCacheType: SDImageCacheType.memory.rawValue,
-            .queryCacheType: SDImageCacheType.memory.rawValue,
-          ]
-        )
-        .resizable()
-        .aspectRatio(contentMode: .fit)
-        .transition(.fade)
+        ZStack(alignment: .topTrailing) {
+          WebImage(
+            url: imageURL,
+            options: [.retryFailed, .scaleDownLargeImages],
+            context: [
+              // Limit single image memory to 50MB (will scale down if larger)
+              .imageScaleDownLimitBytes: 50 * 1024 * 1024,
+              .customManager: SDImageCacheProvider.pageImageManager,
+              .storeCacheType: SDImageCacheType.memory.rawValue,
+              .queryCacheType: SDImageCacheType.memory.rawValue,
+            ]
+          )
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+          .transition(.fade)
+
+          if showPageNumber {
+            pageNumberOverlay
+          }
+        }
         .contextMenu {
           if let page = currentPage {
             Button {

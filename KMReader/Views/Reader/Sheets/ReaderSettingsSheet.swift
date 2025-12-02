@@ -46,6 +46,8 @@ struct ReaderSettingsSheet: View {
           default:
             layoutSection
           }
+
+          pageNumberSection
         }
         .padding(24)
       }
@@ -128,6 +130,25 @@ struct ReaderSettingsSheet: View {
           .foregroundColor(.secondary)
           .lineLimit(nil)
           .multilineTextAlignment(.leading)
+      }
+    }
+  }
+
+  @AppStorage("showPageNumber") private var showPageNumber: Bool = false
+
+  private var pageNumberSection: some View {
+    cardSection(title: "Page Display") {
+      Toggle(isOn: $showPageNumber) {
+        VStack(alignment: .leading, spacing: 4) {
+          Text("Always Show Page Number")
+            .lineLimit(nil)
+            .multilineTextAlignment(.leading)
+          Text("Display page number overlay on images while reading")
+            .font(.caption)
+            .foregroundColor(.secondary)
+            .lineLimit(nil)
+            .multilineTextAlignment(.leading)
+        }
       }
     }
   }
