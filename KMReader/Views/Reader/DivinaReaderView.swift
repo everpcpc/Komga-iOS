@@ -477,8 +477,12 @@ struct DivinaReaderView: View {
       return
     }
     await viewModel.preloadPages()
-    // Start timer to auto-hide controls after 3 seconds when entering reader
-    resetControlsTimer(timeout: 1)
+    #if os(tvOS)
+      // Keep controls visible on tvOS when first entering reader
+    #else
+      // Start timer to auto-hide controls shortly after entering reader
+      resetControlsTimer(timeout: 1)
+    #endif
   }
 
   private func goToNextPage(dualPageEnabled: Bool) {
@@ -552,6 +556,11 @@ struct DivinaReaderView: View {
 
   private func toggleControls(autoHide: Bool = true) {
     #if os(tvOS)
+      let shouldAutoHide = false
+    #else
+      let shouldAutoHide = autoHide
+    #endif
+    #if os(tvOS)
       // On tvOS, allow toggling controls even at endpage to enable navigation back
       // Only prevent hiding for webtoon at bottom
       if readingDirection == .webtoon && isAtBottom {
@@ -569,7 +578,7 @@ struct DivinaReaderView: View {
     if showingControls {
       // Only auto-hide if autoHide is true
       // On macOS and tvOS, manual toggle should not auto-hide
-      if autoHide {
+      if shouldAutoHide {
         resetControlsTimer(timeout: 3)
       } else {
         // Cancel any existing timer when manually opened
@@ -580,11 +589,8 @@ struct DivinaReaderView: View {
 
   private func resetControlsTimer(timeout: TimeInterval) {
     #if os(tvOS)
-      // On tvOS, allow timer to hide controls even at endpage
-      // Only prevent for webtoon at bottom
-      if readingDirection == .webtoon && isAtBottom {
-        return
-      }
+      // Controls remain visible on tvOS
+      return
     #else
       // Don't start timer when at end page or webtoon at bottom
       if isShowingEndPage || (readingDirection == .webtoon && isAtBottom) {
