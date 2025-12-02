@@ -22,7 +22,7 @@ struct PageImageView: View {
   @State private var isSaving = false
   @State private var showDocumentPicker = false
   @State private var fileToSave: URL?
-  @AppStorage("showPageNumber") private var showPageNumber: Bool = false
+  @AppStorage("showPageNumber") private var showPageNumber: Bool = true
 
   private var currentPage: BookPage? {
     guard pageIndex >= 0 && pageIndex < viewModel.pages.count else {

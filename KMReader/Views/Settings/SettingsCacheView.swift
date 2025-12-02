@@ -91,9 +91,7 @@ struct SettingsCacheView: View {
               .foregroundColor(.secondary)
           }
         }
-        #if os(tvOS)
-          .focusable()
-        #endif
+        .tvFocusableHighlight()
 
         HStack {
           Text("Cached Images")
@@ -106,9 +104,7 @@ struct SettingsCacheView: View {
               .foregroundColor(.secondary)
           }
         }
-        #if os(tvOS)
-          .focusable()
-        #endif
+        .tvFocusableHighlight()
 
         Button(role: .destructive) {
           showClearImageCacheConfirmation = true
@@ -134,9 +130,7 @@ struct SettingsCacheView: View {
               .foregroundColor(.secondary)
           }
         }
-        #if os(tvOS)
-          .focusable()
-        #endif
+        .tvFocusableHighlight()
 
         HStack {
           Text("Cached Files")
@@ -149,9 +143,7 @@ struct SettingsCacheView: View {
               .foregroundColor(.secondary)
           }
         }
-        #if os(tvOS)
-          .focusable()
-        #endif
+        .tvFocusableHighlight()
 
         Button(role: .destructive) {
           showClearBookFileCacheConfirmation = true

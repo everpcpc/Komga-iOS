@@ -95,9 +95,7 @@ struct AuthenticationActivityView: View {
                 }
               }
             }
-            #if os(tvOS)
-              .focusable()
-            #endif
+            .tvFocusableHighlight()
             .padding(.vertical, 4)
             .onAppear {
               if index >= activities.count - 3 && hasMorePages && !isLoadingMore {

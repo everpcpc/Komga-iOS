@@ -34,9 +34,7 @@ struct SettingsServerInfoView: View {
                 Text(version)
                   .foregroundColor(.secondary)
               }
-              #if os(tvOS)
-                .focusable()
-              #endif
+              .tvFocusableHighlight()
             }
             if let artifact = build.artifact {
               HStack {
@@ -45,9 +43,7 @@ struct SettingsServerInfoView: View {
                 Text(artifact)
                   .foregroundColor(.secondary)
               }
-              #if os(tvOS)
-                .focusable()
-              #endif
+              .tvFocusableHighlight()
             }
             if let name = build.name {
               HStack {
@@ -56,9 +52,7 @@ struct SettingsServerInfoView: View {
                 Text(name)
                   .foregroundColor(.secondary)
               }
-              #if os(tvOS)
-                .focusable()
-              #endif
+              .tvFocusableHighlight()
             }
             if let group = build.group {
               HStack {
@@ -67,9 +61,7 @@ struct SettingsServerInfoView: View {
                 Text(group)
                   .foregroundColor(.secondary)
               }
-              #if os(tvOS)
-                .focusable()
-              #endif
+              .tvFocusableHighlight()
             }
             if let time = build.time {
               HStack {
@@ -78,9 +70,7 @@ struct SettingsServerInfoView: View {
                 Text(time)
                   .foregroundColor(.secondary)
               }
-              #if os(tvOS)
-                .focusable()
-              #endif
+              .tvFocusableHighlight()
             }
           }
         }
@@ -94,9 +84,7 @@ struct SettingsServerInfoView: View {
                 Text(branch)
                   .foregroundColor(.secondary)
               }
-              #if os(tvOS)
-                .focusable()
-              #endif
+              .tvFocusableHighlight()
             }
             if let commit = git.commit {
               if let id = commit.id {
@@ -107,9 +95,7 @@ struct SettingsServerInfoView: View {
                     .foregroundColor(.secondary)
                     .font(.system(.body, design: .monospaced))
                 }
-                #if os(tvOS)
-                  .focusable()
-                #endif
+                .tvFocusableHighlight()
               }
               if let idAbbrev = commit.idAbbrev {
                 HStack {
@@ -119,9 +105,7 @@ struct SettingsServerInfoView: View {
                     .foregroundColor(.secondary)
                     .font(.system(.body, design: .monospaced))
                 }
-                #if os(tvOS)
-                  .focusable()
-                #endif
+                .tvFocusableHighlight()
               }
               if let time = commit.time {
                 HStack {
@@ -130,9 +114,7 @@ struct SettingsServerInfoView: View {
                   Text(time)
                     .foregroundColor(.secondary)
                 }
-                #if os(tvOS)
-                  .focusable()
-                #endif
+                .tvFocusableHighlight()
               }
             }
           }
@@ -147,9 +129,7 @@ struct SettingsServerInfoView: View {
                 Text(version)
                   .foregroundColor(.secondary)
               }
-              #if os(tvOS)
-                .focusable()
-              #endif
+              .tvFocusableHighlight()
             }
             if let vendor = java.vendor {
               if let name = vendor.name {
@@ -159,9 +139,7 @@ struct SettingsServerInfoView: View {
                   Text(name)
                     .foregroundColor(.secondary)
                 }
-                #if os(tvOS)
-                  .focusable()
-                #endif
+                .tvFocusableHighlight()
               }
               if let version = vendor.version {
                 HStack {
@@ -170,9 +148,7 @@ struct SettingsServerInfoView: View {
                   Text(version)
                     .foregroundColor(.secondary)
                 }
-                #if os(tvOS)
-                  .focusable()
-                #endif
+                .tvFocusableHighlight()
               }
             }
             if let runtime = java.runtime {
@@ -183,9 +159,7 @@ struct SettingsServerInfoView: View {
                   Text(name)
                     .foregroundColor(.secondary)
                 }
-                #if os(tvOS)
-                  .focusable()
-                #endif
+                .tvFocusableHighlight()
               }
               if let version = runtime.version {
                 HStack {
@@ -194,9 +168,7 @@ struct SettingsServerInfoView: View {
                   Text(version)
                     .foregroundColor(.secondary)
                 }
-                #if os(tvOS)
-                  .focusable()
-                #endif
+                .tvFocusableHighlight()
               }
             }
             if let jvm = java.jvm {
@@ -207,9 +179,7 @@ struct SettingsServerInfoView: View {
                   Text(name)
                     .foregroundColor(.secondary)
                 }
-                #if os(tvOS)
-                  .focusable()
-                #endif
+                .tvFocusableHighlight()
               }
               if let vendor = jvm.vendor {
                 HStack {
@@ -218,9 +188,7 @@ struct SettingsServerInfoView: View {
                   Text(vendor)
                     .foregroundColor(.secondary)
                 }
-                #if os(tvOS)
-                  .focusable()
-                #endif
+                .tvFocusableHighlight()
               }
               if let version = jvm.version {
                 HStack {
@@ -229,9 +197,7 @@ struct SettingsServerInfoView: View {
                   Text(version)
                     .foregroundColor(.secondary)
                 }
-                #if os(tvOS)
-                  .focusable()
-                #endif
+                .tvFocusableHighlight()
               }
             }
           }
@@ -246,9 +212,7 @@ struct SettingsServerInfoView: View {
                 Text(name)
                   .foregroundColor(.secondary)
               }
-              #if os(tvOS)
-                .focusable()
-              #endif
+              .tvFocusableHighlight()
             }
             if let version = os.version {
               HStack {
@@ -257,9 +221,7 @@ struct SettingsServerInfoView: View {
                 Text(version)
                   .foregroundColor(.secondary)
               }
-              #if os(tvOS)
-                .focusable()
-              #endif
+              .tvFocusableHighlight()
             }
             if let arch = os.arch {
               HStack {
@@ -268,9 +230,7 @@ struct SettingsServerInfoView: View {
                 Text(arch)
                   .foregroundColor(.secondary)
               }
-              #if os(tvOS)
-                .focusable()
-              #endif
+              .tvFocusableHighlight()
             }
           }
         }

@@ -14,7 +14,7 @@ struct SettingsReaderView: View {
   @AppStorage("dualPageNoCover") private var dualPageNoCover: Bool = false
   @AppStorage("webtoonPageWidthPercentage") private var webtoonPageWidthPercentage: Double = 100.0
   @AppStorage("defaultReadingDirection") private var readDirection: ReadingDirection = .ltr
-  @AppStorage("showPageNumber") private var showPageNumber: Bool = false
+  @AppStorage("showPageNumber") private var showPageNumber: Bool = true
 
   var body: some View {
     Form {

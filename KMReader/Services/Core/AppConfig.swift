@@ -296,7 +296,7 @@ enum AppConfig {
       if defaults.object(forKey: "showPageNumber") != nil {
         return defaults.bool(forKey: "showPageNumber")
       }
-      return false
+      return true
     }
     set {
       defaults.set(newValue, forKey: "showPageNumber")

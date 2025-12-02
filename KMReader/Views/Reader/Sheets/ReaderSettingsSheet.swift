@@ -134,7 +134,7 @@ struct ReaderSettingsSheet: View {
     }
   }
 
-  @AppStorage("showPageNumber") private var showPageNumber: Bool = false
+  @AppStorage("showPageNumber") private var showPageNumber: Bool = true
 
   private var pageNumberSection: some View {
     cardSection(title: "Page Display") {

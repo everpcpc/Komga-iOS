@@ -75,9 +75,7 @@ struct SettingsTasksView: View {
                   .contentTransition(.numericText())
               }
               .padding(.vertical, 4)
-              #if os(tvOS)
-                .focusable()
-              #endif
+              .tvFocusableHighlight()
 
               // Task types with animation
               if !taskQueueStatus.countByType.isEmpty {
@@ -95,9 +93,7 @@ struct SettingsTasksView: View {
                         .contentTransition(.numericText())
                     }
                     .padding(.vertical, 2)
-                    #if os(tvOS)
-                      .focusable()
-                    #endif
+                    .tvFocusableHighlight()
                   }
                 }
               }
@@ -133,9 +129,7 @@ struct SettingsTasksView: View {
                   Text(formatNumber(count))
                     .foregroundColor(.secondary)
                 }
-                #if os(tvOS)
-                  .focusable()
-                #endif
+                .tvFocusableHighlight()
               }
             }
             if let error = metricErrors[.tasksExecuted] {
@@ -146,9 +140,7 @@ struct SettingsTasksView: View {
                   .font(.caption)
                   .foregroundColor(.secondary)
               }
-              #if os(tvOS)
-                .focusable()
-              #endif
+              .tvFocusableHighlight()
             }
           }
         }
@@ -163,9 +155,7 @@ struct SettingsTasksView: View {
                   Text(String(format: "%.2f s", time))
                     .foregroundColor(.secondary)
                 }
-                #if os(tvOS)
-                  .focusable()
-                #endif
+                .tvFocusableHighlight()
               }
             }
             if let error = metricErrors[.tasksTotalTime] {
@@ -176,9 +166,7 @@ struct SettingsTasksView: View {
                   .font(.caption)
                   .foregroundColor(.secondary)
               }
-              #if os(tvOS)
-                .focusable()
-              #endif
+              .tvFocusableHighlight()
             }
           }
         }
