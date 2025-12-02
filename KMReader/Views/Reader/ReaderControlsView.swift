@@ -78,7 +78,7 @@ struct ReaderControlsView: View {
       return "END"
     } else {
       if dualPage, let pair = viewModel.dualPageIndices[viewModel.currentPageIndex] {
-        return pair.display
+        return pair.display(readingDirection: readingDirection)
       } else {
         return String(viewModel.currentPageIndex + 1)
       }

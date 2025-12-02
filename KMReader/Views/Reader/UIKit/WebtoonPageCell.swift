@@ -61,8 +61,7 @@
         loadingIndicator.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
         loadingIndicator.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
         pageNumberLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
-        pageNumberLabel.trailingAnchor.constraint(
-          equalTo: contentView.trailingAnchor, constant: -12),
+        pageNumberLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
         pageNumberLabel.heightAnchor.constraint(equalToConstant: 28),
         pageNumberLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 40),
       ])

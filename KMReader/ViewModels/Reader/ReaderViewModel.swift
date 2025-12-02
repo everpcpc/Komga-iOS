@@ -17,11 +17,16 @@ struct PagePair: Hashable {
   let second: Int?
   var id: Int { first }
 
-  var display: String {
-    if let second = second {
-      return "\(first+1),\(second+1)"
+  func display(readingDirection: ReadingDirection) -> String {
+    guard let second = second else {
+      return "\(first + 1)"
+    }
+    // For RTL reading direction, first page is on the right, so display second,first
+    // For LTR reading direction, first page is on the left, so display first,second
+    if readingDirection == .rtl {
+      return "\(second + 1),\(first + 1)"
     } else {
-      return "\(first+1)"
+      return "\(first + 1),\(second + 1)"
     }
   }
 }

@@ -75,13 +75,22 @@ struct DualPageImageView: View {
     }
   }
 
+  private func pageNumberAlignment(for alignment: Alignment) -> Alignment {
+    // For dual page: left page shows page number at top-leading, right page at top-trailing
+    alignment == .trailing ? .topLeading : .topTrailing
+  }
+
   @ViewBuilder
   private func pageView(
     index: Int,
     alignment: Alignment
   ) -> some View {
-    PageImageView(viewModel: viewModel, pageIndex: index)
-      .frame(width: imageWidth, height: imageHeight, alignment: alignment)
-      .clipped()
+    PageImageView(
+      viewModel: viewModel,
+      pageIndex: index,
+      pageNumberAlignment: pageNumberAlignment(for: alignment)
+    )
+    .frame(width: imageWidth, height: imageHeight, alignment: alignment)
+    .clipped()
   }
 }

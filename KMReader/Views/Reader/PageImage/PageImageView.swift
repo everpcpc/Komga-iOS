@@ -15,6 +15,7 @@ import UniformTypeIdentifiers
 struct PageImageView: View {
   var viewModel: ReaderViewModel
   let pageIndex: Int
+  var pageNumberAlignment: Alignment = .top
 
   @State private var imageURL: URL?
   @State private var loadError: String?
@@ -47,7 +48,7 @@ struct PageImageView: View {
   var body: some View {
     Group {
       if let imageURL = imageURL {
-        ZStack(alignment: .topTrailing) {
+        ZStack(alignment: pageNumberAlignment) {
           WebImage(
             url: imageURL,
             options: [.retryFailed, .scaleDownLargeImages],
