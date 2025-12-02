@@ -79,7 +79,7 @@ struct CollectionSeriesListView: View {
         Group {
           switch layoutMode {
           case .grid:
-            LazyVGrid(columns: layoutHelper.columns, spacing: 12) {
+            LazyVGrid(columns: layoutHelper.columns, spacing: layoutHelper.spacing) {
               ForEach(seriesViewModel.series) { series in
                 Group {
                   if isSelectionMode {
@@ -154,9 +154,9 @@ struct CollectionSeriesListView: View {
                 }
               }
             }
-            .padding(12)
+            .padding(layoutHelper.spacing)
           case .list:
-            LazyVStack(spacing: 8) {
+            LazyVStack(spacing: layoutHelper.spacing) {
               ForEach(seriesViewModel.series) { series in
                 Group {
                   if isSelectionMode {

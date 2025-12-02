@@ -12,8 +12,6 @@ struct BooksBrowseView: View {
   let searchText: String
   let refreshTrigger: UUID
 
-  private let spacing: CGFloat = 12
-
   @AppStorage("bookBrowseOptions") private var browseOpts: BookBrowseOptions = BookBrowseOptions()
   @AppStorage("dashboard") private var dashboard: DashboardConfiguration = DashboardConfiguration()
   @AppStorage("browseLayout") private var browseLayout: BrowseLayoutMode = .grid
@@ -28,7 +26,7 @@ struct BooksBrowseView: View {
   var body: some View {
     VStack(spacing: 0) {
       BookFilterView(browseOpts: $browseOpts)
-        .padding(spacing)
+        .padding(layoutHelper.spacing)
 
       BrowseStateView(
         isLoading: viewModel.isLoading,
@@ -74,7 +72,7 @@ struct BooksBrowseView: View {
   }
 
   private var gridView: some View {
-    LazyVGrid(columns: layoutHelper.columns, spacing: spacing) {
+    LazyVGrid(columns: layoutHelper.columns, spacing: layoutHelper.spacing) {
       ForEach(Array(viewModel.books.enumerated()), id: \.element.id) { index, book in
         BookCardView(
           book: book,
@@ -100,7 +98,7 @@ struct BooksBrowseView: View {
   }
 
   private var listView: some View {
-    LazyVStack(spacing: spacing) {
+    LazyVStack(spacing: layoutHelper.spacing) {
       ForEach(Array(viewModel.books.enumerated()), id: \.element.id) { index, book in
         BookRowView(
           book: book,

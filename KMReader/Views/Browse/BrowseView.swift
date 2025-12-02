@@ -20,7 +20,6 @@ struct BrowseView: View {
   @State private var contentWidth: CGFloat = 0
   @State private var layoutHelper = BrowseLayoutHelper()
 
-  private let spacing: CGFloat = 12
   // SwiftUI's default horizontal padding is 16 on each side (32 total)
   private let horizontalPadding: CGFloat = 16
 
@@ -75,7 +74,6 @@ struct BrowseView: View {
           contentWidth = newContentWidth
           layoutHelper = BrowseLayoutHelper(
             width: newContentWidth,
-            spacing: spacing,
             browseColumns: browseColumns
           )
         }
@@ -84,7 +82,6 @@ struct BrowseView: View {
         if contentWidth > 0 {
           layoutHelper = BrowseLayoutHelper(
             width: contentWidth,
-            spacing: spacing,
             browseColumns: browseColumns
           )
         }

@@ -15,7 +15,7 @@ struct BrowseLayoutHelper {
   let isLandscape: Bool
 
   #if os(tvOS)
-    static let defaultSpacing: CGFloat = 24
+    static let defaultSpacing: CGFloat = 40
   #else
     static let defaultSpacing: CGFloat = 12
   #endif

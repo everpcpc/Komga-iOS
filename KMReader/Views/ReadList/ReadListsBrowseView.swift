@@ -12,8 +12,6 @@ struct ReadListsBrowseView: View {
   let searchText: String
   let refreshTrigger: UUID
 
-  private let spacing: CGFloat = 12
-
   @AppStorage("readListSortOptions") private var sortOpts: SimpleSortOptions =
     SimpleSortOptions()
   @AppStorage("dashboard") private var dashboard: DashboardConfiguration = DashboardConfiguration()
@@ -23,7 +21,7 @@ struct ReadListsBrowseView: View {
   var body: some View {
     VStack(spacing: 0) {
       ReadListSortView()
-        .padding(spacing)
+        .padding(layoutHelper.spacing)
 
       BrowseStateView(
         isLoading: viewModel.isLoading,
@@ -39,7 +37,7 @@ struct ReadListsBrowseView: View {
       ) {
         switch browseLayout {
         case .grid:
-          LazyVGrid(columns: layoutHelper.columns, spacing: spacing) {
+          LazyVGrid(columns: layoutHelper.columns, spacing: layoutHelper.spacing) {
             ForEach(Array(viewModel.readLists.enumerated()), id: \.element.id) { index, readList in
               ReadListCardView(
                 readList: readList,
@@ -61,7 +59,7 @@ struct ReadListsBrowseView: View {
             }
           }
         case .list:
-          LazyVStack(spacing: spacing) {
+          LazyVStack(spacing: layoutHelper.spacing) {
             ForEach(Array(viewModel.readLists.enumerated()), id: \.element.id) { index, readList in
               ReadListRowView(
                 readList: readList,

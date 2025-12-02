@@ -460,7 +460,6 @@ struct SeriesDetailView: View {
         containerWidth = newSize.width
         layoutHelper = BrowseLayoutHelper(
           width: newContentWidth,
-          spacing: 12,
           browseColumns: browseColumns
         )
       }
@@ -469,7 +468,6 @@ struct SeriesDetailView: View {
       if containerWidth > 0 {
         layoutHelper = BrowseLayoutHelper(
           width: containerWidth - horizontalPadding * 2,
-          spacing: 12,
           browseColumns: browseColumns
         )
       }

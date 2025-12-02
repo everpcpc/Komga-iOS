@@ -160,7 +160,6 @@ struct ReadListDetailView: View {
         containerWidth = newContentWidth
         layoutHelper = BrowseLayoutHelper(
           width: newContentWidth,
-          spacing: 12,
           browseColumns: browseColumns
         )
       }
@@ -169,7 +168,6 @@ struct ReadListDetailView: View {
       if containerWidth > 0 {
         layoutHelper = BrowseLayoutHelper(
           width: containerWidth - horizontalPadding * 2,
-          spacing: 12,
           browseColumns: browseColumns
         )
       }

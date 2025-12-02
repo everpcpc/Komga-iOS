@@ -12,8 +12,6 @@ struct SeriesBrowseView: View {
   let searchText: String
   let refreshTrigger: UUID
 
-  private let spacing: CGFloat = 12
-
   @AppStorage("seriesBrowseOptions") private var browseOpts: SeriesBrowseOptions =
     SeriesBrowseOptions()
   @AppStorage("dashboard") private var dashboard: DashboardConfiguration = DashboardConfiguration()
@@ -24,7 +22,7 @@ struct SeriesBrowseView: View {
   var body: some View {
     VStack(spacing: 0) {
       SeriesFilterView(browseOpts: $browseOpts)
-        .padding(spacing)
+        .padding(layoutHelper.spacing)
 
       BrowseStateView(
         isLoading: viewModel.isLoading,
@@ -40,7 +38,7 @@ struct SeriesBrowseView: View {
       ) {
         switch browseLayout {
         case .grid:
-          LazyVGrid(columns: layoutHelper.columns, spacing: spacing) {
+          LazyVGrid(columns: layoutHelper.columns, spacing: layoutHelper.spacing) {
             ForEach(Array(viewModel.series.enumerated()), id: \.element.id) { index, series in
               NavigationLink(value: NavDestination.seriesDetail(seriesId: series.id)) {
                 SeriesCardView(
@@ -65,7 +63,7 @@ struct SeriesBrowseView: View {
             }
           }
         case .list:
-          LazyVStack(spacing: spacing) {
+          LazyVStack(spacing: layoutHelper.spacing) {
             ForEach(Array(viewModel.series.enumerated()), id: \.element.id) { index, series in
               NavigationLink(value: NavDestination.seriesDetail(seriesId: series.id)) {
                 SeriesRowView(

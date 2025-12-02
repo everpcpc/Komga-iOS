@@ -38,7 +38,7 @@ struct BooksListViewForSeries: View {
         Group {
           switch layoutMode {
           case .grid:
-            LazyVGrid(columns: layoutHelper.columns, spacing: 12) {
+            LazyVGrid(columns: layoutHelper.columns, spacing: layoutHelper.spacing) {
               ForEach(bookViewModel.books) { book in
                 BookCardView(
                   book: book,
@@ -60,9 +60,9 @@ struct BooksListViewForSeries: View {
                 }
               }
             }
-            .padding(12)
+            .padding(layoutHelper.spacing)
           case .list:
-            LazyVStack(spacing: 8) {
+            LazyVStack(spacing: layoutHelper.spacing) {
               ForEach(bookViewModel.books) { book in
                 BookRowView(
                   book: book,
