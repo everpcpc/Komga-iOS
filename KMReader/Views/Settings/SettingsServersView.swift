@@ -75,10 +75,6 @@ struct SettingsServersView: View {
         } else {
           ForEach(instances) { instance in
             serverRow(for: instance)
-              .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
-              #if os(iOS) || os(macOS)
-                .listRowSeparator(.hidden)
-              #endif
           }
         }
       }
@@ -209,7 +205,7 @@ struct SettingsServersView: View {
         switchTo(instance)
       }
     } label: {
-      VStack(alignment: .leading, spacing: 12) {
+      VStack(alignment: .leading, spacing: 6) {
         HStack(spacing: 8) {
           Text(instance.displayName)
             .font(.headline)
@@ -238,7 +234,7 @@ struct SettingsServersView: View {
       .padding(16)
       .frame(maxWidth: .infinity, alignment: .leading)
       .background(
-        RoundedRectangle(cornerRadius: 12)
+        RoundedRectangle(cornerRadius: 16)
           .fill(
             isActive(instance)
               ? themeColor.color.opacity(0.15)
@@ -246,7 +242,7 @@ struct SettingsServersView: View {
           )
       )
       .overlay(
-        RoundedRectangle(cornerRadius: 12)
+        RoundedRectangle(cornerRadius: 16)
           .strokeBorder(
             isActive(instance)
               ? themeColor.color.opacity(0.5)
@@ -259,6 +255,10 @@ struct SettingsServersView: View {
     .animation(.easeInOut(duration: 0.25), value: isActive(instance))
     .adaptiveButtonStyle(.plain)
     .disabled(isActive(instance))
+    #if os(iOS) || os(macOS)
+      .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
+      .listRowSeparator(.hidden)
+    #endif
     #if os(iOS) || os(macOS)
       .swipeActions(edge: .trailing) {
         if !isActive(instance) {
@@ -297,6 +297,22 @@ struct SettingsServersView: View {
     activeInstanceId == instance.id.uuidString
   }
 
+  @ViewBuilder
+  private func detailRow(icon: String, text: String, color: Color = .secondary) -> some View {
+    HStack(alignment: .center, spacing: 8) {
+      Image(systemName: icon)
+        .font(.subheadline)
+        .foregroundStyle(color)
+        .frame(width: 16)
+      Text(text)
+        .font(.footnote)
+        .foregroundStyle(color)
+        .lineLimit(1)
+        .minimumScaleFactor(0.9)
+      Spacer()
+    }
+  }
+
   private func switchTo(_ instance: KomgaInstance) {
     guard !isActive(instance) else { return }
     authViewModel.switchTo(instance: instance)
@@ -325,19 +341,4 @@ struct SettingsServersView: View {
     }
   }
 
-  @ViewBuilder
-  private func detailRow(icon: String, text: String, color: Color = .secondary) -> some View {
-    HStack(alignment: .center, spacing: 8) {
-      Image(systemName: icon)
-        .font(.subheadline)
-        .foregroundStyle(color)
-        .frame(width: 16)
-      Text(text)
-        .font(.footnote)
-        .foregroundStyle(color)
-        .lineLimit(1)
-        .minimumScaleFactor(0.9)
-      Spacer()
-    }
-  }
 }

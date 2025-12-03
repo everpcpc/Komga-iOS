@@ -202,9 +202,7 @@ struct SettingsLibrariesView: View {
       }
     }
 
-    withAnimation {
-      allLibrariesMetrics = metrics
-    }
+    allLibrariesMetrics = metrics
   }
 
   private func loadLibraryMetrics() async {
@@ -276,6 +274,11 @@ struct SettingsLibrariesView: View {
   @ViewBuilder
   private func allLibrariesRowView() -> some View {
     let isSelected = dashboard.libraryIds.isEmpty
+    let metricsText =
+      allLibrariesMetrics.flatMap { metrics in
+        hasAllLibrariesMetricsText(metrics) ? formatAllLibrariesMetrics(metrics) : nil
+      } ?? ""
+    let fileSizeText = allLibrariesMetrics?.fileSize.map { formatFileSize($0) } ?? ""
 
     Button {
       withAnimation(.easeInOut(duration: 0.2)) {
@@ -284,16 +287,29 @@ struct SettingsLibrariesView: View {
     } label: {
       HStack(spacing: 8) {
         VStack(alignment: .leading, spacing: 2) {
-          Text("All Libraries")
-            .font(.headline)
-          if let metrics = allLibrariesMetrics, hasAllLibrariesMetrics(metrics) {
-            VStack(alignment: .leading, spacing: 2) {
-              if !formatAllLibrariesMetrics(metrics).isEmpty {
-                Text(formatAllLibrariesMetrics(metrics))
-                  .font(.caption)
-                  .foregroundColor(.secondary)
-              }
+          HStack(spacing: 6) {
+            Text("All Libraries")
+              .font(.headline)
+            if !fileSizeText.isEmpty {
+              Text(fileSizeText)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .opacity(fileSizeText.isEmpty ? 0 : 1)
+                .animation(.easeInOut(duration: 0.2), value: fileSizeText.isEmpty)
             }
+          }
+          if isAdmin {
+            ZStack(alignment: .topLeading) {
+              Text("placeholder\nplaceholder")
+                .font(.caption)
+                .foregroundColor(.clear)
+                .opacity(0)
+              Text(metricsText)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .opacity(metricsText.isEmpty ? 0 : 1)
+            }
+            .animation(.easeInOut(duration: 0.2), value: metricsText.isEmpty)
           }
         }
 
@@ -309,11 +325,11 @@ struct SettingsLibrariesView: View {
       .padding(.horizontal, 16)
       .padding(.vertical, 14)
       .background(
-        RoundedRectangle(cornerRadius: 12)
+        RoundedRectangle(cornerRadius: 16)
           .fill(isSelected ? Color.accentColor.opacity(0.08) : Color.secondary.opacity(0.06))
       )
       .overlay(
-        RoundedRectangle(cornerRadius: 12)
+        RoundedRectangle(cornerRadius: 16)
           .strokeBorder(
             isSelected ? Color.accentColor.opacity(0.3) : Color.clear,
             lineWidth: 1.5
@@ -326,7 +342,7 @@ struct SettingsLibrariesView: View {
     #if os(iOS) || os(macOS)
       .listRowSeparator(.hidden)
     #endif
-    .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
+    .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
     .contextMenu {
       if isAdmin {
         Button {
@@ -388,7 +404,7 @@ struct SettingsLibrariesView: View {
     #if os(iOS) || os(macOS)
       .listRowSeparator(.hidden)
     #endif
-    .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
+    .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
     .contextMenu {
       if isAdmin {
         Button {
@@ -443,12 +459,14 @@ struct SettingsLibrariesView: View {
   private func librarySummary(_ library: KomgaLibrary, isPerforming: Bool, isSelected: Bool)
     -> some View
   {
+    let metricsText = hasMetrics(library) ? formatMetrics(library) : ""
+
     HStack(spacing: 8) {
       VStack(alignment: .leading, spacing: 2) {
         Text(library.name)
           .font(.headline)
         if hasMetrics(library) {
-          Text(formatMetrics(library))
+          Text(metricsText)
             .font(.caption)
             .foregroundColor(.secondary)
         }
@@ -523,30 +541,43 @@ struct SettingsLibrariesView: View {
       || metrics.readlistsCount != nil
   }
 
-  private func formatAllLibrariesMetrics(_ metrics: AllLibrariesMetricsData) -> String {
-    var parts: [String] = []
+  private func hasAllLibrariesMetricsText(_ metrics: AllLibrariesMetricsData) -> Bool {
+    metrics.seriesCount != nil || metrics.booksCount != nil
+      || metrics.sidecarsCount != nil || metrics.collectionsCount != nil
+      || metrics.readlistsCount != nil
+  }
 
+  private func formatAllLibrariesMetrics(_ metrics: AllLibrariesMetricsData) -> String {
+    var lines: [String] = []
+
+    // First line: series, books, sidecars
+    var firstLineParts: [String] = []
     if let seriesCount = metrics.seriesCount {
-      parts.append("\(formatNumber(seriesCount)) series")
+      firstLineParts.append("\(formatNumber(seriesCount)) series")
     }
     if let booksCount = metrics.booksCount {
-      parts.append("\(formatNumber(booksCount)) books")
+      firstLineParts.append("\(formatNumber(booksCount)) books")
     }
     if let sidecarsCount = metrics.sidecarsCount {
-      parts.append("\(formatNumber(sidecarsCount)) sidecars")
+      firstLineParts.append("\(formatNumber(sidecarsCount)) sidecars")
     }
-    if let fileSize = metrics.fileSize {
-      parts.append(formatFileSize(fileSize))
+    if !firstLineParts.isEmpty {
+      lines.append(firstLineParts.joined(separator: " · "))
     }
 
+    // Second line: collections, readlists
+    var secondLineParts: [String] = []
     if let collectionsCount = metrics.collectionsCount {
-      parts.append("\(formatNumber(collectionsCount)) collections")
+      secondLineParts.append("\(formatNumber(collectionsCount)) collections")
     }
     if let readlistsCount = metrics.readlistsCount {
-      parts.append("\(formatNumber(readlistsCount)) readlists")
+      secondLineParts.append("\(formatNumber(readlistsCount)) readlists")
+    }
+    if !secondLineParts.isEmpty {
+      lines.append(secondLineParts.joined(separator: " · "))
     }
 
-    return parts.joined(separator: " · ")
+    return lines.joined(separator: "\n")
   }
 
   private func scanLibrary(_ library: KomgaLibrary) {
