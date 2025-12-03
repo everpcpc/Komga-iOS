@@ -27,6 +27,7 @@ struct AdminRequiredView: View {
         Spacer()
       }
       .padding(.vertical)
+      .tvFocusableHighlight()
     }
   }
 }

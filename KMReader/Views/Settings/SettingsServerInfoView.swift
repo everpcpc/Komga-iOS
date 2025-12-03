@@ -245,6 +245,7 @@ struct SettingsServerInfoView: View {
                 .foregroundColor(.secondary)
               Spacer()
             }
+            .tvFocusableHighlight()
           }
         }
       }

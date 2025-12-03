@@ -39,6 +39,7 @@ struct AuthenticationActivityView: View {
             Spacer()
           }
           .padding(.vertical)
+          .tvFocusableHighlight()
         }
       } else {
         Section {
