@@ -26,7 +26,6 @@ import SwiftUI
           onDismiss()
         } label: {
           Color.black.opacity(0.5)
-            .ignoresSafeArea()
         }
         .adaptiveButtonStyle(.plain)
 

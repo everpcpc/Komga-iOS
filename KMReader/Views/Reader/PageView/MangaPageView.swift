@@ -29,7 +29,7 @@ struct MangaPageView: View {
         LazyHStack(spacing: 0) {
           // End page at the beginning for RTL
           ZStack {
-            readerBackground.color.ignoresSafeArea()
+            readerBackground.color.readerIgnoresSafeArea()
             EndPageView(
               viewModel: viewModel,
               nextBook: nextBook,

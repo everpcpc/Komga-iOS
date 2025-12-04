@@ -34,7 +34,7 @@ struct MangaDualPageView: View {
               if pagePair.first == viewModel.pages.count {
                 // End page
                 ZStack {
-                  readerBackground.color.ignoresSafeArea()
+                  readerBackground.color.readerIgnoresSafeArea()
                   EndPageView(
                     viewModel: viewModel,
                     nextBook: nextBook,

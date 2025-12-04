@@ -46,7 +46,7 @@ struct VerticalPageView: View {
 
           // End page after last page
           ZStack {
-            readerBackground.color.ignoresSafeArea()
+            readerBackground.color.readerIgnoresSafeArea()
             EndPageView(
               viewModel: viewModel,
               nextBook: nextBook,

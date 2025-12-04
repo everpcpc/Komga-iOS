@@ -27,7 +27,7 @@ struct BookReaderView: View {
 
   var body: some View {
     ZStack {
-      readerBackground.color.ignoresSafeArea()
+      readerBackground.color.readerIgnoresSafeArea()
 
       Group {
         if book.deleted {
@@ -125,5 +125,6 @@ struct BookReaderView: View {
         }
       }
     }
+    .readerIgnoresSafeArea()
   }
 }

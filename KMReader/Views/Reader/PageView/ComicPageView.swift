@@ -47,7 +47,7 @@ struct ComicPageView: View {
 
           // End page at the end for LTR
           ZStack {
-            readerBackground.color.ignoresSafeArea()
+            readerBackground.color.readerIgnoresSafeArea()
             EndPageView(
               viewModel: viewModel,
               nextBook: nextBook,

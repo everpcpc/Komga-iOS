@@ -97,7 +97,7 @@ struct DivinaReaderView: View {
       let useDualPage = shouldUseDualPage(screenSize: geometry.size)
 
       ZStack {
-        readerBackground.color.ignoresSafeArea()
+        readerBackground.color.readerIgnoresSafeArea()
         #if os(tvOS)
           // Invisible focus anchor that receives focus when controls are hidden.
           Color.clear
@@ -124,7 +124,8 @@ struct DivinaReaderView: View {
                   toggleControls: { toggleControls() },
                   screenSize: geometry.size,
                   onEndPageFocusChange: endPageFocusChangeHandler
-                ).ignoresSafeArea()
+                )
+                .readerIgnoresSafeArea()
               } else {
                 ComicPageView(
                   viewModel: viewModel,
@@ -136,7 +137,8 @@ struct DivinaReaderView: View {
                   toggleControls: { toggleControls() },
                   screenSize: geometry.size,
                   onEndPageFocusChange: endPageFocusChangeHandler
-                ).ignoresSafeArea()
+                )
+                .readerIgnoresSafeArea()
               }
 
             case .rtl:
@@ -151,7 +153,8 @@ struct DivinaReaderView: View {
                   toggleControls: { toggleControls() },
                   screenSize: geometry.size,
                   onEndPageFocusChange: endPageFocusChangeHandler
-                ).ignoresSafeArea()
+                )
+                .readerIgnoresSafeArea()
               } else {
                 MangaPageView(
                   viewModel: viewModel,
@@ -163,7 +166,8 @@ struct DivinaReaderView: View {
                   toggleControls: { toggleControls() },
                   screenSize: geometry.size,
                   onEndPageFocusChange: endPageFocusChangeHandler
-                ).ignoresSafeArea()
+                )
+                .readerIgnoresSafeArea()
               }
 
             case .vertical:
@@ -177,7 +181,8 @@ struct DivinaReaderView: View {
                 toggleControls: { toggleControls() },
                 screenSize: geometry.size,
                 onEndPageFocusChange: endPageFocusChangeHandler
-              ).ignoresSafeArea()
+              )
+              .readerIgnoresSafeArea()
 
             case .webtoon:
               #if os(iOS)
@@ -191,7 +196,8 @@ struct DivinaReaderView: View {
                   screenSize: geometry.size,
                   pageWidthPercentage: webtoonPageWidthPercentage,
                   readerBackground: readerBackground
-                ).ignoresSafeArea()
+                )
+                .readerIgnoresSafeArea()
               #else
                 // Webtoon requires UIKit on iOS/iPadOS, fallback to vertical
                 VerticalPageView(
@@ -204,7 +210,8 @@ struct DivinaReaderView: View {
                   toggleControls: { toggleControls() },
                   screenSize: geometry.size,
                   onEndPageFocusChange: endPageFocusChangeHandler
-                ).ignoresSafeArea()
+                )
+                .readerIgnoresSafeArea()
               #endif
             }
           }
@@ -240,7 +247,7 @@ struct DivinaReaderView: View {
               WebtoonTapZoneOverlay(isVisible: $showHelperOverlay)
             }
           }
-          .ignoresSafeArea()
+          .readerIgnoresSafeArea()
           .onChange(of: screenKey) {
             // Show helper overlay when screen orientation changes
             triggerHelperOverlay(timeout: 1)
@@ -268,7 +275,7 @@ struct DivinaReaderView: View {
         )
         .padding(.vertical, 24)
         .padding(.horizontal, 8)
-        .ignoresSafeArea()
+        .readerIgnoresSafeArea()
         .opacity(shouldShowControls ? 1.0 : 0.0)
         .allowsHitTesting(shouldShowControls)
 
@@ -365,7 +372,7 @@ struct DivinaReaderView: View {
         )
       )
     #endif
-    .ignoresSafeArea()
+    .readerIgnoresSafeArea()
     #if os(iOS)
       .statusBar(hidden: !shouldShowControls)
     #endif
