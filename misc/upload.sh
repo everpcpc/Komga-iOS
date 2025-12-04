@@ -38,10 +38,13 @@ fi
 
 UPLOAD_TYPE="ios"
 case "$PLATFORM" in
-"macOS")
+"macOS" | "macos")
 	UPLOAD_TYPE="macos"
 	;;
-"tvOS" | "iOS")
+"tvOS" | "tvos")
+	UPLOAD_TYPE="appletvos"
+	;;
+"iOS" | "ios")
 	UPLOAD_TYPE="ios"
 	;;
 *)
