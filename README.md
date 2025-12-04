@@ -74,6 +74,7 @@
 
 ## 🛣️ Roadmap
 
+- Handoff support
 - Offline reading enhancements
 - Live Text / automatic page translation
 
