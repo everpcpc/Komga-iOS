@@ -6,19 +6,19 @@
 //
 
 import Foundation
+import OSLog
 
 class AuthService {
   static let shared = AuthService()
   private let apiClient = APIClient.shared
+  private let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "KMReader", category: "Auth")
 
   private init() {}
 
   func login(username: String, password: String, serverURL: String, rememberMe: Bool = true)
-    async throws -> User
+    async throws -> (user: User, authToken: String)
   {
-    // Set server URL
-    apiClient.setServer(url: serverURL)
-
     // Create basic auth token
     let credentials = "\(username):\(password)"
     guard let credentialsData = credentials.data(using: .utf8) else {
@@ -26,19 +26,15 @@ class AuthService {
     }
     let base64Credentials = credentialsData.base64EncodedString()
 
-    // Set auth token temporarily for the login request
-    apiClient.setAuthToken(base64Credentials)
-
-    // Try to get user info with basic auth to verify login
+    // Validate login using validate method (reuses validation logic)
     let queryItems = [URLQueryItem(name: "remember-me", value: rememberMe ? "true" : "false")]
-    let user: User = try await apiClient.request(
-      path: "/api/v2/users/me", queryItems: queryItems)
+    let user = try await validate(
+      serverURL: serverURL,
+      authToken: base64Credentials,
+      queryItems: queryItems
+    )
 
-    // Store credentials if successful
-    AppConfig.username = username
-    AppConfig.isAdmin = user.roles.contains("ADMIN")
-
-    return user
+    return (user: user, authToken: base64Credentials)
   }
 
   func logout() async throws {
@@ -55,6 +51,22 @@ class AuthService {
 
     // Clear library data
     LibraryManager.shared.clearAllLibraries()
+  }
+
+  func validate(serverURL: String, authToken: String, queryItems: [URLQueryItem]? = nil)
+    async throws -> User
+  {
+    // Validate existing auth token using temporary request
+    logger.info("📡 Validating server connection to \(serverURL)")
+    let user: User = try await apiClient.requestTemporary(
+      serverURL: serverURL,
+      path: "/api/v2/users/me",
+      method: "GET",
+      authToken: authToken,
+      queryItems: queryItems
+    )
+    logger.info("✅ Server validation successful")
+    return user
   }
 
   func getCurrentUser() async throws -> User {

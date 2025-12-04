@@ -57,7 +57,134 @@ class APIClient {
     AppConfig.authToken = token ?? ""
   }
 
+  // MARK: - Temporary Request (doesn't modify global state)
+
+  /// Execute a temporary request without modifying global APIClient state
+  /// This is useful for login validation where we don't want to affect the current server connection
+  func requestTemporary<T: Decodable>(
+    serverURL: String,
+    path: String,
+    method: String = "GET",
+    authToken: String? = nil,
+    body: Data? = nil,
+    queryItems: [URLQueryItem]? = nil,
+    headers: [String: String]? = nil
+  ) async throws -> T {
+    // Build URL
+    let baseURL = serverURL.trimmingCharacters(in: .whitespacesAndNewlines)
+    var urlString = baseURL
+    if !urlString.hasSuffix("/") {
+      urlString += "/"
+    }
+    let trimmedPath = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+    urlString += trimmedPath
+
+    guard var urlComponents = URLComponents(string: urlString) else {
+      throw APIError.invalidURL
+    }
+
+    if let queryItems = queryItems {
+      urlComponents.queryItems = queryItems
+    }
+
+    guard let url = urlComponents.url else {
+      throw APIError.invalidURL
+    }
+
+    // Build request with standard headers
+    var request = URLRequest(url: url)
+    request.httpMethod = method
+    request.httpBody = body
+    configureDefaultHeaders(&request, body: body, authToken: authToken, headers: headers)
+
+    // Execute request with temporary session (doesn't use cached session or shared cookies)
+    // Use ephemeral configuration to avoid using system cookie storage
+    let tempSession = URLSession(
+      configuration: {
+        let config = URLSessionConfiguration.ephemeral
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
+        // Explicitly disable cookie storage to prevent using existing cookies
+        config.httpCookieStorage = nil
+        config.httpShouldSetCookies = false
+        return config
+      }())
+
+    let (data, httpResponse) = try await executeRequest(
+      request, session: tempSession, isTemporary: true)
+
+    return try decodeResponse(data: data, httpResponse: httpResponse, request: request)
+  }
+
   // MARK: - Private Helpers
+
+  private func decodeResponse<T: Decodable>(
+    data: Data,
+    httpResponse: HTTPURLResponse,
+    request: URLRequest
+  ) throws -> T {
+    // Handle 204 No Content responses - skip JSON decoding
+    if httpResponse.statusCode == 204 || data.isEmpty {
+      let expectedTypeName = String(describing: T.self)
+      let emptyResponseTypeName = String(describing: EmptyResponse.self)
+
+      if expectedTypeName == emptyResponseTypeName {
+        return EmptyResponse() as! T
+      } else if data.isEmpty {
+        let urlString = request.url?.absoluteString ?? ""
+        logger.warning("⚠️ Empty response data from \(urlString)")
+        throw APIError.decodingError(
+          AppErrorType.missingRequiredData(message: "Empty response data"),
+          url: urlString,
+          response: nil
+        )
+      }
+    }
+
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+
+    do {
+      return try decoder.decode(T.self, from: data)
+    } catch let decodingError as DecodingError {
+      // Provide detailed decoding error information
+      switch decodingError {
+      case .keyNotFound(let key, let context):
+        let path = context.codingPath.map { $0.stringValue }.joined(separator: ".")
+        logger.error("❌ Missing key '\(key.stringValue)' at path: \(path)")
+      case .typeMismatch(let type, let context):
+        let path = context.codingPath.map { $0.stringValue }.joined(separator: ".")
+        logger.error("❌ Type mismatch for type '\(String(describing: type))' at path: \(path)")
+      case .valueNotFound(let type, let context):
+        let path = context.codingPath.map { $0.stringValue }.joined(separator: ".")
+        logger.error("❌ Value not found for type '\(String(describing: type))' at path: \(path)")
+      case .dataCorrupted(let context):
+        logger.error("❌ Data corrupted: \(context.debugDescription)")
+      @unknown default:
+        logger.error("❌ Unknown decoding error: \(decodingError.localizedDescription)")
+      }
+
+      let responseBody = String(data: data, encoding: .utf8)
+      if let jsonString = responseBody {
+        let truncated = String(jsonString.prefix(1000))
+        logger.debug("Response data: \(truncated)")
+      }
+
+      let urlString = request.url?.absoluteString ?? ""
+      throw APIError.decodingError(decodingError, url: urlString, response: responseBody)
+    } catch {
+      let urlString = request.url?.absoluteString ?? ""
+      let errorDesc = error.localizedDescription
+      logger.error("❌ Decoding error for \(urlString): \(errorDesc)")
+
+      let responseBody = String(data: data, encoding: .utf8)
+      if let jsonString = responseBody {
+        let truncated = String(jsonString.prefix(1000))
+        logger.debug("Response data: \(truncated)")
+      }
+
+      throw APIError.decodingError(error, url: urlString, response: responseBody)
+    }
+  }
 
   private func buildRequest(
     path: String,
@@ -82,7 +209,7 @@ class APIClient {
     request.httpMethod = method
     request.httpBody = body
 
-    configureDefaultHeaders(&request, body: body, headers: headers)
+    configureDefaultHeaders(&request, body: body, authToken: nil, headers: headers)
     return request
   }
 
@@ -95,19 +222,22 @@ class APIClient {
     var request = URLRequest(url: url)
     request.httpMethod = method
     request.httpBody = body
-    configureDefaultHeaders(&request, body: body, headers: headers)
+    configureDefaultHeaders(&request, body: body, authToken: nil, headers: headers)
     return request
   }
 
   private func configureDefaultHeaders(
     _ request: inout URLRequest,
     body: Data?,
+    authToken: String? = nil,
     headers: [String: String]?
   ) {
     request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
 
-    if !AppConfig.authToken.isEmpty {
-      request.addValue("Basic \(AppConfig.authToken)", forHTTPHeaderField: "Authorization")
+    // Use provided authToken or fall back to global AppConfig.authToken
+    let token = authToken ?? AppConfig.authToken
+    if !token.isEmpty {
+      request.addValue("Basic \(token)", forHTTPHeaderField: "Authorization")
     }
 
     if body != nil && request.value(forHTTPHeaderField: "Content-Type") == nil {
@@ -119,17 +249,21 @@ class APIClient {
     }
   }
 
-  private func executeRequest(_ request: URLRequest) async throws -> (
-    data: Data, response: HTTPURLResponse
-  ) {
+  private func executeRequest(
+    _ request: URLRequest,
+    session: URLSession? = nil,
+    isTemporary: Bool = false
+  ) async throws -> (data: Data, response: HTTPURLResponse) {
     let method = request.httpMethod ?? "GET"
     let urlString = request.url?.absoluteString ?? ""
-    logger.info("📡 \(method) \(urlString)")
+    let prefix = isTemporary ? "[TEMP] " : ""
+    logger.info("📡 \(prefix)\(method) \(urlString)")
 
     let startTime = Date()
+    let sessionToUse = session ?? cachedSession
 
     do {
-      let (data, response) = try await cachedSession.data(for: request)
+      let (data, response) = try await sessionToUse.data(for: request)
       let duration = Date().timeIntervalSince(startTime)
 
       guard let httpResponse = response as? HTTPURLResponse else {
@@ -140,7 +274,8 @@ class APIClient {
       let statusEmoji = (200...299).contains(httpResponse.statusCode) ? "✅" : "❌"
       let durationMs = String(format: "%.2f", duration * 1000)
       logger.info(
-        "\(statusEmoji) \(httpResponse.statusCode) \(method) \(urlString) (\(durationMs)ms)")
+        "\(statusEmoji) \(prefix)\(httpResponse.statusCode) \(method) \(urlString) (\(durationMs)ms)"
+      )
 
       guard (200...299).contains(httpResponse.statusCode) else {
         let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
@@ -180,16 +315,9 @@ class APIClient {
     } catch let error as APIError {
       throw error
     } catch let appError as AppErrorType {
-      // Convert AppErrorType to APIError if it's a network error
-      switch appError {
-      case .networkUnavailable, .networkTimeout, .networkCancelled, .networkError:
-        logger.error("❌ Network error for \(urlString): \(appError.description)")
-        throw APIError.networkError(appError, url: urlString)
-      default:
-        throw APIError.networkError(appError, url: urlString)
-      }
+      logger.error("❌ Network error for \(urlString): \(appError.description)")
+      throw APIError.networkError(appError, url: urlString)
     } catch let nsError as NSError where nsError.domain == NSURLErrorDomain {
-      // Convert NSError to AppErrorType first, then to APIError
       let appError = AppErrorType.from(nsError)
       logger.error("❌ Network error for \(urlString): \(appError.description)")
       throw APIError.networkError(appError, url: urlString)
@@ -211,73 +339,7 @@ class APIClient {
       path: path, method: method, body: body, queryItems: queryItems, headers: headers)
     let (data, httpResponse) = try await executeRequest(urlRequest)
 
-    // Handle 204 No Content responses - skip JSON decoding
-    if httpResponse.statusCode == 204 || data.isEmpty {
-      // Check if we're expecting an EmptyResponse by comparing type names
-      let expectedTypeName = String(describing: T.self)
-      let emptyResponseTypeName = String(describing: EmptyResponse.self)
-
-      if expectedTypeName == emptyResponseTypeName {
-        // Return empty response instance for 204/empty responses
-        return EmptyResponse() as! T
-      } else if data.isEmpty {
-        // For non-empty response types, empty data is an error
-        let urlString = urlRequest.url?.absoluteString ?? ""
-        logger.warning("⚠️ Empty response data from \(urlString)")
-        throw APIError.decodingError(
-          AppErrorType.missingRequiredData(message: "Empty response data"),
-          url: urlString,
-          response: nil
-        )
-      }
-    }
-
-    let decoder = JSONDecoder()
-    decoder.dateDecodingStrategy = .iso8601
-
-    do {
-      return try decoder.decode(T.self, from: data)
-    } catch let decodingError as DecodingError {
-      // Provide detailed decoding error information
-      switch decodingError {
-      case .keyNotFound(let key, let context):
-        let path = context.codingPath.map { $0.stringValue }.joined(separator: ".")
-        logger.error("❌ Missing key '\(key.stringValue)' at path: \(path)")
-      case .typeMismatch(let type, let context):
-        let path = context.codingPath.map { $0.stringValue }.joined(separator: ".")
-        logger.error("❌ Type mismatch for type '\(String(describing: type))' at path: \(path)")
-      case .valueNotFound(let type, let context):
-        let path = context.codingPath.map { $0.stringValue }.joined(separator: ".")
-        logger.error("❌ Value not found for type '\(String(describing: type))' at path: \(path)")
-      case .dataCorrupted(let context):
-        logger.error("❌ Data corrupted: \(context.debugDescription)")
-      @unknown default:
-        logger.error("❌ Unknown decoding error: \(decodingError.localizedDescription)")
-      }
-
-      // Log raw response for debugging
-      let responseBody = String(data: data, encoding: .utf8)
-      if let jsonString = responseBody {
-        let truncated = String(jsonString.prefix(1000))
-        logger.debug("Response data: \(truncated)")
-      }
-
-      let urlString = urlRequest.url?.absoluteString ?? ""
-      throw APIError.decodingError(decodingError, url: urlString, response: responseBody)
-    } catch {
-      let urlString = urlRequest.url?.absoluteString ?? ""
-      let errorDesc = error.localizedDescription
-      logger.error("❌ Decoding error for \(urlString): \(errorDesc)")
-
-      // Log raw response for debugging
-      let responseBody = String(data: data, encoding: .utf8)
-      if let jsonString = responseBody {
-        let truncated = String(jsonString.prefix(1000))
-        logger.debug("Response data: \(truncated)")
-      }
-
-      throw APIError.decodingError(error, url: urlString, response: responseBody)
-    }
+    return try decodeResponse(data: data, httpResponse: httpResponse, request: urlRequest)
   }
 
   func requestOptional<T: Decodable>(

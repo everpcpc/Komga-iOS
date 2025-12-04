@@ -84,7 +84,11 @@ struct SettingsServersView: View {
         Button {
           showLogin = true
         } label: {
-          Label(addButtonTitle, systemImage: "plus.circle")
+          HStack {
+            Spacer()
+            Label(addButtonTitle, systemImage: "plus.circle")
+            Spacer()
+          }
         }
       }
 
@@ -211,7 +215,10 @@ struct SettingsServersView: View {
             .font(.headline)
             .foregroundStyle(.primary)
           Spacer()
-          if isActive(instance) {
+          if isSwitching(instance) {
+            ProgressView()
+              .scaleEffect(0.8)
+          } else if isActive(instance) {
             Label("Active", systemImage: "checkmark.seal.fill")
               .font(.caption)
               .foregroundStyle(themeColor.color)
@@ -254,7 +261,7 @@ struct SettingsServersView: View {
     }
     .animation(.easeInOut(duration: 0.25), value: isActive(instance))
     .adaptiveButtonStyle(.plain)
-    .disabled(isActive(instance))
+    .disabled(isActive(instance) || authViewModel.isSwitching)
     #if os(iOS) || os(macOS)
       .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
       .listRowSeparator(.hidden)
@@ -297,6 +304,10 @@ struct SettingsServersView: View {
     activeInstanceId == instance.id.uuidString
   }
 
+  private func isSwitching(_ instance: KomgaInstance) -> Bool {
+    authViewModel.isSwitching && authViewModel.switchingInstanceId == instance.id.uuidString
+  }
+
   @ViewBuilder
   private func detailRow(icon: String, text: String, color: Color = .secondary) -> some View {
     HStack(alignment: .center, spacing: 8) {
@@ -315,9 +326,13 @@ struct SettingsServersView: View {
 
   private func switchTo(_ instance: KomgaInstance) {
     guard !isActive(instance) else { return }
-    authViewModel.switchTo(instance: instance)
-    instance.lastUsedAt = Date()
-    saveChanges()
+    Task {
+      let success = await authViewModel.switchTo(instance: instance)
+      if success {
+        instance.lastUsedAt = Date()
+        saveChanges()
+      }
+    }
   }
 
   private func delete(_ instance: KomgaInstance) {

@@ -48,18 +48,21 @@ struct LoginView: View {
     Task {
       let trimmedName = instanceName.trimmingCharacters(in: .whitespacesAndNewlines)
       let displayName = trimmedName.isEmpty ? nil : trimmedName
-      // Save to AppStorage
-      serverURL = serverURLText
-      username = usernameText
-      await authViewModel.login(
+
+      // Attempt login - AuthViewModel will handle saving to AppConfig
+      let success = await authViewModel.login(
         username: usernameText,
         password: password,
         serverURL: serverURLText,
         displayName: displayName
       )
-      if isLoggedIn {
+
+      // Dismiss only if login was successful
+      // AppConfig is already updated by AuthViewModel, which syncs with @AppStorage
+      if success {
         dismiss()
       }
+      // If login failed, stay on login screen
     }
   }
 
@@ -69,7 +72,6 @@ struct LoginView: View {
         .resizable()
         .aspectRatio(contentMode: .fit)
         .frame(height: 72)
-        .drawingGroup()
 
       Text("Sign in to Komga")
         .font(.system(size: 32, weight: .bold))

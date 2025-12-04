@@ -13,6 +13,8 @@ import SwiftUI
 @Observable
 class AuthViewModel {
   var isLoading = false
+  var isSwitching = false
+  var switchingInstanceId: String?
   var user: User?
   var credentialsVersion = UUID()
 
@@ -28,30 +30,32 @@ class AuthViewModel {
     password: String,
     serverURL: String,
     displayName: String? = nil
-  ) async {
+  ) async -> Bool {
     isLoading = true
+    defer { isLoading = false }
 
     do {
-      user = try await authService.login(
+      // Validate authentication using temporary request
+      let result = try await authService.login(
         username: username, password: password, serverURL: serverURL)
-      AppConfig.isLoggedIn = true
-      LibraryManager.shared.clearAllLibraries()
-      AppConfig.clearSelectedLibraryIds()
-      persistInstance(serverURL: serverURL, username: username, displayName: displayName)
-      await LibraryManager.shared.loadLibraries()
-      credentialsVersion = UUID()
-      ErrorManager.shared.notify(message: "Logged in successfully")
 
-      // Connect to SSE after successful login if enabled
-      if AppConfig.enableSSE {
-        sseService.connect()
-      }
+      // Apply login configuration
+      try await applyLoginConfiguration(
+        serverURL: serverURL,
+        username: username,
+        authToken: result.authToken,
+        user: result.user,
+        displayName: displayName,
+        shouldPersistInstance: true,
+        successMessage: "Logged in successfully"
+      )
+
+      return true
     } catch {
+      // Login failed - AuthService uses temporary request, so AppConfig is not modified
       ErrorManager.shared.alert(error: error)
-      AppConfig.isLoggedIn = false
+      return false
     }
-
-    isLoading = false
   }
 
   func logout() {
@@ -67,6 +71,10 @@ class AuthViewModel {
     credentialsVersion = UUID()
     LibraryManager.shared.clearAllLibraries()
     AppConfig.clearSelectedLibraryIds()
+  }
+
+  func validate(serverURL: String, authToken: String) async throws -> User {
+    return try await authService.validate(serverURL: serverURL, authToken: authToken)
   }
 
   func loadCurrentUser() async {
@@ -85,53 +93,102 @@ class AuthViewModel {
     }
   }
 
-  func switchTo(instance: KomgaInstance) {
-    let previousInstanceId = AppConfig.currentInstanceId
-    if previousInstanceId != instance.id.uuidString {
+  func switchTo(instance: KomgaInstance) async -> Bool {
+    isSwitching = true
+    switchingInstanceId = instance.id.uuidString
+    defer {
+      isSwitching = false
+      switchingInstanceId = nil
+    }
+
+    // Validate server connection before switching
+    do {
+      let validatedUser = try await authService.validate(
+        serverURL: instance.serverURL,
+        authToken: instance.authToken
+      )
+
+      // Check if switching to a different instance
+      let previousInstanceId = AppConfig.currentInstanceId
+      let isDifferentInstance = previousInstanceId != instance.id.uuidString
+
+      // Apply switch configuration
+      try await applyLoginConfiguration(
+        serverURL: instance.serverURL,
+        username: instance.username,
+        authToken: instance.authToken,
+        user: validatedUser,
+        displayName: instance.displayName,
+        shouldPersistInstance: false,
+        successMessage: "Switched to \(instance.name)",
+        currentInstanceId: instance.id.uuidString,
+        clearLibrariesIfDifferent: isDifferentInstance
+      )
+
+      return true
+    } catch {
+      ErrorManager.shared.alert(error: error)
+      return false
+    }
+  }
+
+  private func applyLoginConfiguration(
+    serverURL: String,
+    username: String,
+    authToken: String,
+    user: User,
+    displayName: String?,
+    shouldPersistInstance: Bool,
+    successMessage: String,
+    currentInstanceId: String? = nil,
+    clearLibrariesIfDifferent: Bool = true
+  ) async throws {
+    // Update AppConfig only after validation succeeds
+    APIClient.shared.setServer(url: serverURL)
+    APIClient.shared.setAuthToken(authToken)
+    AppConfig.username = username
+    AppConfig.isAdmin = user.roles.contains("ADMIN")
+    AppConfig.isLoggedIn = true
+
+    // Clear libraries if switching to a different instance
+    if clearLibrariesIfDifferent {
       LibraryManager.shared.clearAllLibraries()
       AppConfig.clearSelectedLibraryIds()
       AppConfig.serverLastUpdate = nil
     }
-    APIClient.shared.setServer(url: instance.serverURL)
-    APIClient.shared.setAuthToken(instance.authToken)
-    AppConfig.username = instance.username
-    AppConfig.isAdmin = instance.isAdmin
-    AppConfig.serverDisplayName = instance.displayName
-    AppConfig.isLoggedIn = true
-    AppConfig.currentInstanceId = instance.id.uuidString
-    credentialsVersion = UUID()
 
-    Task {
-      await loadCurrentUser()
-      await LibraryManager.shared.loadLibraries()
-      ErrorManager.shared.notify(message: "Switched to \(instance.name)")
-
-      // Reconnect SSE with new instance if enabled
-      sseService.disconnect()
-      if AppConfig.enableSSE {
-        sseService.connect()
-      }
-    }
-  }
-
-  private func persistInstance(serverURL: String, username: String, displayName: String?) {
-    guard !AppConfig.authToken.isEmpty else {
-      return
-    }
-
-    do {
+    // Persist instance if this is a new login
+    if shouldPersistInstance {
       let instance = try instanceStore.upsertInstance(
         serverURL: serverURL,
         username: username,
-        authToken: AppConfig.authToken,
-        isAdmin: AppConfig.isAdmin,
+        authToken: authToken,
+        isAdmin: user.roles.contains("ADMIN"),
         displayName: displayName
       )
       AppConfig.currentInstanceId = instance.id.uuidString
       AppConfig.serverDisplayName = instance.displayName
-    } catch {
-      ErrorManager.shared
-        .notify(message: "Failed to remember server: \(error.localizedDescription)")
+    } else if let instanceId = currentInstanceId {
+      // Update current instance ID for switch
+      AppConfig.currentInstanceId = instanceId
+      AppConfig.serverDisplayName = displayName ?? ""
+    }
+
+    // Load libraries
+    await LibraryManager.shared.loadLibraries()
+
+    // Update user and credentials version
+    self.user = user
+    credentialsVersion = UUID()
+
+    // Show success message
+    ErrorManager.shared.notify(message: successMessage)
+
+    // Reconnect SSE with new instance if enabled
+    sseService.disconnect()
+    if AppConfig.enableSSE {
+      sseService.connect()
     }
   }
+
 }
