@@ -45,7 +45,9 @@ make clean            # Remove archives and exports
 # --show-in-organizer: Save to Xcode's default location (~/Library/Developer/Xcode/Archives/) so it appears in Organizer
 
 # Export
-./misc/export.sh [archive_path] [export_options_plist] [destination]
+./misc/export.sh [archive_path] [export_options_plist] [destination] [--keep-archive] [--platform <iOS|macOS|tvOS>]
+# --keep-archive: Keep the archive after export (default removes it)
+# --platform: Optional label; when provided the exported IPA/PKG is renamed (e.g., KMReader-iOS.ipa) so artifacts can be distinguished
 
 # Build all platforms (archive + export)
 ./misc/release.sh [--show-in-organizer] [--skip-export]
@@ -86,6 +88,7 @@ make clean            # Remove archives and exports
 ## Notes
 
 - Archive uses Release configuration
+- Release/export scripts rename artifacts to `KMReader-<platform>.(ipa|pkg)` so `make artifacts` can differentiate iOS/tvOS/macOS builds
 - Scripts automatically handle code signing (if configured in the project)
 - All output files include timestamps to prevent overwriting
 - Use `--show-in-organizer` flag or `*-organizer` make targets to save archives to Xcode's default location, making them visible in Xcode Organizer (Window > Organizer)

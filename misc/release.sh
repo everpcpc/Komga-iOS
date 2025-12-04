@@ -212,7 +212,15 @@ if [ "$SKIP_EXPORT" = false ]; then
 		esac
 
 		# Build export command; keep archive for artifacts.sh to extract .app file for DMG creation
-		EXPORT_CMD=("$SCRIPT_DIR/export.sh" "$archive_path" "$EXPORT_PLIST" "$EXPORTS_DIR" "--keep-archive")
+		EXPORT_CMD=(
+			"$SCRIPT_DIR/export.sh"
+			"$archive_path"
+			"$EXPORT_PLIST"
+			"$EXPORTS_DIR"
+			"--keep-archive"
+			"--platform"
+			"$PLATFORM_NAME"
+		)
 
 		"${EXPORT_CMD[@]}"
 
@@ -226,15 +234,24 @@ if [ "$SKIP_EXPORT" = false ]; then
 		case "$platform" in
 		ios)
 			PLATFORM_NAME="iOS"
-			ARTIFACT_FILE=$(find "$EXPORTS_DIR" -type f -name "*.ipa" | sort | tail -n1 || true)
+			ARTIFACT_FILE=$(find "$EXPORTS_DIR" -type f -name "KMReader-iOS.ipa" | sort | tail -n1 || true)
+			if [ -z "$ARTIFACT_FILE" ]; then
+				ARTIFACT_FILE=$(find "$EXPORTS_DIR" -type f -name "*.ipa" ! -name "*tvOS*.ipa" | sort | tail -n1 || true)
+			fi
 			;;
 		macos)
 			PLATFORM_NAME="macOS"
-			ARTIFACT_FILE=$(find "$EXPORTS_DIR" -type f -name "*.pkg" | sort | tail -n1 || true)
+			ARTIFACT_FILE=$(find "$EXPORTS_DIR" -type f -name "KMReader-macOS.pkg" | sort | tail -n1 || true)
+			if [ -z "$ARTIFACT_FILE" ]; then
+				ARTIFACT_FILE=$(find "$EXPORTS_DIR" -type f -name "*.pkg" | sort | tail -n1 || true)
+			fi
 			;;
 		tvos)
 			PLATFORM_NAME="tvOS"
-			ARTIFACT_FILE=$(find "$EXPORTS_DIR" -type f -name "*tvOS*.ipa" | sort | tail -n1 || true)
+			ARTIFACT_FILE=$(find "$EXPORTS_DIR" -type f -name "KMReader-tvOS.ipa" | sort | tail -n1 || true)
+			if [ -z "$ARTIFACT_FILE" ]; then
+				ARTIFACT_FILE=$(find "$EXPORTS_DIR" -type f -name "*tvOS*.ipa" | sort | tail -n1 || true)
+			fi
 			;;
 		esac
 

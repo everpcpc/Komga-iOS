@@ -1,9 +1,10 @@
 #!/bin/bash
 
 # Export script for KMReader archives
-# Usage: ./export.sh [archive_path] [export_options_plist] [destination] [--keep-archive]
+# Usage: ./export.sh [archive_path] [export_options_plist] [destination] [--keep-archive] [--platform <name>]
 # Example: ./export.sh ./archives/KMReader-iOS_20240101_120000.xcarchive exportOptions.plist ./exports
 # --keep-archive: Keep the archive after successful export (default: delete archive)
+# --platform: Optional label (iOS, macOS, tvOS) used to rename exported artifacts
 
 set -e
 
@@ -35,12 +36,21 @@ KEEP_ARCHIVE=false
 ARCHIVE_PATH=""
 EXPORT_OPTIONS=""
 DEST_DIR=""
+PLATFORM_LABEL=""
 
 while [[ $# -gt 0 ]]; do
 	case "$1" in
 	--keep-archive)
 		KEEP_ARCHIVE=true
 		shift
+		;;
+	--platform)
+		if [ -z "${2:-}" ]; then
+			echo -e "${RED}Error: --platform requires a value (e.g. iOS, macOS, tvOS)${NC}"
+			exit 1
+		fi
+		PLATFORM_LABEL="$2"
+		shift 2
 		;;
 	*)
 		if [ -z "$ARCHIVE_PATH" ]; then
@@ -149,6 +159,25 @@ echo -e "${GREEN}✓ Export completed successfully!${NC}"
 echo "Export location: $EXPORT_PATH"
 echo ""
 echo "Exported files:"
+
+# Rename exported artifact to include platform when requested
+if [ -n "$PLATFORM_LABEL" ]; then
+	shopt -s nullglob
+	for ext in ipa pkg; do
+		for file in "$EXPORT_PATH"/*."$ext"; do
+			[ -e "$file" ] || continue
+			BASENAME="$(basename "$file")"
+			TARGET_NAME="KMReader-${PLATFORM_LABEL}.${ext}"
+			TARGET_PATH="$EXPORT_PATH/$TARGET_NAME"
+			if [ "$BASENAME" != "$TARGET_NAME" ]; then
+				mv "$file" "$TARGET_PATH"
+				echo -e "${GREEN}Renamed ${BASENAME} -> ${TARGET_NAME}${NC}"
+			fi
+		done
+	done
+	shopt -u nullglob
+fi
+
 ls -lh "$EXPORT_PATH"
 
 # Delete archive if not keeping it
