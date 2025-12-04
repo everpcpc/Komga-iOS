@@ -11,6 +11,7 @@ struct CollectionsBrowseView: View {
   let layoutHelper: BrowseLayoutHelper
   let searchText: String
   let refreshTrigger: UUID
+  @Binding var showFilterSheet: Bool
 
   private let spacing: CGFloat = 12
 
@@ -22,7 +23,7 @@ struct CollectionsBrowseView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      CollectionSortView()
+      CollectionSortView(showFilterSheet: $showFilterSheet)
         .padding(spacing)
 
       BrowseStateView(

@@ -20,6 +20,7 @@ struct CollectionDetailView: View {
   @State private var collection: KomgaCollection?
   @State private var showDeleteConfirmation = false
   @State private var showEditSheet = false
+  @State private var showFilterSheet = false
   @State private var containerWidth: CGFloat = 0
   @State private var layoutHelper = BrowseLayoutHelper()
 
@@ -92,7 +93,8 @@ struct CollectionDetailView: View {
               collectionId: collectionId,
               seriesViewModel: seriesViewModel,
               layoutMode: layoutMode,
-              layoutHelper: layoutHelper
+              layoutHelper: layoutHelper,
+              showFilterSheet: $showFilterSheet
             )
           }
         } else {
@@ -189,6 +191,13 @@ extension CollectionDetailView {
   @ViewBuilder
   private var collectionToolbarContent: some View {
     HStack(spacing: PlatformHelper.buttonSpacing) {
+      Button {
+        showFilterSheet = true
+      } label: {
+        Image(systemName: "line.3.horizontal.decrease.circle")
+      }
+      .toolbarButtonStyle()
+
       layoutMenu
       actionsMenu
     }

@@ -9,12 +9,12 @@ import SwiftUI
 
 struct BookFilterView: View {
   @Binding var browseOpts: BookBrowseOptions
-  @State private var showOptionsSheet = false
+  @Binding var showFilterSheet: Bool
 
   var body: some View {
     HStack(spacing: 8) {
       Button {
-        showOptionsSheet = true
+        showFilterSheet = true
       } label: {
         Image(systemName: "line.3.horizontal.decrease.circle")
           .imageScale(.large)
@@ -39,7 +39,7 @@ struct BookFilterView: View {
 
       Spacer()
     }
-    .sheet(isPresented: $showOptionsSheet) {
+    .sheet(isPresented: $showFilterSheet) {
       BookBrowseOptionsSheet(browseOpts: $browseOpts)
     }
   }

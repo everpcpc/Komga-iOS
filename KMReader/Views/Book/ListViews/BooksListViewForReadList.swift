@@ -14,6 +14,7 @@ struct BooksListViewForReadList: View {
   var onReadBook: (Book, Bool) -> Void
   let layoutMode: BrowseLayoutMode
   let layoutHelper: BrowseLayoutHelper
+  @Binding var showFilterSheet: Bool
 
   @AppStorage("readListBookBrowseOptions") private var browseOpts: BookBrowseOptions =
     BookBrowseOptions()
@@ -33,7 +34,7 @@ struct BooksListViewForReadList: View {
         Spacer()
 
         HStack(spacing: 8) {
-          BookFilterView(browseOpts: $browseOpts)
+          BookFilterView(browseOpts: $browseOpts, showFilterSheet: $showFilterSheet)
 
           if !isSelectionMode && isAdmin {
             Button {

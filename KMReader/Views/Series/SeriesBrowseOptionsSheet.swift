@@ -19,7 +19,7 @@ struct SeriesBrowseOptionsSheet: View {
 
   var body: some View {
     SheetView(title: "Filter & Sort", size: .medium) {
-        Form {
+      Form {
         Section("Filters") {
           Picker("Read Status", selection: $tempOpts.readStatusFilter) {
             ForEach(ReadStatusFilter.allCases, id: \.self) { filter in
@@ -40,9 +40,8 @@ struct SeriesBrowseOptionsSheet: View {
           sortField: $tempOpts.sortField,
           sortDirection: $tempOpts.sortDirection
         )
-        }
       }
-    controls: {
+    } controls: {
       Button(action: applyChanges) {
         Label("Done", systemImage: "checkmark")
       }

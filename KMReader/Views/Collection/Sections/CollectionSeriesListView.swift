@@ -13,6 +13,7 @@ struct CollectionSeriesListView: View {
   @Bindable var seriesViewModel: SeriesViewModel
   let layoutMode: BrowseLayoutMode
   let layoutHelper: BrowseLayoutHelper
+  @Binding var showFilterSheet: Bool
 
   @AppStorage("collectionSeriesBrowseOptions") private var browseOpts: SeriesBrowseOptions =
     SeriesBrowseOptions()
@@ -31,7 +32,7 @@ struct CollectionSeriesListView: View {
         Spacer()
 
         HStack(spacing: 8) {
-          SeriesFilterView(browseOpts: $browseOpts)
+          SeriesFilterView(browseOpts: $browseOpts, showFilterSheet: $showFilterSheet)
 
           if !isSelectionMode && isAdmin {
             Button {

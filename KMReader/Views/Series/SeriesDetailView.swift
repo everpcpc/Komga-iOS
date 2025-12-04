@@ -23,6 +23,7 @@ struct SeriesDetailView: View {
   @State private var showDeleteConfirmation = false
   @State private var showCollectionPicker = false
   @State private var showEditSheet = false
+  @State private var showFilterSheet = false
   @State private var containingCollections: [KomgaCollection] = []
   @State private var isLoadingCollections = false
   @State private var containerWidth: CGFloat = 0
@@ -393,7 +394,8 @@ struct SeriesDetailView: View {
                 presentReader(book: book, incognito: incognito)
               },
               layoutMode: layoutMode,
-              layoutHelper: layoutHelper
+              layoutHelper: layoutHelper,
+              showFilterSheet: $showFilterSheet
             )
           }
         } else {
@@ -689,6 +691,13 @@ extension SeriesDetailView {
   @ViewBuilder
   private var seriesToolbarContent: some View {
     HStack(spacing: PlatformHelper.buttonSpacing) {
+      Button {
+        showFilterSheet = true
+      } label: {
+        Image(systemName: "line.3.horizontal.decrease.circle")
+      }
+      .toolbarButtonStyle()
+
       Menu {
         Picker("Layout", selection: $layoutMode) {
           ForEach(BrowseLayoutMode.allCases) { mode in

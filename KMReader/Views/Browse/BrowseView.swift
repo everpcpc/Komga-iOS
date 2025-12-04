@@ -20,6 +20,7 @@ struct BrowseView: View {
   @State private var contentWidth: CGFloat = 0
   @State private var layoutHelper = BrowseLayoutHelper()
   @State private var showLibraryPicker = false
+  @State private var showFilterSheet = false
 
   private let horizontalPadding: CGFloat = PlatformHelper.sheetPadding
 
@@ -60,11 +61,18 @@ struct BrowseView: View {
       .searchable(text: $searchQuery)
       #if !os(tvOS)
         .toolbar {
-          ToolbarItem(placement: .automatic) {
+          ToolbarItem(placement: .cancellationAction) {
             Button {
               showLibraryPicker = true
             } label: {
               Image(systemName: "books.vertical")
+            }
+          }
+          ToolbarItem(placement: .confirmationAction) {
+            Button {
+              showFilterSheet = true
+            } label: {
+              Image(systemName: "line.3.horizontal.decrease.circle")
             }
           }
         }
@@ -116,25 +124,29 @@ struct BrowseView: View {
       SeriesBrowseView(
         layoutHelper: layoutHelper,
         searchText: activeSearchText,
-        refreshTrigger: refreshTrigger
+        refreshTrigger: refreshTrigger,
+        showFilterSheet: $showFilterSheet
       )
     case .books:
       BooksBrowseView(
         layoutHelper: layoutHelper,
         searchText: activeSearchText,
-        refreshTrigger: refreshTrigger
+        refreshTrigger: refreshTrigger,
+        showFilterSheet: $showFilterSheet
       )
     case .collections:
       CollectionsBrowseView(
         layoutHelper: layoutHelper,
         searchText: activeSearchText,
-        refreshTrigger: refreshTrigger
+        refreshTrigger: refreshTrigger,
+        showFilterSheet: $showFilterSheet
       )
     case .readlists:
       ReadListsBrowseView(
         layoutHelper: layoutHelper,
         searchText: activeSearchText,
-        refreshTrigger: refreshTrigger
+        refreshTrigger: refreshTrigger,
+        showFilterSheet: $showFilterSheet
       )
     }
   }

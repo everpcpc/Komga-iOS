@@ -14,6 +14,7 @@ struct BooksListViewForSeries: View {
   var onReadBook: (Book, Bool) -> Void
   let layoutMode: BrowseLayoutMode
   let layoutHelper: BrowseLayoutHelper
+  @Binding var showFilterSheet: Bool
 
   @AppStorage("seriesBookBrowseOptions") private var browseOpts: BookBrowseOptions =
     BookBrowseOptions()
@@ -27,7 +28,7 @@ struct BooksListViewForSeries: View {
 
         Spacer()
 
-        BookFilterView(browseOpts: $browseOpts)
+        BookFilterView(browseOpts: $browseOpts, showFilterSheet: $showFilterSheet)
       }
 
       if bookViewModel.isLoading && bookViewModel.books.isEmpty {

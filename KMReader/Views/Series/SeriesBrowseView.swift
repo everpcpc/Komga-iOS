@@ -11,6 +11,7 @@ struct SeriesBrowseView: View {
   let layoutHelper: BrowseLayoutHelper
   let searchText: String
   let refreshTrigger: UUID
+  @Binding var showFilterSheet: Bool
 
   @AppStorage("seriesBrowseOptions") private var browseOpts: SeriesBrowseOptions =
     SeriesBrowseOptions()
@@ -21,7 +22,7 @@ struct SeriesBrowseView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      SeriesFilterView(browseOpts: $browseOpts)
+      SeriesFilterView(browseOpts: $browseOpts, showFilterSheet: $showFilterSheet)
         .padding(layoutHelper.spacing)
 
       BrowseStateView(

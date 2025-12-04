@@ -11,6 +11,7 @@ struct ReadListsBrowseView: View {
   let layoutHelper: BrowseLayoutHelper
   let searchText: String
   let refreshTrigger: UUID
+  @Binding var showFilterSheet: Bool
 
   @AppStorage("readListSortOptions") private var sortOpts: SimpleSortOptions =
     SimpleSortOptions()
@@ -20,7 +21,7 @@ struct ReadListsBrowseView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      ReadListSortView()
+      ReadListSortView(showFilterSheet: $showFilterSheet)
         .padding(layoutHelper.spacing)
 
       BrowseStateView(

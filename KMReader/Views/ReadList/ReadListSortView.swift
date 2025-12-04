@@ -10,12 +10,12 @@ import SwiftUI
 struct ReadListSortView: View {
   @AppStorage("readListSortOptions") private var sortOpts: SimpleSortOptions =
     SimpleSortOptions()
-  @State private var showSortSheet = false
+  @Binding var showFilterSheet: Bool
 
   var body: some View {
     HStack(spacing: 8) {
       Button {
-        showSortSheet = true
+        showFilterSheet = true
       } label: {
         Image(systemName: "arrow.up.arrow.down.circle")
           .imageScale(.large)
@@ -33,7 +33,7 @@ struct ReadListSortView: View {
 
       Spacer()
     }
-    .sheet(isPresented: $showSortSheet) {
+    .sheet(isPresented: $showFilterSheet) {
       SimpleSortOptionsSheet(sortOpts: $sortOpts)
     }
   }

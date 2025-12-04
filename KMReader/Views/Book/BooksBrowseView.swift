@@ -11,6 +11,7 @@ struct BooksBrowseView: View {
   let layoutHelper: BrowseLayoutHelper
   let searchText: String
   let refreshTrigger: UUID
+  @Binding var showFilterSheet: Bool
 
   @AppStorage("bookBrowseOptions") private var browseOpts: BookBrowseOptions = BookBrowseOptions()
   @AppStorage("dashboard") private var dashboard: DashboardConfiguration = DashboardConfiguration()
@@ -21,7 +22,7 @@ struct BooksBrowseView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      BookFilterView(browseOpts: $browseOpts)
+      BookFilterView(browseOpts: $browseOpts, showFilterSheet: $showFilterSheet)
         .padding(layoutHelper.spacing)
 
       BrowseStateView(

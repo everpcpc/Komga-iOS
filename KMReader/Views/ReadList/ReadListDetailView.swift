@@ -21,6 +21,7 @@ struct ReadListDetailView: View {
   @State private var readList: ReadList?
   @State private var showDeleteConfirmation = false
   @State private var showEditSheet = false
+  @State private var showFilterSheet = false
   @State private var containerWidth: CGFloat = 0
   @State private var layoutHelper = BrowseLayoutHelper()
 
@@ -103,7 +104,8 @@ struct ReadListDetailView: View {
                 presentReader(book: book, incognito: incognito)
               },
               layoutMode: layoutMode,
-              layoutHelper: layoutHelper
+              layoutHelper: layoutHelper,
+              showFilterSheet: $showFilterSheet
             )
           }
         } else {
@@ -208,6 +210,13 @@ extension ReadListDetailView {
   @ViewBuilder
   private var readListToolbarContent: some View {
     HStack(spacing: PlatformHelper.buttonSpacing) {
+      Button {
+        showFilterSheet = true
+      } label: {
+        Image(systemName: "line.3.horizontal.decrease.circle")
+      }
+      .toolbarButtonStyle()
+
       Menu {
         Picker("Layout", selection: $layoutMode) {
           ForEach(BrowseLayoutMode.allCases) { mode in
