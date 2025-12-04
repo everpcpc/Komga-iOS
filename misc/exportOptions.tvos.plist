@@ -4,20 +4,20 @@
 <dict>
     <key>method</key>
     <string>app-store-connect</string>
-
     <key>teamID</key>
     <string>M777UHWZA4</string>
-
     <key>uploadToAppStore</key>
-    <true/>
-
+    <false/>
     <key>uploadSymbols</key>
     <true/>
-
-    <!-- Signing values will be enforced by release.sh when creating per-platform plist -->
     <key>signingStyle</key>
     <string>manual</string>
     <key>signingCertificate</key>
     <string>Apple Distribution</string>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.everpcpc.Komga</key>
+        <string>KMReader tvOS</string>
+    </dict>
 </dict>
 </plist>

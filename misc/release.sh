@@ -52,48 +52,22 @@ for arg in "$@"; do
 done
 
 # Configuration
-BUNDLE_IDENTIFIER="com.everpcpc.Komga"
-MAC_INSTALLER_CERT_NAME="${MAC_INSTALLER_CERT_NAME:-3rd Party Mac Developer Installer}"
 ARCHIVES_DIR="$PROJECT_ROOT/archives"
 EXPORTS_DIR="$PROJECT_ROOT/exports"
-EXPORT_OPTIONS_TEMPLATE="$SCRIPT_DIR/exportOptions.template.plist"
+EXPORT_OPTIONS_IOS="$SCRIPT_DIR/exportOptions.ios.plist"
+EXPORT_OPTIONS_MACOS="$SCRIPT_DIR/exportOptions.macos.plist"
+EXPORT_OPTIONS_TVOS="$SCRIPT_DIR/exportOptions.tvos.plist"
 PLATFORMS=("ios" "macos" "tvos")
 
-# Check if export options template exists
-if [ "$SKIP_EXPORT" = false ] && [ ! -f "$EXPORT_OPTIONS_TEMPLATE" ]; then
-	echo -e "${RED}Error: Export options template not found at '$EXPORT_OPTIONS_TEMPLATE'${NC}"
-	echo "Please create it by copying the example:"
-	echo "  cp $SCRIPT_DIR/exportOptions.plist.example $EXPORT_OPTIONS_TEMPLATE"
-	echo "Then edit it according to your needs."
-	exit 1
+# Check if export options files exist
+if [ "$SKIP_EXPORT" = false ]; then
+	for plist in "$EXPORT_OPTIONS_IOS" "$EXPORT_OPTIONS_MACOS" "$EXPORT_OPTIONS_TVOS"; do
+		if [ ! -f "$plist" ]; then
+			echo -e "${RED}Error: export options plist not found at '$plist'${NC}"
+			exit 1
+		fi
+	done
 fi
-
-prepare_export_options() {
-	local platform_name=$1
-	local profile_name=$2
-	local output_plist=$3
-
-	cp "$EXPORT_OPTIONS_TEMPLATE" "$output_plist"
-
-	/usr/libexec/PlistBuddy -c "Delete :signingStyle" "$output_plist" >/dev/null 2>&1 || true
-	/usr/libexec/PlistBuddy -c "Add :signingStyle string manual" "$output_plist"
-	/usr/libexec/PlistBuddy -c "Delete :signingCertificate" "$output_plist" >/dev/null 2>&1 || true
-	/usr/libexec/PlistBuddy -c "Add :signingCertificate string 'Apple Distribution'" "$output_plist"
-
-	/usr/libexec/PlistBuddy -c "Delete :provisioningProfiles" "$output_plist" >/dev/null 2>&1 || true
-	/usr/libexec/PlistBuddy -c "Add :provisioningProfiles dict" "$output_plist"
-	/usr/libexec/PlistBuddy -c "Add :provisioningProfiles:$BUNDLE_IDENTIFIER string $profile_name" "$output_plist" >/dev/null 2>&1 || \
-		/usr/libexec/PlistBuddy -c "Set :provisioningProfiles:$BUNDLE_IDENTIFIER $profile_name" "$output_plist"
-
-	if [ "$platform_name" = "macOS" ]; then
-		/usr/libexec/PlistBuddy -c "Delete :installerSigningCertificate" "$output_plist" >/dev/null 2>&1 || true
-		/usr/libexec/PlistBuddy -c "Add :installerSigningCertificate string ${MAC_INSTALLER_CERT_NAME}" "$output_plist"
-	else
-		/usr/libexec/PlistBuddy -c "Delete :installerSigningCertificate" "$output_plist" >/dev/null 2>&1 || true
-	fi
-
-	echo -e "${GREEN}Prepared export options for $platform_name using profile '$profile_name'.${NC}"
-}
 
 # Array to store archive paths
 declare -a ARCHIVE_PATHS
@@ -221,38 +195,56 @@ if [ "$SKIP_EXPORT" = false ]; then
 		echo -e "${YELLOW}Exporting $PLATFORM_NAME archive...${NC}"
 		echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
-		PROFILE_NAME=""
 		case "$PLATFORM_NAME" in
 		"iOS")
-			PROFILE_NAME="${IOS_PROVISIONING_PROFILE_NAME:-}"
+			EXPORT_PLIST="$EXPORT_OPTIONS_IOS"
 			;;
 		"macOS")
-			PROFILE_NAME="${MACOS_PROVISIONING_PROFILE_NAME:-}"
+			EXPORT_PLIST="$EXPORT_OPTIONS_MACOS"
 			;;
 		"tvOS")
-			PROFILE_NAME="${TVOS_PROVISIONING_PROFILE_NAME:-}"
+			EXPORT_PLIST="$EXPORT_OPTIONS_TVOS"
+			;;
+		*)
+			echo -e "${RED}✗ Unknown platform for export: $PLATFORM_NAME${NC}"
+			continue
 			;;
 		esac
 
-		if [ -z "$PROFILE_NAME" ]; then
-			echo -e "${RED}✗ No provisioning profile available for $PLATFORM_NAME. Skipping export.${NC}"
-			continue
-		fi
-
-		TMPDIR="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
-		TEMP_EXPORT_OPTIONS="$(mktemp "$TMPDIR/exportOptions.${PLATFORM_NAME}.XXXXXX.plist")"
-		prepare_export_options "$PLATFORM_NAME" "$PROFILE_NAME" "$TEMP_EXPORT_OPTIONS"
-
 		# Build export command; keep archive for artifacts.sh to extract .app file for DMG creation
-		EXPORT_CMD=("$SCRIPT_DIR/export.sh" "$archive_path" "$TEMP_EXPORT_OPTIONS" "$EXPORTS_DIR" "--keep-archive")
+		EXPORT_CMD=("$SCRIPT_DIR/export.sh" "$archive_path" "$EXPORT_PLIST" "$EXPORTS_DIR" "--keep-archive")
 
 		"${EXPORT_CMD[@]}"
-		rm -f "$TEMP_EXPORT_OPTIONS"
 
 		echo ""
 	done
 
 	echo -e "${GREEN}✓ All exports completed successfully!${NC}"
+	echo ""
+	echo -e "${GREEN}Uploading exported artifacts...${NC}"
+	for platform in "${PLATFORMS[@]}"; do
+		case "$platform" in
+		ios)
+			PLATFORM_NAME="iOS"
+			ARTIFACT_FILE=$(find "$EXPORTS_DIR" -type f -name "*.ipa" | sort | tail -n1 || true)
+			;;
+		macos)
+			PLATFORM_NAME="macOS"
+			ARTIFACT_FILE=$(find "$EXPORTS_DIR" -type f -name "*.pkg" | sort | tail -n1 || true)
+			;;
+		tvos)
+			PLATFORM_NAME="tvOS"
+			ARTIFACT_FILE=$(find "$EXPORTS_DIR" -type f -name "*tvOS*.ipa" | sort | tail -n1 || true)
+			;;
+		esac
+
+		if [ -n "$ARTIFACT_FILE" ]; then
+			echo -e "${YELLOW}Uploading $(basename "$ARTIFACT_FILE") for $PLATFORM_NAME...${NC}"
+			"$SCRIPT_DIR/upload.sh" "$ARTIFACT_FILE" "$PLATFORM_NAME"
+		else
+			echo -e "${YELLOW}No artifact found for $PLATFORM_NAME; skipping upload.${NC}"
+		fi
+	done
 	echo ""
 fi
 

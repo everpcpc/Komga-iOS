@@ -71,84 +71,47 @@ if [ -n "$IPA_FILES" ]; then
 	echo ""
 fi
 
+# Find latest macOS archive from custom archives directory
+find_latest_macos_archive() {
+	local pattern="KMReader-macOS_*.xcarchive"
+	local candidate=""
+
+	if compgen -G "$PROJECT_ROOT/archives/$pattern" >/dev/null; then
+		candidate=$(ls -1d "$PROJECT_ROOT/archives"/$pattern 2>/dev/null | sort | tail -n1)
+		if [ -n "$candidate" ]; then
+			printf "%s" "$candidate"
+			return 0
+		fi
+	fi
+
+	return 1
+}
+
 # Process .pkg files (convert to .dmg using .app from archive)
 if [ -n "$PKG_FILES" ]; then
 	echo -e "${GREEN}Converting .pkg files to .dmg...${NC}"
 
-	# If multiple .pkg files exist, only process the latest one (by timestamp)
-	# Convert to array and sort by timestamp to get the latest
-	PKG_ARRAY=($PKG_FILES)
-	if [ ${#PKG_ARRAY[@]} -gt 1 ]; then
-		# Extract timestamps and find the latest
-		LATEST_PKG=""
-		LATEST_TIMESTAMP=""
+for pkg in $PKG_FILES; do
+	# Determine platform (should be macOS for .pkg)
+	PLATFORM="macOS"
 
-		for pkg in "${PKG_ARRAY[@]}"; do
-			PKG_DIR=$(dirname "$pkg")
-			PKG_DIR_NAME=$(basename "$PKG_DIR")
-			TIMESTAMP=$(echo "$PKG_DIR_NAME" | sed -E 's/.*_([0-9]{8}_[0-9]{6})_.*/\1/')
+	PKG_DIR=$(dirname "$pkg")
+	ARCHIVE_PATH=$(find_latest_macos_archive)
 
-			if [ -n "$TIMESTAMP" ] && echo "$TIMESTAMP" | grep -qE '^[0-9]{8}_[0-9]{6}$'; then
-				if [ -z "$LATEST_TIMESTAMP" ] || [ "$TIMESTAMP" \> "$LATEST_TIMESTAMP" ]; then
-					LATEST_TIMESTAMP="$TIMESTAMP"
-					LATEST_PKG="$pkg"
-				fi
-			fi
-		done
-
-		if [ -n "$LATEST_PKG" ]; then
-			echo -e "  ${YELLOW}Found ${#PKG_ARRAY[@]} .pkg files, using latest: $(basename "$(dirname "$LATEST_PKG")")${NC}"
-			PKG_FILES="$LATEST_PKG"
-		fi
+	if [ -z "$ARCHIVE_PATH" ] || [ ! -d "$ARCHIVE_PATH" ]; then
+		echo -e "  ${RED}✗${NC} No archive found for $PLATFORM (looked for KMReader-${PLATFORM}_*.xcarchive)"
+		echo -e "  ${YELLOW}Skipping $(basename "$pkg")${NC}"
+		continue
 	fi
 
-	for pkg in $PKG_FILES; do
-		# Determine platform (should be macOS for .pkg)
-		PLATFORM="macOS"
+	# Extract .app from archive
+	APP_PATH="$ARCHIVE_PATH/Products/Applications/KMReader.app"
 
-		# Extract timestamp from pkg path (e.g., KMReader-macOS_20251203_184811_export/KMReader.pkg)
-		# Pattern: KMReader-macOS_TIMESTAMP_export
-		PKG_DIR=$(dirname "$pkg")
-		PKG_DIR_NAME=$(basename "$PKG_DIR")
-
-		# Extract timestamp from directory name (format: KMReader-macOS_YYYYMMDD_HHMMSS_export)
-		TIMESTAMP=$(echo "$PKG_DIR_NAME" | sed -E 's/.*_([0-9]{8}_[0-9]{6})_.*/\1/')
-
-		# Verify timestamp format (should be YYYYMMDD_HHMMSS)
-		if [ -z "$TIMESTAMP" ] || ! echo "$TIMESTAMP" | grep -qE '^[0-9]{8}_[0-9]{6}$'; then
-			echo -e "  ${RED}✗${NC} Could not extract timestamp from $(basename "$PKG_DIR")"
-			echo -e "  ${YELLOW}Skipping $(basename "$pkg")${NC}"
-			continue
-		fi
-
-		# Find corresponding archive
-		ARCHIVE_NAME="KMReader-${PLATFORM}_${TIMESTAMP}.xcarchive"
-		ARCHIVE_PATH="$PROJECT_ROOT/archives/$ARCHIVE_NAME"
-
-		# Also check in Xcode's default archive location
-		if [ ! -d "$ARCHIVE_PATH" ]; then
-			ARCHIVE_DATE=$(echo "$TIMESTAMP" | cut -d'_' -f1)
-			ARCHIVE_DATE_FORMATTED="${ARCHIVE_DATE:0:4}-${ARCHIVE_DATE:4:2}-${ARCHIVE_DATE:6:2}"
-			ARCHIVE_PATH="$HOME/Library/Developer/Xcode/Archives/$ARCHIVE_DATE_FORMATTED/$ARCHIVE_NAME"
-		fi
-
-		if [ ! -d "$ARCHIVE_PATH" ]; then
-			echo -e "  ${RED}✗${NC} Archive not found: $ARCHIVE_NAME"
-			echo -e "  ${YELLOW}Searched in:${NC}"
-			echo -e "    - $PROJECT_ROOT/archives/"
-			echo -e "    - $HOME/Library/Developer/Xcode/Archives/$ARCHIVE_DATE_FORMATTED/"
-			echo -e "  ${YELLOW}Skipping $(basename "$pkg")${NC}"
-			continue
-		fi
-
-		# Extract .app from archive
-		APP_PATH="$ARCHIVE_PATH/Products/Applications/KMReader.app"
-
-		if [ ! -d "$APP_PATH" ]; then
-			echo -e "  ${RED}✗${NC} .app not found in archive: $APP_PATH"
-			echo -e "  ${YELLOW}Skipping $(basename "$pkg")${NC}"
-			continue
-		fi
+	if [ ! -d "$APP_PATH" ]; then
+		echo -e "  ${RED}✗${NC} .app not found in archive: $APP_PATH"
+		echo -e "  ${YELLOW}Skipping $(basename "$pkg")${NC}"
+		continue
+	fi
 
 		# Get base name for DMG
 		DMG_NAME="KMReader-${PLATFORM}.dmg"

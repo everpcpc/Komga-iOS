@@ -77,7 +77,7 @@ jobs:
             fi
           fi
 
-  store:
+  build:
     runs-on: macos-latest
     needs: [detect, create]
     if: needs.detect.outputs.version
@@ -107,20 +107,6 @@ jobs:
           printf "%s" "$APP_STORE_CONNECT_API_PRIVATE_KEY" > "$KEY_PATH"
           echo "APP_STORE_CONNECT_API_KEY_PATH=$KEY_PATH" >> "$GITHUB_OUTPUT"
 
-      - name: Prepare exportOptions template
-        run: |
-          set -euo pipefail
-          EXPORT_TEMPLATE="misc/exportOptions.template.plist"
-          EXPORT_TEMPLATE_OVERRIDE=".github/misc/exportOptions.template.plist"
-
-          if [ -f "$EXPORT_TEMPLATE_OVERRIDE" ]; then
-            cp "$EXPORT_TEMPLATE_OVERRIDE" "$EXPORT_TEMPLATE"
-            echo "Copied export options template from $EXPORT_TEMPLATE_OVERRIDE"
-          else
-            echo "Error: Custom export options template not found at $EXPORT_TEMPLATE_OVERRIDE" >&2
-            exit 1
-          fi
-
       - name: Import codesign certs
         uses: apple-actions/import-codesign-certs@v3
         with:
@@ -128,83 +114,7 @@ jobs:
           p12-password: ${{ secrets.APPSTORE_CERTIFICATES_PASSWORD }}
 
       - name: Import provisioning profiles
-        run: |
-          set -euo pipefail
-
-          # Create provisioning profiles directory
-          PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
-          mkdir -p "$PROFILES_DIR"
-
-          # Function to import a provisioning profile
-          import_profile() {
-            local platform=$1
-            local profile_base64=$2
-            local file_ext=$3
-
-            if [ -z "$profile_base64" ]; then
-              echo "Warning: $platform profile not provided, skipping"
-              return 0
-            fi
-
-            echo "Importing $platform provisioning profile..."
-            local temp_profile="$RUNNER_TEMP/${platform}${file_ext}"
-            echo "$profile_base64" | base64 -d > "$temp_profile"
-
-            # Extract UUID from profile using security cms
-            local uuid=""
-            local profile_xml=$(security cms -D -i "$temp_profile" 2>/dev/null || echo "")
-            if [ -n "$profile_xml" ]; then
-              uuid=$(echo "$profile_xml" | /usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin 2>/dev/null || echo "")
-            fi
-            local profile_name=""
-            local app_identifier=""
-            local bundle_identifier=""
-            if [ -n "$profile_xml" ]; then
-              profile_name=$(echo "$profile_xml" | /usr/libexec/PlistBuddy -c "Print Name" /dev/stdin 2>/dev/null || echo "")
-              app_identifier=$(echo "$profile_xml" | /usr/libexec/PlistBuddy -c "Print Entitlements:application-identifier" /dev/stdin 2>/dev/null || echo "")
-              if [[ "$app_identifier" == *.* ]]; then
-                bundle_identifier="${app_identifier#*.}"
-              fi
-            fi
-
-            if [ -n "$uuid" ] && [ "$uuid" != "" ]; then
-              cp "$temp_profile" "$PROFILES_DIR/$uuid${file_ext}"
-              echo "✓ Imported $platform profile: $uuid"
-            else
-              # Fallback: use a generic name
-              local fallback_name="${platform}${file_ext}"
-              cp "$temp_profile" "$PROFILES_DIR/$fallback_name"
-              echo "⚠ Imported $platform profile (UUID not found, using: $fallback_name)"
-            fi
-
-            if [ -n "$profile_name" ]; then
-              echo "  Name: $profile_name"
-            fi
-            if [ -n "$bundle_identifier" ]; then
-              echo "  Bundle Identifier: $bundle_identifier"
-            fi
-
-            # Export profile metadata for later steps (e.g., manual signing)
-            local platform_upper
-            platform_upper=$(echo "$platform" | tr '[:lower:]' '[:upper:]')
-            platform_upper=$(echo "$platform_upper" | tr -cd 'A-Z0-9')
-            if [ -n "$profile_name" ]; then
-              printf "%s_PROVISIONING_PROFILE_NAME=%s\n" "$platform_upper" "$profile_name" >> "$GITHUB_ENV"
-            fi
-            if [ -n "$bundle_identifier" ]; then
-              printf "%s_PROVISIONING_PROFILE_BUNDLE_ID=%s\n" "$platform_upper" "$bundle_identifier" >> "$GITHUB_ENV"
-            fi
-          }
-
-          # Import profiles for each platform
-          import_profile "iOS" "${IOS_PROVISIONING_PROFILE_BASE64:-}" ".mobileprovision"
-          import_profile "macOS" "${MACOS_PROVISIONING_PROFILE_BASE64:-}" ".provisionprofile"
-          import_profile "tvOS" "${TVOS_PROVISIONING_PROFILE_BASE64:-}" ".mobileprovision"
-
-          # List imported profiles
-          echo ""
-          echo "Imported provisioning profiles:"
-          ls -lh "$PROFILES_DIR" 2>/dev/null | tail -n +2 || echo "No profiles found"
+        run: misc/import_profiles.sh
         env:
           IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 || '' }}
           MACOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.MACOS_PROVISIONING_PROFILE_BASE64 || '' }}
@@ -246,7 +156,7 @@ jobs:
 
   publish:
     runs-on: ubuntu-latest
-    needs: [detect, create, store]
+    needs: [detect, create, build]
     if: needs.detect.outputs.version
     steps:
       - name: Checkout

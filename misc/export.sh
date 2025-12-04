@@ -84,19 +84,10 @@ mkdir -p "$DEST_DIR"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 EXPORT_PATH="$DEST_DIR/export_${TIMESTAMP}"
 
-# Check export method and upload settings
+# Check export method
 EXPORT_METHOD=""
-UPLOAD_ENABLED=false
 if command -v plutil &>/dev/null; then
 	EXPORT_METHOD=$(plutil -extract method raw "$EXPORT_OPTIONS" 2>/dev/null || echo "")
-	UPLOAD_VALUE=$(plutil -extract uploadToAppStore raw "$EXPORT_OPTIONS" 2>/dev/null || echo "")
-	if [ "$UPLOAD_VALUE" = "true" ] || [ "$UPLOAD_VALUE" = "1" ]; then
-		UPLOAD_ENABLED=true
-	fi
-	# app-store-connect method implies upload
-	if [ "$EXPORT_METHOD" = "app-store-connect" ]; then
-		UPLOAD_ENABLED=true
-	fi
 fi
 
 # Determine App Store Connect API credentials from environment
@@ -122,20 +113,7 @@ echo "Export path: $EXPORT_PATH"
 if [ -n "$EXPORT_METHOD" ]; then
 	echo "Export method: $EXPORT_METHOD"
 fi
-if [ "$UPLOAD_ENABLED" = true ]; then
-	echo -e "${YELLOW}Upload to App Store Connect: Enabled${NC}"
-	if [ "$USING_API_KEY" = true ]; then
-		echo "Using App Store Connect API key: $APP_STORE_CONNECT_API_KEY_PATH"
-	else
-		echo -e "${YELLOW}Note: Will prompt for Apple ID credentials if API key not provided${NC}"
-		echo -e "${YELLOW}      Make sure you have App-Specific Password if 2FA is enabled${NC}"
-	fi
-else
-	if [ "$EXPORT_METHOD" = "app-store-connect" ]; then
-		echo -e "${YELLOW}Note: Method is 'app-store-connect' but uploadToAppStore is not explicitly set${NC}"
-		echo -e "${YELLOW}      Upload should happen automatically with this method${NC}"
-	fi
-fi
+echo -e "${YELLOW}Export only; upload handled by separate script${NC}"
 echo ""
 
 # Configure authentication flags if App Store Connect API credentials are available
@@ -151,9 +129,6 @@ fi
 
 # Export
 echo -e "${YELLOW}Exporting archive...${NC}"
-if [ "$UPLOAD_ENABLED" = true ]; then
-	echo -e "${YELLOW}This will also upload to App Store Connect...${NC}"
-fi
 
 # Run xcodebuild quietly (warnings/errors still show)
 xcodebuild -exportArchive \
@@ -170,9 +145,6 @@ if [ "$XCODEBUILD_EXIT_CODE" -ne 0 ]; then
 fi
 
 echo -e "${GREEN}✓ Export completed successfully!${NC}"
-if [ "$UPLOAD_ENABLED" = true ]; then
-	echo -e "${GREEN}✓ Upload to App Store Connect triggered by xcodebuild.${NC}"
-fi
 
 echo "Export location: $EXPORT_PATH"
 echo ""
