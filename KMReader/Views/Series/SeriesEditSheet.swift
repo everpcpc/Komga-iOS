@@ -54,7 +54,7 @@ struct SeriesEditSheet: View {
 
   var body: some View {
     SheetView(title: "Edit Series", size: .large) {
-        Form {
+      Form {
         Section("Basic Information") {
           TextField("Title", text: $title)
           TextField("Title Sort", text: $titleSort)
@@ -65,7 +65,7 @@ struct SeriesEditSheet: View {
             #if os(iOS) || os(tvOS)
               .keyboardType(.numberPad)
             #endif
-          TextField("Language", text: $language)
+          LanguagePicker(selectedLanguage: $language)
           Picker("Reading Direction", selection: $readingDirection) {
             ForEach(ReadingDirection.allCases, id: \.self) { direction in
               Text(direction.displayName).tag(direction)
@@ -202,9 +202,8 @@ struct SeriesEditSheet: View {
             .disabled(newAlternateTitleLabel.isEmpty || newAlternateTitle.isEmpty)
           }
         }
-        }
       }
-    controls: {
+    } controls: {
       Button(action: saveChanges) {
         if isSaving {
           ProgressView()

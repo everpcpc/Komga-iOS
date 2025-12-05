@@ -620,30 +620,7 @@ extension SeriesDetailView {
   }
 
   private func languageDisplayName(_ language: String) -> String {
-    // Simple language code to name mapping
-    let languageMap: [String: String] = [
-      "en": "English",
-      "ja": "Japanese",
-      "zh": "Chinese",
-      "ko": "Korean",
-      "fr": "French",
-      "de": "German",
-      "es": "Spanish",
-      "it": "Italian",
-      "pt": "Portuguese",
-      "ru": "Russian",
-      "ar": "Arabic",
-      "th": "Thai",
-      "vi": "Vietnamese",
-    ]
-
-    // Check if it's a full language code like "en-US" or "zh-CN"
-    if language.contains("-") {
-      let baseCode = String(language.prefix(2))
-      return languageMap[baseCode.lowercased()] ?? language
-    }
-
-    return languageMap[language.lowercased()] ?? language.uppercased()
+    LanguageCodeHelper.displayName(for: language)
   }
 
   private func groupAuthorsByRole(_ authors: [Author]) -> [String: [String]] {
