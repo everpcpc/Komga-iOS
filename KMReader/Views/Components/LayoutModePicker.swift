@@ -11,16 +11,15 @@ struct LayoutModePicker: View {
   @AppStorage("browseLayout") private var layoutMode: BrowseLayoutMode = .grid
 
   var body: some View {
-    Menu {
-      Picker("Layout", selection: $layoutMode) {
-        ForEach(BrowseLayoutMode.allCases) { mode in
-          Label(mode.displayName, systemImage: mode.iconName).tag(mode)
-        }
+    Button {
+      withAnimation {
+        layoutMode = layoutMode == .grid ? .list : .grid
       }
-      .pickerStyle(.inline)
     } label: {
       Label(layoutMode.displayName, systemImage: layoutMode.iconName)
         .labelStyle(.iconOnly)
     }
+    .adaptiveButtonStyle(.bordered)
+    .controlSize(.small)
   }
 }

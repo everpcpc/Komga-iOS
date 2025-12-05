@@ -11,6 +11,10 @@ struct ReadListBookFilterView: View {
   @Binding var browseOpts: ReadListBookBrowseOptions
   @Binding var showFilterSheet: Bool
 
+  var emptyFilter: Bool {
+    return browseOpts.readStatusFilter == .all
+  }
+
   var body: some View {
     HStack(spacing: 8) {
       LayoutModePicker()
@@ -19,23 +23,27 @@ struct ReadListBookFilterView: View {
         HStack(spacing: 6) {
           Image(systemName: "line.3.horizontal.decrease.circle")
             .padding(.leading, 4)
+            .foregroundColor(.secondary)
 
-          Button {
-            showFilterSheet = true
-          } label: {
+          if browseOpts.readStatusFilter != .all {
             FilterChip(
-              label: browseOpts.readStatusFilter != .all
-                ? "Read: \(browseOpts.readStatusFilter.displayName)"
-                : "Filter",
-              systemImage: "eye"
+              label: "Read: \(browseOpts.readStatusFilter.displayName)",
+              systemImage: "eye",
+              openSheet: $showFilterSheet
             )
           }
-          .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 4)
-      }
 
-      Spacer()
+          if emptyFilter {
+            FilterChip(
+              label: "Filter",
+              systemImage: "line.3.horizontal.decrease.circle",
+              openSheet: $showFilterSheet
+            )
+          }
+        }
+        .padding(4)
+      }
+      .scrollClipDisabled()
     }
     .sheet(isPresented: $showFilterSheet) {
       ReadListBookBrowseOptionsSheet(browseOpts: $browseOpts)

@@ -11,6 +11,11 @@ struct BookFilterView: View {
   @Binding var browseOpts: BookBrowseOptions
   @Binding var showFilterSheet: Bool
 
+  var sortString: String {
+    return
+      "\(browseOpts.sortField.displayName) \(browseOpts.sortDirection == .ascending ? "↑" : "↓")"
+  }
+
   var body: some View {
     HStack(spacing: 8) {
       LayoutModePicker()
@@ -19,34 +24,25 @@ struct BookFilterView: View {
         HStack(spacing: 6) {
           Image(systemName: "line.3.horizontal.decrease.circle")
             .padding(.leading, 4)
+            .foregroundColor(.secondary)
 
           if browseOpts.readStatusFilter != .all {
-            Button {
-              showFilterSheet = true
-            } label: {
-              FilterChip(
-                label: "Read: \(browseOpts.readStatusFilter.displayName)",
-                systemImage: "eye"
-              )
-            }
-            .buttonStyle(.plain)
-          }
-
-          Button {
-            showFilterSheet = true
-          } label: {
             FilterChip(
-              label:
-                "\(browseOpts.sortField.displayName) \(browseOpts.sortDirection == .ascending ? "↑" : "↓")",
-              systemImage: "arrow.up.arrow.down"
+              label: "Read: \(browseOpts.readStatusFilter.displayName)",
+              systemImage: "eye",
+              openSheet: $showFilterSheet
             )
           }
-          .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 4)
-      }
 
-      Spacer()
+          FilterChip(
+            label: sortString,
+            systemImage: "arrow.up.arrow.down",
+            openSheet: $showFilterSheet
+          )
+        }
+        .padding(4)
+      }
+      .scrollClipDisabled()
     }
     .sheet(isPresented: $showFilterSheet) {
       BookBrowseOptionsSheet(browseOpts: $browseOpts)

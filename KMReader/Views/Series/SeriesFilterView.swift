@@ -11,6 +11,11 @@ struct SeriesFilterView: View {
   @Binding var browseOpts: SeriesBrowseOptions
   @Binding var showFilterSheet: Bool
 
+  var sortString: String {
+    return
+      "\(browseOpts.sortField.displayName) \(browseOpts.sortDirection == .ascending ? "↑" : "↓")"
+  }
+
   var body: some View {
     HStack(spacing: 8) {
       LayoutModePicker()
@@ -19,48 +24,34 @@ struct SeriesFilterView: View {
         HStack(spacing: 6) {
           Image(systemName: "line.3.horizontal.decrease.circle")
             .padding(.leading, 4)
+            .foregroundColor(.secondary)
 
           if browseOpts.readStatusFilter != .all {
-            Button {
-              showFilterSheet = true
-            } label: {
-              FilterChip(
-                label: "Read: \(browseOpts.readStatusFilter.displayName)",
-                systemImage: "eye"
-              )
-            }
-            .buttonStyle(.plain)
+            FilterChip(
+              label: "Read: \(browseOpts.readStatusFilter.displayName)",
+              systemImage: "eye",
+              openSheet: $showFilterSheet
+            )
           }
 
           if browseOpts.seriesStatusFilter != .all {
-            Button {
-              showFilterSheet = true
-            } label: {
-              FilterChip(
-                label: "Status: \(browseOpts.seriesStatusFilter.displayName)",
-                systemImage: "chart.bar"
-              )
-            }
-            .buttonStyle(.plain)
-          }
-
-          Button {
-            showFilterSheet = true
-          } label: {
             FilterChip(
-              label:
-                browseOpts.readStatusFilter == .all && browseOpts.seriesStatusFilter == .all
-                  ? "Filter & Sort"
-                  : "\(browseOpts.sortField.displayName) \(browseOpts.sortDirection == .ascending ? "↑" : "↓")",
-              systemImage: "arrow.up.arrow.down"
+              label: "Status: \(browseOpts.seriesStatusFilter.displayName)",
+              systemImage: "chart.bar",
+              openSheet: $showFilterSheet
             )
           }
-          .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 4)
-      }
 
-      Spacer()
+          FilterChip(
+            label: sortString,
+            systemImage: "arrow.up.arrow.down",
+            openSheet: $showFilterSheet
+          )
+
+        }
+        .padding(4)
+      }
+      .scrollClipDisabled()
     }
     .sheet(isPresented: $showFilterSheet) {
       SeriesBrowseOptionsSheet(browseOpts: $browseOpts)

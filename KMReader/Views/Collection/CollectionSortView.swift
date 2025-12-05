@@ -12,6 +12,11 @@ struct CollectionSortView: View {
     SimpleSortOptions()
   @Binding var showFilterSheet: Bool
 
+  var sortString: String {
+    return
+      "\(sortOpts.sortField.displayName) \(sortOpts.sortDirection == .ascending ? "↑" : "↓")"
+  }
+
   var body: some View {
     HStack(spacing: 8) {
       LayoutModePicker()
@@ -20,22 +25,17 @@ struct CollectionSortView: View {
         HStack(spacing: 6) {
           Image(systemName: "arrow.up.arrow.down.circle")
             .padding(.leading, 4)
+            .foregroundColor(.secondary)
 
-          Button {
-            showFilterSheet = true
-          } label: {
-            FilterChip(
-              label:
-                "\(sortOpts.sortField.displayName) \(sortOpts.sortDirection == .ascending ? "↑" : "↓")",
-              systemImage: "arrow.up.arrow.down"
-            )
-          }
-          .buttonStyle(.plain)
+          FilterChip(
+            label: sortString,
+            systemImage: "arrow.up.arrow.down",
+            openSheet: $showFilterSheet
+          )
         }
-        .padding(.horizontal, 4)
+        .padding(4)
       }
-
-      Spacer()
+      .scrollClipDisabled()
     }
     .sheet(isPresented: $showFilterSheet) {
       SimpleSortOptionsSheet(sortOpts: $sortOpts)
