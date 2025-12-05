@@ -20,6 +20,7 @@ struct LayoutModePicker: View {
       .pickerStyle(.inline)
     } label: {
       Label(layoutMode.displayName, systemImage: layoutMode.iconName)
+        .labelStyle(.iconOnly)
     }
   }
 }
