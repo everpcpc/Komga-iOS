@@ -77,6 +77,7 @@ struct DashboardSeriesSection: View {
             }
             .padding()
           }
+          .scrollClipDisabled()
           #if os(tvOS)
             .focusSection()
           #endif

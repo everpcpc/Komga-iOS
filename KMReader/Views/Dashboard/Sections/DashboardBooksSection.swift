@@ -80,6 +80,7 @@ struct DashboardBooksSection: View {
             }
             .padding()
           }
+          .scrollClipDisabled()
         }
         .padding(.bottom, 16)
       } else {

@@ -134,7 +134,7 @@ struct PlatformHelper {
 
   static var readerAnimation: Animation? {
     #if os(tvOS)
-      return nil
+      return .easeInOut(duration: 0.2)
     #else
       return .easeInOut(duration: 0.2)
     #endif
