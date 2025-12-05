@@ -25,11 +25,7 @@ struct SimpleSortOptionsSheet: View {
           sortDirection: $tempOpts.sortDirection
         )
 
-        Section {
-          Button(action: resetOptions) {
-            Label("Reset", systemImage: "arrow.uturn.backward")
-          }
-        }
+        ResetButton(action: resetOptions)
       }
     } controls: {
       Button(action: applyChanges) {
