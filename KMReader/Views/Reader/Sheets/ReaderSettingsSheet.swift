@@ -15,7 +15,7 @@ struct ReaderSettingsSheet: View {
   @Binding var webtoonPageWidthPercentage: Double
 
   var body: some View {
-    SheetView(title: "Reader Settings", size: .medium, applyFormStyle: true) {
+    SheetView(title: "Current Reading Options", size: .medium, applyFormStyle: true) {
       Form {
         Section(header: Text("Appearance")) {
           Picker("Reader Background", selection: $readerBackground) {
@@ -26,7 +26,7 @@ struct ReaderSettingsSheet: View {
           .pickerStyle(.menu)
         }
 
-        Section(header: Text("Reading Options")) {
+        Section(header: Text("Options")) {
           Picker("Reading Direction", selection: $readingDirection) {
             ForEach(ReadingDirection.availableCases, id: \.self) { direction in
               Label(direction.displayName, systemImage: direction.icon)

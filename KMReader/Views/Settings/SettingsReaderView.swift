@@ -52,7 +52,7 @@ struct SettingsReaderView: View {
         #endif
       }
 
-      Section(header: Text("Default Reading Settings")) {
+      Section(header: Text("Default Reading Options")) {
         VStack(alignment: .leading, spacing: 8) {
           Picker("Preferred Direction", selection: $readDirection) {
             ForEach(ReadingDirection.availableCases, id: \.self) { direction in
