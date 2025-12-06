@@ -10,16 +10,27 @@ import SwiftUI
 struct LayoutModePicker: View {
   @AppStorage("browseLayout") private var layoutMode: BrowseLayoutMode = .grid
 
-  var body: some View {
-    Button {
-      withAnimation {
-        layoutMode = layoutMode == .grid ? .list : .grid
+  private var animatedSelection: Binding<BrowseLayoutMode> {
+    Binding(
+      get: { layoutMode },
+      set: { newValue in
+        withAnimation {
+          layoutMode = newValue
+        }
       }
-    } label: {
-      Label(layoutMode.displayName, systemImage: layoutMode.iconName)
-        .labelStyle(.iconOnly)
+    )
+  }
+
+  var body: some View {
+    Picker("Layout Mode", selection: animatedSelection) {
+      ForEach(BrowseLayoutMode.allCases) { mode in
+        Image(systemName: mode.iconName)
+          .tag(mode)
+      }
     }
-    .adaptiveButtonStyle(.bordered)
-    .controlSize(.small)
+    .pickerStyle(.segmented)
+    .scaleEffect(0.8)
+    .frame(width: 80, height: 28)
+    .clipped()
   }
 }

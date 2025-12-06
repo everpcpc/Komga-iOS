@@ -45,7 +45,9 @@ struct CollectionSeriesBrowseOptionsSheet: View {
   }
 
   private func resetOptions() {
-    tempOpts = CollectionSeriesBrowseOptions()
+    withAnimation {
+      tempOpts = CollectionSeriesBrowseOptions()
+    }
   }
 
   private func applyChanges() {

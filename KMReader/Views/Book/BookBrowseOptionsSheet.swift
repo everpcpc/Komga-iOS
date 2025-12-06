@@ -43,7 +43,9 @@ struct BookBrowseOptionsSheet: View {
   }
 
   private func resetOptions() {
-    tempOpts = BookBrowseOptions()
+    withAnimation {
+      tempOpts = BookBrowseOptions()
+    }
   }
 
   private func applyChanges() {

@@ -38,7 +38,9 @@ struct ReadListBookBrowseOptionsSheet: View {
   }
 
   private func resetOptions() {
-    tempOpts = ReadListBookBrowseOptions()
+    withAnimation {
+      tempOpts = ReadListBookBrowseOptions()
+    }
   }
 
   private func applyChanges() {

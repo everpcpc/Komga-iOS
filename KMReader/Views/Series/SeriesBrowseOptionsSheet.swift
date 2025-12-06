@@ -50,7 +50,9 @@ struct SeriesBrowseOptionsSheet: View {
   }
 
   private func resetOptions() {
-    tempOpts = SeriesBrowseOptions()
+    withAnimation {
+      tempOpts = SeriesBrowseOptions()
+    }
   }
 
   private func applyChanges() {

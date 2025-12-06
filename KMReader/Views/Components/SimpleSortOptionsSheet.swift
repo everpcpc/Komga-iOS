@@ -34,7 +34,9 @@ struct SimpleSortOptionsSheet: View {
   }
 
   private func resetOptions() {
-    tempOpts = SimpleSortOptions()
+    withAnimation {
+      tempOpts = SimpleSortOptions()
+    }
   }
 
   private func applyChanges() {
