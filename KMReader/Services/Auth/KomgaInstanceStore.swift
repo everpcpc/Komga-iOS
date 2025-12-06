@@ -102,4 +102,24 @@ final class KomgaInstanceStore {
     }
     return defaultName(serverURL: serverURL, username: username)
   }
+
+  func updateLastUsed(for instanceId: String) {
+    Task {
+      do {
+        let context = try makeContext()
+        if let uuid = UUID(uuidString: instanceId) {
+          let descriptor = FetchDescriptor<KomgaInstance>(
+            predicate: #Predicate { instance in
+              instance.id == uuid
+            })
+          if let instance = try context.fetch(descriptor).first {
+            instance.lastUsedAt = Date()
+            try context.save()
+          }
+        }
+      } catch {
+        print("Failed to update last used: \(error)")
+      }
+    }
+  }
 }

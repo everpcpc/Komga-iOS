@@ -13,6 +13,7 @@ struct ContentView: View {
   #if os(macOS)
     @Environment(\.openWindow) private var openWindow
   #endif
+  @Environment(\.scenePhase) private var scenePhase
 
   @AppStorage("themeColorHex") private var themeColor: ThemeColor = .orange
   @AppStorage("isLoggedIn") private var isLoggedIn: Bool = false
@@ -57,6 +58,11 @@ struct ContentView: View {
         } else {
           // Disconnect SSE when logged out
           SSEService.shared.disconnect()
+        }
+      }
+      .onChange(of: scenePhase) { _, phase in
+        if phase == .active && isLoggedIn {
+          KomgaInstanceStore.shared.updateLastUsed(for: AppConfig.currentInstanceId)
         }
       }
       .onChange(of: authViewModel.credentialsVersion) {
