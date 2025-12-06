@@ -85,7 +85,7 @@ struct ReaderSettingsSheet: View {
       .pickerStyle(.segmented)
       .labelsHidden()
 
-      if pageLayout == .dual {
+      if pageLayout.supportsDualPageOptions {
         Toggle(isOn: $dualPageNoCover) {
           VStack(alignment: .leading, spacing: 4) {
             Text("Show Cover in Dual Spread")

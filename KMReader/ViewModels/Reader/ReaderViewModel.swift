@@ -53,6 +53,7 @@ class ReaderViewModel {
   var dualPageIndices: [Int: PagePair] = [:]
   var tableOfContents: [ReaderTOCEntry] = []
   private var dualPageNoCoverEnabled: Bool
+  private var forceDualPagePairs: Bool
 
   private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier ?? "Komga", category: "ReaderViewModel")
@@ -72,12 +73,16 @@ class ReaderViewModel {
   }
 
   convenience init() {
-    self.init(dualPageNoCover: AppConfig.dualPageNoCover)
+    self.init(
+      dualPageNoCover: AppConfig.dualPageNoCover,
+      pageLayout: AppConfig.pageLayout
+    )
   }
 
-  init(dualPageNoCover: Bool) {
+  init(dualPageNoCover: Bool, pageLayout: PageLayout) {
     self.pageImageCache = ImageCache()
     self.dualPageNoCoverEnabled = dualPageNoCover
+    self.forceDualPagePairs = pageLayout == .dual
     regenerateDualPageState()
   }
 
@@ -342,8 +347,19 @@ class ReaderViewModel {
     regenerateDualPageState()
   }
 
+  func updatePageLayout(_ layout: PageLayout) {
+    let shouldForceDualPage = layout == .dual
+    guard forceDualPagePairs != shouldForceDualPage else { return }
+    forceDualPagePairs = shouldForceDualPage
+    regenerateDualPageState()
+  }
+
   private func regenerateDualPageState() {
-    pagePairs = generatePagePairs(pages: pages, noCover: dualPageNoCoverEnabled)
+    pagePairs = generatePagePairs(
+      pages: pages,
+      noCover: dualPageNoCoverEnabled,
+      forceDualPairs: forceDualPagePairs
+    )
     dualPageIndices = generateDualPageIndices(pairs: pagePairs)
   }
 
@@ -451,25 +467,39 @@ class ReaderViewModel {
   }
 }
 
-private func generatePagePairs(pages: [BookPage], noCover: Bool) -> [PagePair] {
+private func generatePagePairs(
+  pages: [BookPage],
+  noCover: Bool,
+  forceDualPairs: Bool
+) -> [PagePair] {
   guard pages.count > 0 else { return [] }
 
   var pairs: [PagePair] = []
 
   var index = 0
   while index < pages.count {
+    if forceDualPairs {
+      let shouldShowSingle = (!noCover && index == 0) || index == pages.count - 1
+      if shouldShowSingle {
+        pairs.append(PagePair(first: index, second: nil))
+        index += 1
+      } else {
+        let nextIndex = index + 1
+        pairs.append(PagePair(first: index, second: nextIndex))
+        index += 2
+      }
+      continue
+    }
+
     let currentPage = pages[index]
 
     var useSinglePage = false
-    // force single page if the page is landscape
     if !currentPage.isPortrait {
       useSinglePage = true
     }
-    // force single page if it's the first page and cover is enabled
     if !noCover && index == 0 {
       useSinglePage = true
     }
-    // force single page if it's the last page
     if index == pages.count - 1 {
       useSinglePage = true
     }
@@ -478,14 +508,11 @@ private func generatePagePairs(pages: [BookPage], noCover: Bool) -> [PagePair] {
       pairs.append(PagePair(first: index, second: nil))
       index += 1
     } else {
-      // Try to pair with next page
       let nextPage = pages[index + 1]
-      // Only pair if next page is also portrait
       if nextPage.isPortrait {
         pairs.append(PagePair(first: index, second: index + 1))
         index += 2
       } else {
-        // Next page is not portrait, show current as single
         pairs.append(PagePair(first: index, second: nil))
         index += 1
       }

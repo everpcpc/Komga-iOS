@@ -10,7 +10,7 @@ import SwiftUI
 struct SettingsReaderView: View {
   @AppStorage("showReaderHelperOverlay") private var showReaderHelperOverlay: Bool = true
   @AppStorage("readerBackground") private var readerBackground: ReaderBackground = .system
-  @AppStorage("pageLayout") private var pageLayout: PageLayout = .dual
+  @AppStorage("pageLayout") private var pageLayout: PageLayout = .auto
   @AppStorage("dualPageNoCover") private var dualPageNoCover: Bool = false
   @AppStorage("webtoonPageWidthPercentage") private var webtoonPageWidthPercentage: Double = 100.0
   @AppStorage("defaultReadingDirection") private var readDirection: ReadingDirection = .ltr
@@ -78,16 +78,18 @@ struct SettingsReaderView: View {
             }
           }
           .optimizedPickerStyle()
-          Text("Single page or dual page (only in landscape)")
+          Text("Opt for single page, auto-detected spreads, or forced dual pages (landscape only)")
             .font(.caption)
             .foregroundColor(.secondary)
         }
-        Toggle(isOn: $dualPageNoCover) {
-          VStack(alignment: .leading, spacing: 4) {
-            Text("Show Cover in Dual Spread")
-            Text("Display the cover alongside the next page when using dual page mode")
-              .font(.caption)
-              .foregroundColor(.secondary)
+        if pageLayout.supportsDualPageOptions {
+          Toggle(isOn: $dualPageNoCover) {
+            VStack(alignment: .leading, spacing: 4) {
+              Text("Show Cover in Dual Spread")
+              Text("Display the cover alongside the next page when using dual page mode")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            }
           }
         }
       }

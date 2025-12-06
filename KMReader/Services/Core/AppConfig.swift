@@ -253,12 +253,15 @@ enum AppConfig {
 
   static var pageLayout: PageLayout {
     get {
-      if let stored = defaults.string(forKey: "pageLayout"),
-        let layout = PageLayout(rawValue: stored)
-      {
-        return layout
+      if let stored = defaults.string(forKey: "pageLayout") {
+        if stored == "dual" {
+          return .auto
+        }
+        if let layout = PageLayout(rawValue: stored) {
+          return layout
+        }
       }
-      return .dual
+      return .auto
     }
     set {
       defaults.set(newValue.rawValue, forKey: "pageLayout")

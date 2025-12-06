@@ -68,13 +68,14 @@ struct DivinaReaderView: View {
 
   private func shouldUseDualPage(screenSize: CGSize) -> Bool {
     guard screenSize.width > screenSize.height else { return false }  // Only in landscape
-    guard pageLayout == .dual else { return false }
+    guard pageLayout != .single else { return false }
     return readingDirection != .vertical
   }
 
   private func resetReaderPreferencesForCurrentBook() {
     readerBackground = AppConfig.readerBackground
     pageLayout = AppConfig.pageLayout
+    viewModel.updatePageLayout(pageLayout)
     dualPageNoCover = AppConfig.dualPageNoCover
     webtoonPageWidthPercentage = AppConfig.webtoonPageWidthPercentage
     readingDirection = AppConfig.defaultReadingDirection
@@ -394,6 +395,9 @@ struct DivinaReaderView: View {
     .onChange(of: dualPageNoCover) { _, newValue in
       viewModel.updateDualPageSettings(noCover: newValue)
     }
+    .onChange(of: pageLayout) { _, newValue in
+      viewModel.updatePageLayout(newValue)
+    }
     .task(id: currentBookId) {
       resetReaderPreferencesForCurrentBook()
       await loadBook(bookId: currentBookId)
@@ -653,7 +657,7 @@ struct DivinaReaderView: View {
     currentBookId = nextBookId
     resetReaderPreferencesForCurrentBook()
     // Reset viewModel state for new book
-    viewModel = ReaderViewModel(dualPageNoCover: dualPageNoCover)
+    viewModel = ReaderViewModel(dualPageNoCover: dualPageNoCover, pageLayout: pageLayout)
     // Preserve incognito mode for next book
     viewModel.incognitoMode = incognito
     // Reset isAtBottom so buttons hide until user scrolls to bottom
